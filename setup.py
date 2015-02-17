@@ -114,6 +114,8 @@ def find_package_data(data_root, package_root):
 # SETUP
 ################################################################################
 
+#msm_ext = distutils.extension.Extension("bhmm.msm._sample_transition_matrix", ['./bhmm/msm/_sample_transition_matrix.pyx'])
+
 write_version_py()
 setup(
     name='bhmm',
@@ -126,20 +128,17 @@ setup(
     url='https://github.com/choderalab/bhmm',
     platforms=['Linux', 'Mac OS-X', 'Unix', 'Windows'],
     classifiers=CLASSIFIERS.splitlines(),
-    package_dir={'bhmm': 'Yank'},
+    package_dir={'bhmm': 'bhmm'},
     packages=['bhmm', "bhmm.tests"] + ['bhmm.%s' % package for package in find_packages('bhmm')],
-    package_data={'bhmm': find_package_data('examples', 'bhmm')},  # NOTE: examples installs to bhmm.egg/examples/, NOT bhmm.egg/yank/examples/.  You need to do utils.get_data_filename("../examples/*/setup/").
+    package_data={'bhmm': find_package_data('examples', 'bhmm')},  # NOTE: examples installs to bhmm.egg/examples/, NOT bhmm.egg/bhmm/examples/.  You need to do utils.get_data_filename("../examples/*/setup/").
     zip_safe=False,
     install_requires=[
         'numpy',
         'scipy',
-        'openmm',
-        'pymbar',
-        'openmmtools',
         'docopt>=0.6.1',
         'netcdf4',
         ],
-    ext_modules=cythonize(mixing_ext),
+    #ext_modules=cythonize(msm_ext),
     entry_points={'console_scripts': ['bhmm = bhmm.cli:main']})
 
 
