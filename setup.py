@@ -114,7 +114,7 @@ def find_package_data(data_root, package_root):
 # SETUP
 ################################################################################
 
-#msm_ext = distutils.extension.Extension("bhmm.msm._sample_transition_matrix", ['./bhmm/msm/_sample_transition_matrix.pyx'])
+msm_ext = distutils.extension.Extension("bhmm.msm.tmatrix_sampling", ['./bhmm/msm/tmatrix_sampling.pyx'])
 
 write_version_py()
 setup(
@@ -138,7 +138,7 @@ setup(
         'nose',
         'docopt>=0.6.1',
         ],
-    #ext_modules=cythonize(msm_ext),
+    ext_modules=cythonize(msm_ext),
     #entry_points={'console_scripts': ['bhmm = bhmm.cli:main']}
     )
 

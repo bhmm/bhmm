@@ -46,6 +46,18 @@ class HMM(object):
     def logPi(self):
         return np.log(self.Pi)
 
+
+    def count_matrix(self):
+        if hasattr(self, 'hidden_state_trajectory'):
+            C = np.zeros((self.nstates,self.nstates))
+            S = self.hidden_state_trajectory
+            for t in range(len(S)-1):
+                C[S[t],S[t+1]] += 1
+            return C
+        else:
+            raise RuntimeError('HMM model does not have a hidden state trajectory.')
+
+
     def generate_synthetic_state_trajectory(self, length, initial_Pi=None, dtype=np.int32):
         """Generate a synthetic state trajectory.
 

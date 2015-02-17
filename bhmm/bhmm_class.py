@@ -4,6 +4,7 @@ Bayesian hidden Markov models.
 """
 
 import copy
+from bhmm.msm.transition_matrix_sampling_rev import TransitionMatrixSamplerRev
 
 class BHMM(object):
     """Bayesian hidden Markov model sampler.
@@ -27,7 +28,8 @@ class BHMM(object):
     >>> models = bhmm.sample(nsamples=10)
 
     """
-    def __init__(self, observations, nstates, initial_model=None, verbose=False):
+    def __init__(self, observations, nstates, initial_model=None, verbose=False,
+                 transition_matrix_sampling_steps = 1000):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -41,6 +43,8 @@ class BHMM(object):
             Otherwise, a heuristic scheme is used to generate an initial guess.
         verbose : bool, optional, default=False
             Verbosity flag.
+        transition_matrix_sampling_steps : int
+            number of transition matrix sampling steps per BHMM cycle
 
         """
         self.verbose = verbose
@@ -57,6 +61,8 @@ class BHMM(object):
         else:
             # Generate our own initial model.
             self.model = self._generateInitialModel()
+
+        self.transition_matrix_sampling_steps = transition_matrix_sampling_steps
 
         return
 
@@ -105,30 +111,27 @@ class BHMM(object):
         self._updateEmissionProbabilities(self.model)
         self._updateTransitionMatrix(self.model)
 
-    def _updateStateTrajectories(self, model):
+
+    def _updateStateTrajectories(self):
         """Sample a new set of state trajectories from the conditional distribution P(S | T, O)
 
-        Parameters
-        ----------
-        model : bhmm.HMM
-            The model for which a new set of hidden state trajectories is to be sampled. Will be modified.
-
         """
         pass
 
-    def _updateEmissionProbabilities(self, model):
+    def _updateEmissionProbabilities(self):
         """Sample a new set of emission probabilites from the conditional distribution P(E | S, O)
 
-        Parameters
-        ----------
-        model : bhmm.HMM
-            The model for which a new set of emission probabilities is to be sampled. Will be modified.
-
         """
         pass
 
-    def _updateTransitionMatrix(self, model):
-        pass
+    def _updateTransitionMatrix(self):
+        """
+        Updates the hidden-state transition matrix
+
+        """
+        C = self.model.count_matrix()
+        sampler = TransitionMatrixSamplerRev(C)
+        self.model.Tij = sampler.sample(self.transition_matrix_sampling_steps)
 
     def _generateInitialModel(self):
         """Use a heuristic scheme to generate an initial model.
