@@ -26,12 +26,12 @@ def test_hmm():
 def test_two_state_model():
     """Test the creation of a simple two-state HMM model with analytical parameters.
     """
-    from bhmm import hmm
+    from bhmm import HMM
     # Create a simple two-state model.
     nstates = 2
     Tij = testsystems.generate_transition_matrix(reversible=True)
     states = [ {'mu' : -1, 'sigma' : 1}, {'mu' : +1, 'sigma' : 1} ]
-    model = hmm.HMM(nstates, Tij, states)
+    model = HMM(nstates, Tij, states)
     # Compute stationary probability using ARPACK.
     from scipy.sparse.linalg import eigs
     from numpy.linalg import norm

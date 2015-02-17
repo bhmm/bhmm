@@ -6,7 +6,7 @@ Test systems for validation
 import numpy as np
 from scipy import linalg
 
-from hmm import HMM
+from bhmm import HMM
 
 def generate_transition_matrix(nstates=3, reversible=True):
     """
@@ -67,3 +67,34 @@ def three_state_model(sigma=1.0):
     model = HMM(nstates, Tij, states)
 
     return model
+
+def generate_random_model(nstates, reversible=True):
+    """Generate a random HMM model with the specified number of states.
+
+    Parameters
+    ----------
+    nstates : int
+        The number of states for the model.
+    reversible : bool, optional, default=True
+        If True, the row-stochastic transition matrix will be reversible.
+
+    Returns
+    -------
+    model : HMM
+        The randomly generated HMM model.
+
+    """
+    Tij = generate_transition_matrix(nstates, reversible=reversible)
+
+    states = list()
+    for index in range(nstates):
+        # TODO: Come up with a better prior with tunable hyperparameters on mu and sigma.
+        mu = np.random.randn()
+        sigma = np.random.random()
+        states.append({ 'mu' : mu, 'sigma' : sigma })
+
+    # Construct HMM with these parameters.
+    model = HMM(nstates, Tij, states)
+
+    return model
+
