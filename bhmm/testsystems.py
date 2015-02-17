@@ -41,15 +41,6 @@ def generate_transition_matrix(nstates=3, reversible=True):
     for i in range(nstates):
         Tij[i,:] /= Tij[i,:].sum()
 
-#    if nstates != 3:
-#        raise Exception("Only 3 states are supported right now.")
-#
-#    # Define row-stochastic rate matrix that satisfies detailed balance, and compute transition matrix from this.
-#    Kij = np.array([[-0.10,  0.10,  0.00],
-#                     [ 0.10, -0.15,  0.05],
-#                     [ 0.00,  0.05, -0.05]], np.float64)
-#    Tij = linalg.expm(Kij);
-
     return Tij
 
 def three_state_model(sigma=1.0):
@@ -76,4 +67,3 @@ def three_state_model(sigma=1.0):
     model = HMM(nstates, Tij, states)
 
     return model
-

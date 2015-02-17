@@ -35,6 +35,7 @@ class HMM(object):
         """
         # TODO: Perform sanity checks on data consistency.
 
+        self.nstates = nstates
         self.Tij = Tij
         self.Pi = self._compute_stationary_probabilities(self.Tij)
         self.states = states
@@ -44,6 +45,95 @@ class HMM(object):
     @property
     def logPi(self):
         return np.log(self.Pi)
+
+    def generate_synthetic_state_trajectory(self, length, initial_Pi=None, dtype=np.int32):
+        """Generate a synthetic state trajectory.
+
+        Parameters
+        ----------
+        length : int
+            Length of synthetic state trajectory to be generated.
+        initial_Pi : np.array of shape (nstates,), optional, default=None
+            The initial probability distribution, if samples are not to be taken from equilibrium.
+        dtype : numpy.dtype, optional, default=numpy.int32
+            The numpy dtype to use to store the synthetic trajectory.
+
+        Returns
+        -------
+        states : np.array of shape (nstates,) of dtype=np.int32
+            The trajectory of hidden states, with each element in range(0,nstates).
+
+        Examples
+        --------
+        >>> from bhmm import testsystems
+        >>> model = testsystems.three_state_model()
+        >>> states = model.generate_synthetic_state_trajectory(length=100)
+
+        """
+        states = np.zeros([length], dtype=dtype)
+
+        # Generate first state sample.
+        if initial_Pi:
+            states[0] = np.random.choice(range(self.nstates), size=1, p=initial_Pi)
+        else:
+            states[0] = np.random.choice(range(self.nstates), size=1, p=self.Pi)
+
+        # Generate subsequent samples.
+        for t in range(1,length):
+            states[t] = np.random.choice(range(self.nstates), size=1, p=self.Tij[states[t-1],:])
+
+        return states
+
+    def generate_synthetic_observation(self, state):
+        """Generate a synthetic observation from a given state.
+
+        Parameters
+        ----------
+        state : int
+            The index of the state from which the observable is to be sampled.
+
+        Returns
+        -------
+        observation : float
+            The observation from the given state.
+
+        """
+        observation = self.states[state]['sigma'] * np.random.randn() + self.states[state]['mu']
+        return observation
+
+    def generate_synthetic_observation_trajectory(self, length, initial_Pi=None, dtype=np.float32):
+        """Generate a synthetic realization of observables.
+
+        Parameters
+        ----------
+        length : int
+            Length of synthetic state trajectory to be generated.
+        initial_Pi : np.array of shape (nstates,), optional, default=None
+            The initial probability distribution, if samples are not to be taken from equilibrium.
+        dtype : numpy.dtype, optional, default=numpy.float32
+            The numpy dtype to use to store the synthetic trajectory.
+
+        Returns
+        -------
+        observations : np.array of shape (nstates,) of dtype=np.float32
+            The trajectory of hidden states, with each element in range(0,nstates).
+
+        Examples
+        --------
+        >>> from bhmm import testsystems
+        >>> model = testsystems.three_state_model()
+        >>> states = model.generate_synthetic_observation_trajectory(length=100)
+
+        """
+        # First, generate synthetic state trajetory.
+        states = self.generate_synthetic_state_trajectory(length, initial_Pi=initial_Pi)
+
+        # Next, generate observations from these states.
+        observations = np.zeros([length], dtype=dtype)
+        for t in range(length):
+            observations[t] = self.generate_synthetic_observation(states[t])
+
+        return observations
 
     @classmethod
     def _compute_stationary_probabilities(cls, Tij, tol=1e-5, maxits=None, method='arpack'):
@@ -71,13 +161,18 @@ class HMM(object):
 
         Examples
         --------
-        >>> import testsystems
+        >>> from bhmm import testsystems
         >>> Tij = testsystems.generate_transition_matrix(nstates=3, reversible=True)
         >>> Pi = HMM._compute_stationary_probabilities(Tij)
 
         """
         nstates = Tij.shape[0]
 
+        if nstates == 2:
+            # Use analytical method for 2x2 matrices.
+            return np.array([Tij[1,0], Tij[0,1]], np.float64)
+
+        # For larger matrices, solve numerically.
         if method == 'arpack':
             # Compute stationary probability using ARPACK.
             # TODO: Pass 'maxits' and 'tol' to ARPACK?

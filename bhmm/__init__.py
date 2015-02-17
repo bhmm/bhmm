@@ -8,4 +8,3 @@ BHMM: A toolkit for Bayesian hidden Markov model analysis of single-molecule tra
 # Define global version.
 import version
 __version__ = version.version
-
