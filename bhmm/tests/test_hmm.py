@@ -6,18 +6,20 @@ Test HMM functions.
 """
 
 import numpy as np
-import numpy.linalg as linalg
+import scipy.sparse.linalg
 
-from nose.tools import ok_, eq_
+from bhmm import testsystems
+
+from nose.tools import assert_equal, assert_almost_equal
+from numpy.testing import assert_array_almost_equal
 
 def test_hmm():
     # Create a simple HMM model.
-    from bhmm import testsystems
     model = testsystems.three_state_model()
     # Test model parameter access.
-    eq_(model.Tij.shape, (3,3))
-    eq_(model.Pi.shape, (3,))
-    eq_(model.logPi.shape, (3,))
+    assert_equal(model.Tij.shape, (3,3))
+    assert_equal(model.Pi.shape, (3,))
+    assert_equal(model.logPi.shape, (3,))
 
     return
 
@@ -27,12 +29,17 @@ def test_two_state_model():
     from bhmm import hmm
     # Create a simple two-state model.
     nstates = 2
-    Tij = np.array([[0.8, 0.2], [0.5, 0.5]], np.float64)
-    Pi = np.array([0.5, 0.5], np.float64)
+    Tij = testsystems.generate_transition_matrix(reversible=True)
     states = [ {'mu' : -1, 'sigma' : 1}, {'mu' : +1, 'sigma' : 1} ]
     model = hmm.HMM(nstates, Tij, states)
+    # Compute stationary probability using ARPACK.
+    from scipy.sparse.linalg import eigs
+    from numpy.linalg import norm
+    [eigenvalues, eigenvectors] = eigs(Tij.T, k=1, which='LR')
+    eigenvectors = np.real(eigenvectors)
+    Pi = eigenvectors[:,0] / eigenvectors[:,0].sum()
     # Test model is correct.
-    eq_(linalg.norm(model.Tij - Tij), 0.0)
-    eq_(model.states, states)
-    eq_(linalg.norm(model.Pi - Pi), 0.0)
+    assert_array_almost_equal(model.Tij, Tij)
+    assert_equal(model.states, states)
+    assert_array_almost_equal(model.Pi, Pi)
 

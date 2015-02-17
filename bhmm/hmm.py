@@ -15,7 +15,7 @@ class HMM(object):
     --------
 
     >>> nstates = 2
-    >>> Tij = np.array([[0.5, 0.5], [0.5, 0.5]])
+    >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
     >>> states = [ {'mu' : -1, 'sigma' : 1}, {'mu' : +1, 'sigma' : 1} ]
     >>> model = HMM(nstates, Tij, states)
 
@@ -46,7 +46,7 @@ class HMM(object):
         return np.log(self.Pi)
 
     @classmethod
-    def _compute_stationary_probabilities(cls, Tij, tol=1e-5, maxits=None):
+    def _compute_stationary_probabilities(cls, Tij, tol=1e-5, maxits=None, method='arpack'):
         """Compute the stationary probabilities for a given transition matrix.
 
         Parameters
@@ -55,8 +55,10 @@ class HMM(object):
             The row-stochastic transition matrix for which the stationary probabilities are to be computed.
         tol : float, optional, default=1e-5
             The absolute tolerance in total variation distance between probability vector iterates at which iterations are terminated.
-        maxits : int, optional default=None
+        maxits : int, optional, default=None
             If not None, the maximum number of iterations to perform.
+        method : str, optional, default='arpack'
+            Method of stationary eigenvector computation: ['arpack', 'inverse-iteration']
 
         Returns
         -------
@@ -70,40 +72,55 @@ class HMM(object):
         Examples
         --------
         >>> import testsystems
-        >>> Tij = testsystems.transition_matrix()
+        >>> Tij = testsystems.generate_transition_matrix(nstates=3, reversible=True)
         >>> Pi = HMM._compute_stationary_probabilities(Tij)
 
         """
         nstates = Tij.shape[0]
 
-        T = np.array(Tij, dtype=np.float64)
-        mu = 1.0 # eigenvalue corresponding to eigenvector to extract
-        I = np.eye(nstates, dtype=np.float64)
-        b_old = np.ones([nstates], dtype=np.float64) / float(nstates) # initial guess
+        if method == 'arpack':
+            # Compute stationary probability using ARPACK.
+            # TODO: Pass 'maxits' and 'tol' to ARPACK?
+            from scipy.sparse.linalg import eigs
+            from numpy.linalg import norm
+            [eigenvalues, eigenvectors] = eigs(Tij.T, k=1, which='LR')
+            eigenvectors = np.real(eigenvectors)
+            Pi = eigenvectors[:,0] / eigenvectors[:,0].sum()
+            return Pi
+        elif method == 'inverse-iteration':
+            T = np.array(Tij, dtype=np.float64) # Promote matrix to float64
+            mu = 1.0 # eigenvalue corresponding to eigenvector to extract
+            I = np.eye(nstates, dtype=np.float64) # identity matrix
+            b_old = np.ones([nstates], dtype=np.float64) / float(nstates) # initial eigenvector guess
 
-        # Perform inverse iteration.
-        converged = False
-        iteration = 1
-        while not converged:
-            # Update eigenvector guess
-            b_new = np.dot(np.linalg.inv(T - mu*I), b_old)
+            # Perform inverse iteration.
+            converged = False
+            iteration = 1
+            while not converged:
+                # Update eigenvector guess
+                b_new = np.dot(np.linalg.inv((T - mu*I).T), b_old)
 
-            # Normalize to be a probability.
-            b_new /= b_new.sum()
+                # Normalize to be a probability.
+                b_new /= b_new.sum()
 
-            # Compute total variation probability difference.
-            delta = 0.5 * np.absolute(b_new - b_old).sum()
+                # Compute total variation probability difference.
+                delta = 0.5 * np.absolute(b_new - b_old).sum()
 
-            if maxits:
-                converged = (iteration >= maxits)
-            if tol:
-                converged = (delta < tol)
+                # Check convergence criterion.
+                if maxits:
+                    converged = (iteration >= maxits)
+                if tol:
+                    converged = (delta < tol)
 
-            iteration += 1
-            b_old = b_new
+                # Proceed to next iteration.
+                if not converged:
+                    iteration += 1
+                    b_old = b_new
 
-        # Normalize vector to sum to unity.
-        b_new = b_new / b_new.sum()
+            # Normalize vector to sum to unity.
+            Pi = b_new / b_new.sum()
+            return Pi
+        else:
+            raise Exception("method %s unknown." % method)
 
-        return b_new
-
+        return

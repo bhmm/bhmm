@@ -8,24 +8,47 @@ from scipy import linalg
 
 from hmm import HMM
 
-def transition_matrix(nstates=3):
+def generate_transition_matrix(nstates=3, reversible=True):
     """
-    Construct a test transition matrix.
+    Construct test transition matrices.
+
+    Parameters
+    ----------
+    nstates : int, optional, default=3
+        Number of states for which row-stockastic transition matrix is to be generated.
+    reversible : bool, optional, default=True
+        If True, the row-stochastic transition matrix will be reversible.
 
     Returns
     -------
     Tij : np.array with shape (nstates, nstates)
-        The transition matrix.
+        A randomly generated row-stochastic transition matrix.
+
+    TODO
+    ----
+    * Ensure matrices are metastable such that Tii > 0.5.
 
     """
-    if nstates != 3:
-        raise Exception("Only 3 states are supported right now.")
 
-    # Define row-stochastic rate matrix that satisfies detailed balance, and compute transition matrix from this.
-    Kij = np.array([[-0.10,  0.10,  0.00],
-                     [ 0.10, -0.15,  0.05],
-                     [ 0.00,  0.05, -0.05]], np.float64)
-    Tij = linalg.expm(Kij);
+    X = np.random.random([nstates,nstates]) # generate random matrix
+    if reversible:
+        Cij = (X + X.T) / 2.0 # generate symmetric matrix
+    else:
+        Cij = X # asymmetric matrix
+
+    # Compute row-stochastic transition matrix.
+    Tij = Cij
+    for i in range(nstates):
+        Tij[i,:] /= Tij[i,:].sum()
+
+#    if nstates != 3:
+#        raise Exception("Only 3 states are supported right now.")
+#
+#    # Define row-stochastic rate matrix that satisfies detailed balance, and compute transition matrix from this.
+#    Kij = np.array([[-0.10,  0.10,  0.00],
+#                     [ 0.10, -0.15,  0.05],
+#                     [ 0.00,  0.05, -0.05]], np.float64)
+#    Tij = linalg.expm(Kij);
 
     return Tij
 
@@ -47,7 +70,7 @@ def three_state_model(sigma=1.0):
     states.append({ 'mu' :  0, 'sigma' : sigma })
     states.append({ 'mu' : +1, 'sigma' : sigma })
 
-    Tij = transition_matrix(nstates)
+    Tij = generate_transition_matrix(nstates, reversible=True)
 
     # Construct HMM with these parameters.
     model = HMM(nstates, Tij, states)
