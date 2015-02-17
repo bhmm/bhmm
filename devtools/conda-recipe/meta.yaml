@@ -1,0 +1,42 @@
+package:
+  name: bhmm-dev
+  version: !!str 0.0.0
+
+build:
+  preserve_egg_dir: True
+  number: 0
+
+requirements:
+  build:
+    - python
+    - cython
+    - numpy
+    - scipy
+    - setuptools
+    - docopt
+    - jinja2
+
+  run:
+    - python
+    - numpy
+    - scipy
+    - cython
+    - docopt
+    - pyyaml
+    - jinja2
+
+test:
+  requires:
+    - nose
+  imports:
+    - bhmm
+  commands:
+    - nosetests bhmm --nocapture --verbosity=2 --with-doctest
+
+about:
+  home: https://github.com/choderalab/bhmm
+  license: GNU Lesser General Public License v3 or later (LGPLv3+)
+
+
+
+

@@ -135,10 +135,11 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
+        'nose',
         'docopt>=0.6.1',
-        'netcdf4',
         ],
     #ext_modules=cythonize(msm_ext),
-    entry_points={'console_scripts': ['bhmm = bhmm.cli:main']})
+    #entry_points={'console_scripts': ['bhmm = bhmm.cli:main']}
+    )
 
 
