@@ -69,16 +69,19 @@ class HMM(object):
         RuntimeError
             A RuntimeError is raised if the HMM model does not yet have a hidden state trajectory associated with it.
 
+        Examples
+        --------
+
         """
 
-        if self.hidden_state_trajectories is not None:
-            C = np.zeros((self.nstates,self.nstates), dtype=type)
-            for S in self.hidden_state_trajectories:
-                for t in range(len(S)-1):
-                    C[S[t],S[t+1]] += 1
-            return C
-        else:
+        if self.hidden_state_trajectories is None:
             raise RuntimeError('HMM model does not have a hidden state trajectory.')
+
+        C = np.zeros((self.nstates,self.nstates), dtype=type)
+        for S in self.hidden_state_trajectories:
+            for t in range(len(S)-1):
+                C[S[t],S[t+1]] += 1
+        return C
 
     def emission_probability(self, state, observation):
         """Compute the emission probability of an observation from a given state.
@@ -96,6 +99,17 @@ class HMM(object):
         TODO
         ----
         * Vectorize
+
+        Examples
+        --------
+
+        Compute the probability of observing an emission of 0 from state 0.
+
+        >>> from bhmm import testsystems
+        >>> model = testsystems.generate_random_model(nstates=3)
+        >>> state_index = 0
+        >>> observation = 0.0
+        >>> Pobs = model.emission_probability(state_index, observation)
 
         """
         observation_model = self.states[state]['model']
@@ -126,6 +140,17 @@ class HMM(object):
         ----
         * Vectorize
 
+        Examples
+        --------
+
+        Compute the log probability of observing an emission of 0 from state 0.
+
+        >>> from bhmm import testsystems
+        >>> model = testsystems.generate_random_model(nstates=3)
+        >>> state_index = 0
+        >>> observation = 0.0
+        >>> log_Pobs = model.log_emission_probability(state_index, observation)
+
         """
         observation_model = self.states[state]['model']
         if observation_model == 'gaussian':
@@ -137,6 +162,39 @@ class HMM(object):
             raise Exception('Observation model "%s" unknown.' % observation_model)
 
         return log_Pobs
+
+    def collect_observations_in_state(self, observations, state_index, dtype=np.float64):
+        """Collect a vector of all observations belonging to a specified hidden state.
+
+        Parameters
+        ----------
+        observations : list of numpy.array
+            List of observed trajectories.
+        state_index : int
+            The index of the hidden state for which corresponding observations are to be retrieved.
+        dtype : numpy.dtype, optional, default=numpy.float64
+            The numpy dtype to use to store the collected observations.
+
+        Returns
+        -------
+        collected_observations : numpy.array with shape (nsamples,)
+            The collected vector of observations belonging to the specified hidden state.
+
+        Raises
+        ------
+        RuntimeError
+            A RuntimeError is raised if the HMM model does not yet have a hidden state trajectory associated with it.
+
+        """
+        if not self.hidden_state_trajectories:
+            raise RuntimeError('HMM model does not have a hidden state trajectory.')
+
+        collected_observations = np.array([], dtype=dtype)
+        for (s_t, o_t) in zip(self.hidden_state_trajectories, observations):
+            indices = np.where(s_t == state_index)
+            np.append(collected_observations, o_t[indices])
+
+        return collected_observations
 
     def generate_synthetic_state_trajectory(self, length, initial_Pi=None, dtype=np.int32):
         """Generate a synthetic state trajectory.
@@ -157,6 +215,9 @@ class HMM(object):
 
         Examples
         --------
+
+        Generate a synthetic state trajectory of a specified length.
+
         >>> from bhmm import testsystems
         >>> model = testsystems.three_state_model()
         >>> states = model.generate_synthetic_state_trajectory(length=100)
@@ -189,6 +250,16 @@ class HMM(object):
         observation : float
             The observation from the given state.
 
+        Examples
+        --------
+
+        Generate a synthetic observation from a single state.
+
+        >>> from bhmm import testsystems
+        >>> model = testsystems.three_state_model()
+        >>> state_index = 0
+        >>> observation = model.generate_synthetic_observation(state_index)
+
         """
         observation_model = self.states[state]['model']
         if observation_model == 'gaussian':
@@ -217,6 +288,9 @@ class HMM(object):
 
         Examples
         --------
+
+        Generate a synthetic observation trajectory for an equilibrium realization.
+
         >>> from bhmm import testsystems
         >>> model = testsystems.three_state_model()
         >>> states = model.generate_synthetic_observation_trajectory(length=100)
@@ -260,7 +334,7 @@ class HMM(object):
         Examples
         --------
 
-        Generate a number of synthetica trajectories.
+        Generate a number of synthetic trajectories.
 
         >>> from bhmm import testsystems
         >>> model = testsystems.three_state_model()
@@ -277,6 +351,7 @@ class HMM(object):
         trajectories = list()
         for trajectory_index in range(ntrajectories):
             trajectory = self.generate_synthetic_observation_trajectory(length=length, initial_Pi=initial_Pi, dtype=dtype)
+            trajectories.append(trajectory)
 
         return trajectories
 
@@ -306,6 +381,9 @@ class HMM(object):
 
         Examples
         --------
+
+        Compute stationary probabilities for a given transition matrix.
+
         >>> from bhmm import testsystems
         >>> Tij = testsystems.generate_transition_matrix(nstates=3, reversible=True)
         >>> Pi = HMM._compute_stationary_probabilities(Tij)

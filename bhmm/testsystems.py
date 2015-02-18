@@ -143,6 +143,7 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=100):
     # Generate synthetic data.
     observations = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
     # Initialize a new BHMM model.
+    from bhmm import BHMM
     bhmm = BHMM(observations, nstates)
 
     return [model, observations, bhmm]
