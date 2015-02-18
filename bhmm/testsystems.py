@@ -4,9 +4,6 @@ Test systems for validation
 """
 
 import numpy as np
-from scipy import linalg
-
-#from bhmm import HMM
 import math
 
 def generate_transition_matrix(nstates=3, lifetime_max=100, lifetime_min=10, reversible=True):
