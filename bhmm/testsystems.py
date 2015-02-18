@@ -51,9 +51,9 @@ def generate_transition_matrix(nstates = 3, lifetime_max = 10000, lifetime_min =
     return T
 
 
-def three_state_model(sigma=1.0):
+def regular_model(nstates = 3, sigma=1.0, omin = -1, omax = 1, lifetime_max = 10000, lifetime_min = 100, reversible = True):
     """
-    Construct a test three-state model with variable emission width.
+    Construct a test two-state model with variable emission width.
 
     Parameters
     ----------
@@ -63,13 +63,15 @@ def three_state_model(sigma=1.0):
     """
     nstates = 3
 
+    # parameters
+    means = np.linspace(omin, omax, num = nstates)
+
     # Define state emission probabilities.
     states = list()
-    states.append({ 'model' : 'gaussian', 'mu' : -1, 'sigma' : sigma })
-    states.append({ 'model' : 'gaussian', 'mu' :  0, 'sigma' : sigma })
-    states.append({ 'model' : 'gaussian', 'mu' : +1, 'sigma' : sigma })
+    for i in range(nstates):
+        states.append({ 'model' : 'gaussian', 'mu' : means[i], 'sigma' : sigma })
 
-    Tij = generate_transition_matrix(nstates, reversible=True)
+    Tij = generate_transition_matrix(nstates, lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible)
 
     # Construct HMM with these parameters.
     model = HMM(nstates, Tij, states)
@@ -77,7 +79,7 @@ def three_state_model(sigma=1.0):
     return model
 
 
-def generate_random_model(nstates, reversible=True):
+def generate_random_model(nstates, lifetime_max = 10000, lifetime_min = 100, reversible=True):
     """Generate a random HMM model with the specified number of states.
 
     Parameters
@@ -93,7 +95,7 @@ def generate_random_model(nstates, reversible=True):
         The randomly generated HMM model.
 
     """
-    Tij = generate_transition_matrix(nstates, reversible=reversible)
+    Tij = generate_transition_matrix(nstates, lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible)
 
     states = list()
     for index in range(nstates):
@@ -108,7 +110,8 @@ def generate_random_model(nstates, reversible=True):
     return model
 
 
-def generate_random_bhmm(nstates=3, ntrajectories=10, length=100):
+def generate_random_bhmm(nstates=3, ntrajectories=10, length=100,
+                         lifetime_max = 10000, lifetime_min = 100, reversible = True):
     """Generate a BHMM model from synthetic data from a random HMM model.
 
     Parameters
@@ -139,7 +142,7 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=100):
     """
 
     # Generate a random HMM model.
-    model = generate_random_model(nstates)
+    model = generate_random_model(nstates, lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible)
     # Generate synthetic data.
     observations = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
     # Initialize a new BHMM model.
