@@ -9,7 +9,7 @@ from scipy import linalg
 #from bhmm import HMM
 import math
 
-def generate_transition_matrix(nstates = 3, lifetime_max = 10000, lifetime_min = 100, reversible = True):
+def generate_transition_matrix(nstates=3, lifetime_max=100, lifetime_min=10, reversible=True):
     """
     Generates random metastable transition matrices
 
@@ -17,9 +17,9 @@ def generate_transition_matrix(nstates = 3, lifetime_max = 10000, lifetime_min =
     ----------
     nstates : int, optional, default=3
         Number of states for which row-stockastic transition matrix is to be generated.
-    lifetime_max : float, optional, default = 10000
+    lifetime_max : float, optional, default = 100
         maximum lifetime of any state
-    lifetime_min : float, optional, default = 100
+    lifetime_min : float, optional, default = 10
         minimum lifetime of any state
     reversible : bool, optional, default=True
         If True, the row-stochastic transition matrix will be reversible.
@@ -72,6 +72,7 @@ def three_state_model(sigma=1.0):
     Tij = generate_transition_matrix(nstates, reversible=True)
 
     # Construct HMM with these parameters.
+    from bhmm import HMM
     model = HMM(nstates, Tij, states)
 
     return model
@@ -103,12 +104,13 @@ def generate_random_model(nstates, reversible=True):
         states.append({ 'model' : 'gaussian', 'mu' : mu, 'sigma' : sigma })
 
     # Construct HMM with these parameters.
+    from bhmm import HMM
     model = HMM(nstates, Tij, states)
 
     return model
 
 
-def generate_random_bhmm(nstates=3, ntrajectories=10, length=100):
+def generate_random_bhmm(nstates=3, ntrajectories=10, length=1000):
     """Generate a BHMM model from synthetic data from a random HMM model.
 
     Parameters
@@ -117,7 +119,7 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=100):
         The number of states for the underlying HMM model.
     ntrajectories : int, optional, default=10
         The number of synthetic observation trajectories to generate.
-    length : int, optional, default=100
+    length : int, optional, default=10000
         The length of synthetic observation trajectories to generate.
 
     Returns
