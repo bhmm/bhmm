@@ -106,6 +106,6 @@ class MLHMM(object):
 
         # DEBUG
         from bhmm import testsystems
-        model = testsystems.generate_random_model(nstates=self.nstates)
+        model = testsystems.dalton_model(nstates=self.nstates)
         return model
 

@@ -19,7 +19,7 @@ class BHMM(object):
 
     >>> from bhmm import testsystems
     >>> nstates = 3
-    >>> model = testsystems.generate_random_model(nstates)
+    >>> model = testsystems.dalton_model(nstates)
     >>> data = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=10000)
 
     Initialize a new BHMM model.
@@ -261,6 +261,6 @@ class BHMM(object):
 
         """
         from bhmm import testsystems
-        model = testsystems.generate_random_model(nstates=self.nstates)
+        model = testsystems.dalton_model(nstates=self.nstates)
         return model
 
