@@ -139,20 +139,3 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=100,
 
     return [model, observations, bhmm]
 
-
-def main():
-    """
-    This is a test function
-
-    :return:
-    """
-    T = generate_transition_matrix()
-    eigs = np.linalg.eigvals(T)
-    eigs = np.sort(eigs)[1::-1]
-    ts = -1.0 / np.log(eigs)
-    print ts
-
-
-
-if __name__ == "__main__":
-    main()
