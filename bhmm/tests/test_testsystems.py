@@ -18,6 +18,6 @@ def test_three_state_model():
     """Test three-state model.
     """
     from bhmm import testsystems
-    model = testsystems.three_state_model()
+    model = testsystems.dalton_model()
     # TODO: Check stationary probiblities are correct?
     return
