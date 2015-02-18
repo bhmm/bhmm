@@ -32,6 +32,9 @@ class TransitionMatrixSamplerRev:
         self.n = self.C.shape[0]
         self.sumC = self.C.sum(1)+0.0
         self.X = None
+        # check input
+        if np.min(self.sumC <= 0):
+            raise ValueError('Count matrix has row sums of zero or less. Make sure that every state is visited!')
 
 
     def _is_positive(self, x):
