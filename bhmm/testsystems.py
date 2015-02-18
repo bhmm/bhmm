@@ -57,9 +57,9 @@ def three_state_model(sigma=1.0):
 
     # Define state emission probabilities.
     states = list()
-    states.append({ 'mu' : -1, 'sigma' : sigma })
-    states.append({ 'mu' :  0, 'sigma' : sigma })
-    states.append({ 'mu' : +1, 'sigma' : sigma })
+    states.append({ 'model' : 'gaussian', 'mu' : -1, 'sigma' : sigma })
+    states.append({ 'model' : 'gaussian', 'mu' :  0, 'sigma' : sigma })
+    states.append({ 'model' : 'gaussian', 'mu' : +1, 'sigma' : sigma })
 
     Tij = generate_transition_matrix(nstates, reversible=True)
 
@@ -91,10 +91,49 @@ def generate_random_model(nstates, reversible=True):
         # TODO: Come up with a better prior with tunable hyperparameters on mu and sigma.
         mu = np.random.randn()
         sigma = np.random.random()
-        states.append({ 'mu' : mu, 'sigma' : sigma })
+        states.append({ 'model' : 'gaussian', 'mu' : mu, 'sigma' : sigma })
 
     # Construct HMM with these parameters.
     model = HMM(nstates, Tij, states)
 
     return model
+
+def generate_random_bhmm(nstates=3, ntrajectories=10, length=100):
+    """Generate a BHMM model from synthetic data from a random HMM model.
+
+    Parameters
+    ----------
+    nstates : int, optional, default=3
+        The number of states for the underlying HMM model.
+    ntrajectories : int, optional, default=10
+        The number of synthetic observation trajectories to generate.
+    length : int, optional, default=100
+        The length of synthetic observation trajectories to generate.
+
+    Returns
+    -------
+    model : HMM
+        The true underlying HMM model.
+    observations : list of numpy arrays
+        The synthetic observation trajectories generated from the HMM model.
+    bhmm : BHMM
+        The BHMM model generated.
+
+    Examples
+    --------
+
+    Generate BHMM with default parameters.
+
+    >>> [model, observations, bhmm] = generate_random_bhmm()
+
+    """
+
+    # Generate a random HMM model.
+    model = generate_random_model(nstates)
+    # Generate synthetic data.
+    observations = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
+    # Initialize a new BHMM model.
+    bhmm = BHMM(observations, nstates)
+
+    return [model, observations, bhmm]
 
