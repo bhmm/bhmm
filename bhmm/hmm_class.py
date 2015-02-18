@@ -106,7 +106,7 @@ class HMM(object):
         Compute the probability of observing an emission of 0 from state 0.
 
         >>> from bhmm import testsystems
-        >>> model = testsystems.generate_random_model(nstates=3)
+        >>> model = testsystems.dalton_model(nstates=3)
         >>> state_index = 0
         >>> observation = 0.0
         >>> Pobs = model.emission_probability(state_index, observation)
@@ -146,7 +146,7 @@ class HMM(object):
         Compute the log probability of observing an emission of 0 from state 0.
 
         >>> from bhmm import testsystems
-        >>> model = testsystems.generate_random_model(nstates=3)
+        >>> model = testsystems.dalton_model(nstates=3)
         >>> state_index = 0
         >>> observation = 0.0
         >>> log_Pobs = model.log_emission_probability(state_index, observation)

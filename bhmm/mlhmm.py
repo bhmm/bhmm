@@ -3,6 +3,7 @@ Hidden Markov model
 
 """
 
+import copy
 import numpy as np
 
 class MLHMM(object):
