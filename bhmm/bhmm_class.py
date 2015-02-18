@@ -20,7 +20,7 @@ class BHMM(object):
     >>> from bhmm import testsystems
     >>> nstates = 3
     >>> model = testsystems.generate_random_model(nstates)
-    >>> data = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100)
+    >>> data = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=10000)
 
     Initialize a new BHMM model.
 
@@ -31,8 +31,7 @@ class BHMM(object):
     >>> models = bhmm.sample(nsamples=10)
 
     """
-    def __init__(self, observations, nstates, initial_model=None, verbose=False,
-                 transition_matrix_sampling_steps = 1000):
+    def __init__(self, observations, nstates, initial_model=None, verbose=False, transition_matrix_sampling_steps=1000):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -46,7 +45,7 @@ class BHMM(object):
             Otherwise, a heuristic scheme is used to generate an initial guess.
         verbose : bool, optional, default=False
             Verbosity flag.
-        transition_matrix_sampling_steps : int
+        transition_matrix_sampling_steps : int, optional, default=1000
             number of transition matrix sampling steps per BHMM cycle
 
         """
@@ -223,6 +222,11 @@ class BHMM(object):
         for state_index in range(nstates):
             # Extract all observations in this state.
             collected_observations = model.collect_observations_in_state(self.observations, state_index)
+
+            # Don't update any emission probabilities if this state is empty.
+            if len(collected_observations) == 0:
+                print "Warning: state %d has no hidden samples" % state_index
+                break
 
             # Update state emission distribution parameters.
             state = model.states[state_index]
