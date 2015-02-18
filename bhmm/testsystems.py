@@ -93,6 +93,46 @@ def dalton_model(nstates = 3, omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 
     return model
 
 
+def generate_synthetic_observations(nstates=3, ntrajectories=10, length=1000,
+                         omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0,
+                         lifetime_max = 10000, lifetime_min = 100, reversible = True):
+
+    """Generate synthetic data from a random HMM model.
+
+    Parameters
+    ----------
+    nstates : int, optional, default=3
+        The number of states for the underlying HMM model.
+    ntrajectories : int, optional, default=10
+        The number of synthetic observation trajectories to generate.
+    length : int, optional, default=10000
+        The length of synthetic observation trajectories to generate.
+
+    Returns
+    -------
+    model : HMM
+        The true underlying HMM model.
+    observations : list of numpy arrays
+        The synthetic observation trajectories generated from the HMM model.
+
+    Examples
+    --------
+
+    Generate BHMM with default parameters.
+
+    >>> [model, observations] = generate_synthetic_observations()
+
+    """
+
+    # Generate a random HMM model.
+    model = dalton_model(nstates, omin = omin, omax = omax, sigma_min = sigma_min, sigma_max = sigma_max,
+                         lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible)
+    # Generate synthetic data.
+    observations = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
+
+    return [model, observations]
+
+
 def generate_random_bhmm(nstates=3, ntrajectories=10, length=100,
                          omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0,
                          lifetime_max = 10000, lifetime_min = 100, reversible = True):

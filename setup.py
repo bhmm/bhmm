@@ -114,7 +114,7 @@ def find_package_data(data_root, package_root):
 # SETUP
 ################################################################################
 
-msm_ext = distutils.extension.Extension("bhmm.msm.tmatrix_sampling", ['./bhmm/msm/tmatrix_sampling.pyx'])
+msm_ext = distutils.extension.Extension("bhmm.msm.tmatrix_sampling", ['./bhmm/msm/tmatrix_sampling.pyx'], include_dirs=[numpy.get_include()])
 
 write_version_py()
 setup(
@@ -134,6 +134,7 @@ setup(
     package_data={'bhmm': find_package_data('examples', 'bhmm')},  # NOTE: examples installs to bhmm.egg/examples/, NOT bhmm.egg/bhmm/examples/.  You need to do utils.get_data_filename("../examples/*/setup/").
     zip_safe=False,
     install_requires=[
+        'cython',
         'numpy',
         'scipy',
         'nose',

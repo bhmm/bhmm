@@ -11,3 +11,4 @@ __version__ = version.version
 
 from bhmm_class import BHMM
 from hmm_class import HMM
+from mlhmm import MLHMM
