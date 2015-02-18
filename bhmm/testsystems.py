@@ -6,16 +6,21 @@ Test systems for validation
 import numpy as np
 from scipy import linalg
 
-from bhmm import HMM
+#from bhmm import HMM
+import math
 
-def generate_transition_matrix(nstates=3, reversible=True):
+def generate_transition_matrix(nstates = 3, lifetime_max = 10000, lifetime_min = 100, reversible = True):
     """
-    Construct test transition matrices.
+    Generates random metastable transition matrices
 
     Parameters
     ----------
     nstates : int, optional, default=3
         Number of states for which row-stockastic transition matrix is to be generated.
+    lifetime_max : float, optional, default = 10000
+        maximum lifetime of any state
+    lifetime_min : float, optional, default = 100
+        minimum lifetime of any state
     reversible : bool, optional, default=True
         If True, the row-stochastic transition matrix will be reversible.
 
@@ -24,24 +29,27 @@ def generate_transition_matrix(nstates=3, reversible=True):
     Tij : np.array with shape (nstates, nstates)
         A randomly generated row-stochastic transition matrix.
 
-    TODO
-    ----
-    * Ensure matrices are metastable such that Tii > 0.5.
-
     """
-
-    X = np.random.random([nstates,nstates]) # generate random matrix
-    if reversible:
-        Cij = (X + X.T) / 2.0 # generate symmetric matrix
-    else:
-        Cij = X # asymmetric matrix
-
-    # Compute row-stochastic transition matrix.
-    Tij = Cij
+    # regular grid in the log lifetimes
+    ltmax = math.log(lifetime_max)
+    ltmin = math.log(lifetime_min)
+    lt = np.linspace(ltmin, ltmax, num = nstates)
+    # create diagonal with self-transition probabilities according to timescales
+    diag = 1.0 - 1.0/np.exp(lt)
+    # random X
+    X = np.random.random((nstates,nstates))
+    if (reversible):
+        X += X.T
+    # row-normalize
+    T = X / np.sum(X, axis=1)[:,None]
+    # enforce lifetimes by rescaling rows
     for i in range(nstates):
-        Tij[i,:] /= Tij[i,:].sum()
+        T[i,i] = 0
+        T[i,:] *= (1.0-diag[i]) / np.sum(T[i,:])
+        T[i,i] = 1.0 - np.sum(T[i,:])
 
-    return Tij
+    return T
+
 
 def three_state_model(sigma=1.0):
     """
@@ -67,6 +75,7 @@ def three_state_model(sigma=1.0):
     model = HMM(nstates, Tij, states)
 
     return model
+
 
 def generate_random_model(nstates, reversible=True):
     """Generate a random HMM model with the specified number of states.
@@ -97,6 +106,7 @@ def generate_random_model(nstates, reversible=True):
     model = HMM(nstates, Tij, states)
 
     return model
+
 
 def generate_random_bhmm(nstates=3, ntrajectories=10, length=100):
     """Generate a BHMM model from synthetic data from a random HMM model.
@@ -137,3 +147,20 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=100):
 
     return [model, observations, bhmm]
 
+
+def main():
+    """
+    This is a test function
+
+    :return:
+    """
+    T = generate_transition_matrix()
+    eigs = np.linalg.eigvals(T)
+    eigs = np.sort(eigs)[1::-1]
+    ts = -1.0 / np.log(eigs)
+    print ts
+
+
+
+if __name__ == "__main__":
+    main()
