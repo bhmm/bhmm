@@ -16,7 +16,7 @@ class HMM(object):
 
     >>> nstates = 2
     >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
-    >>> states = [ {'mu' : -1, 'sigma' : 1}, {'mu' : +1, 'sigma' : 1} ]
+    >>> states = [ {'model' : 'gaussian', 'mu' : -1, 'sigma' : 1}, {'model' : 'gaussian', 'mu' : +1, 'sigma' : 1} ]
     >>> model = HMM(nstates, Tij, states)
 
     """
@@ -36,9 +36,10 @@ class HMM(object):
         # TODO: Perform sanity checks on data consistency.
 
         self.nstates = nstates
-        self.Tij = Tij
-        self.Pi = self._compute_stationary_probabilities(self.Tij)
-        self.states = states
+        self.Tij = Tij # TODO: Rename to 'transition matrix'?
+        self.Pi = self._compute_stationary_probabilities(self.Tij) # TODO: Rename to 'stationary_probabilities'?
+        self.states = states # TODO: Rename to 'state_emission_parameters'?
+        self.hidden_state_trajectories = None
 
         return
 
@@ -46,17 +47,96 @@ class HMM(object):
     def logPi(self):
         return np.log(self.Pi)
 
+    @property
+    def logTij(self):
+        return np.log(self.Tij)
 
-    def count_matrix(self):
-        if hasattr(self, 'hidden_state_trajectory'):
-            C = np.zeros((self.nstates,self.nstates))
-            S = self.hidden_state_trajectory
-            for t in range(len(S)-1):
-                C[S[t],S[t+1]] += 1
+    def count_matrix(self, dtype=np.float64):
+        """Compute the transition count matrix from hidden state trajectory.
+
+        Parameters
+        ----------
+        dtype : numpy.dtype, optional, default=numpy.int32
+            The numpy dtype to use to store the synthetic trajectory.
+
+        Returns
+        -------
+        C : numpy.array with shape (nstates,nstates)
+            C[i,j] is the number of transitions observed from state i to state j
+
+        Raises
+        ------
+        RuntimeError
+            A RuntimeError is raised if the HMM model does not yet have a hidden state trajectory associated with it.
+
+        """
+
+        if self.hidden_state_trajectories is not None:
+            C = np.zeros((self.nstates,self.nstates), dtype=type)
+            for S in self.hidden_state_trajectories:
+                for t in range(len(S)-1):
+                    C[S[t],S[t+1]] += 1
             return C
         else:
             raise RuntimeError('HMM model does not have a hidden state trajectory.')
 
+    def emission_probability(self, state, observation):
+        """Compute the emission probability of an observation from a given state.
+
+        Parameters
+        ----------
+        state : int
+            The state index for which the emission probability is to be computed.
+
+        Returns
+        -------
+        Pobs : float
+            The probability (or probability density, if continuous) of the observation.
+
+        TODO
+        ----
+        * Vectorize
+
+        """
+        observation_model = self.states[state]['model']
+        if observation_model == 'gaussian':
+            mu = self.states[state]['mu']
+            sigma = self.states[state]['sigma']
+            C = 1.0 / (np.sqrt(2.0 * np.pi) * sigma)
+            Pobs = C * np.exp(-0.5 * ((observation-mu)/sigma)**2)
+        else:
+            raise Exception('Observation model "%s" unknown.' % observation_model)
+
+        return Pobs
+
+    def log_emission_probability(self, state, observation):
+        """Compute the log emission probability of an observation from a given state.
+
+        Parameters
+        ----------
+        state : int
+            The state index for which the emission probability is to be computed.
+
+        Returns
+        -------
+        log_Pobs : float
+            The log probability (or probability density, if continuous) of the observation.
+
+        TODO
+        ----
+        * Vectorize
+
+        """
+        observation_model = self.states[state]['model']
+        if observation_model == 'gaussian':
+            mu = self.states[state]['mu']
+            sigma = self.states[state]['sigma']
+            C = 1.0 / (np.sqrt(2.0 * np.pi) * sigma)
+            log_Pobs = -0.5 * np.log(2.0 * np.pi) - np.log(sigma) - 0.5 * ((observation-mu)/sigma)**2
+        else:
+            raise Exception('Observation model "%s" unknown.' % observation_model)
+
+        return log_Pobs
 
     def generate_synthetic_state_trajectory(self, length, initial_Pi=None, dtype=np.int32):
         """Generate a synthetic state trajectory.
@@ -110,7 +190,12 @@ class HMM(object):
             The observation from the given state.
 
         """
-        observation = self.states[state]['sigma'] * np.random.randn() + self.states[state]['mu']
+        observation_model = self.states[state]['model']
+        if observation_model == 'gaussian':
+            observation = self.states[state]['sigma'] * np.random.randn() + self.states[state]['mu']
+        else:
+            raise Exception('Observation model "%s" unknown.' % observation_model)
+
         return observation
 
     def generate_synthetic_observation_trajectory(self, length, initial_Pi=None, dtype=np.float32):

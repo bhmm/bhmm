@@ -34,7 +34,7 @@ class BHMM(object):
 
         Parameters
         ----------
-        observations : list of 1d numpy arrays
+        observations : list of numpy arrays representing temporal data
             `observations[i]` is a 1d numpy array corresponding to the observed trajectory index `i`
         nstates : int
             The number of states in the model.
@@ -49,14 +49,17 @@ class BHMM(object):
         """
         self.verbose = verbose
 
+        # Store the number of states.
+        self.nstates = nstates
+
         # Store a copy of the observations.
         self.observations = copy.deepcopy(observations)
 
         # Determine number of observation trajectories we have been given.
-        self.ntraces = len(self.observations)
+        self.nobservations = len(self.observations)
 
         if initial_model:
-            # Use user-specified initial model.
+            # Use user-specified initial model, if provided.
             self.model = copy.deepcopy(initial_model)
         else:
             # Generate our own initial model.
@@ -113,10 +116,85 @@ class BHMM(object):
 
 
     def _updateStateTrajectories(self):
-        """Sample a new set of state trajectories from the conditional distribution P(S | T, O)
+        """Sample a new set of state trajectories from the conditional distribution P(S | T, E, O)
 
         """
-        pass
+        self.model.hidden_state_trajectories = list()
+        for trajectory_index in range(self.ntrajectories):
+            hidden_state_trajectory = self._sampleHiddenStateTrajectory(self.observations[trajectory_index])
+            self.model.hidden_state_trajectories.append(hidden_state_trajectory)
+        return
+
+    def _sampleHiddenStateTrajectory(self, o_t, dtype=np.int32):
+        """Sample a hidden state trajectory from the conditional distribution P(s | T, E, o)
+
+        Parameters
+        ----------
+        o_t : numpy.array with dimensions (T,)
+            observation[n] is the nth observation
+        dtype : numpy.dtype, optional, default=numpy.int32
+            The dtype to to use for returned state trajectory.
+
+        Returns
+        -------
+        s_t : numpy.array with dimensions (T,) of type `dtype`
+            Hidden state trajectory, with s_t[t] the hidden state corresponding to observation o_t[t]
+
+        Examples
+        --------
+        >>> [model, observations, bhmm] = generate_random_bhmm_model()
+        >>> o_t = observations[0]
+        >>> s_t = bhmm._sampleHiddenStateTrajectory(o_t)
+
+        """
+
+        # Determine observation trajectory length
+        T = o_t.shape[0]
+
+        # Convenience access.
+        model = self.model # current HMM model
+        nstates = model.nstates
+        logPi = model.logPi
+        logTij = model.logTij
+
+        #
+        # Forward part.
+        #
+
+        log_alpha_it = np.zeros([nstates, T], np.float64)
+
+        # TODO: Vectorize in i.
+        for i in range(nstates):
+            log_alpha_it[i,0] = logPi[i] + model.log_emission_probability(i, o_t[0])
+
+        # TODO: Vectorize in j.
+        for t in range(1,T):
+            for j in range(nstates):
+                log_alpha_it[j,t] = np.logsumexp(log_alpha_it[:,t-1] + logTij[:,j]) + model.log_emission_probability(j, o_t[t])
+
+        #
+        # Sample state trajectory in backwards part.
+        #
+
+        s_t = np.zeros([T], dtype=dtype)
+
+        # Sample final state.
+        log_p_i = log_alpha_it[:,T-1]
+        p_i = np.exp(log_p_i - np.logsumexp(log_alpha_it[:,T-1]))
+        s_t[T-1] states[0] = np.random.choice(range(nstates), size=1, p=p_i)
+
+
+        # Work backwards.
+        for t in range(T-2, 0, -1):
+            # Compute P(s_t = i | s_{t+1}..s_T).
+            log_p_i = log_alpha_it[:,t] + logTij[:,s_t[t+1]]
+            p_i = np.exp(log_p_i - np.logsumexp(log_p_i))
+
+            # Draw from this distribution.
+            s_t[t] = np.random.choice(range(nstates), size=1, p=p_i)
+
+        # Return trajectory
+        return s_t
 
     def _updateEmissionProbabilities(self):
         """Sample a new set of emission probabilites from the conditional distribution P(E | S, O)
@@ -136,7 +214,12 @@ class BHMM(object):
     def _generateInitialModel(self):
         """Use a heuristic scheme to generate an initial model.
 
+        TODO
+        ----
+        * Replace this with EM or MLHMM procedure from Matlab code.
+
         """
         from bhmm import testsystems
-        model = testsystems.generate_random_model(nstates=3)
+        model = testsystems.generate_random_model(nstates=self.nstates)
         return model
+
