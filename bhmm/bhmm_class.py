@@ -3,7 +3,10 @@ Bayesian hidden Markov models.
 
 """
 
+import numpy as np
 import copy
+from scipy.misc import logsumexp
+
 from bhmm.msm.transition_matrix_sampling_rev import TransitionMatrixSamplerRev
 
 class BHMM(object):
@@ -56,7 +59,7 @@ class BHMM(object):
         self.observations = copy.deepcopy(observations)
 
         # Determine number of observation trajectories we have been given.
-        self.nobservations = len(self.observations)
+        self.ntrajectories = len(self.observations)
 
         if initial_model:
             # Use user-specified initial model, if provided.
@@ -69,7 +72,7 @@ class BHMM(object):
 
         return
 
-    def sample(self, nsamples, nburn=0, nthin=1):
+    def sample(self, nsamples, nburn=0, nthin=1, save_hidden_state_trajectory=False):
         """Sample from the BHMM posterior.
 
         Parameters
@@ -80,11 +83,23 @@ class BHMM(object):
             The number of samples to discard to burn-in, following which `nsamples` will be generated.
         nthin : int, optional, default=1
             The number of Gibbs sampling updates used to generate each returned sample.
+        save_hidden_state_trajectory : bool, optional, default=False
+            If True, the hidden state trajectory for each sample will be saved as well.
 
         Returns
         -------
         models : list of bhmm.HMM
             The sampled HMM models from the Bayesian posterior.
+
+        Examples
+        --------
+
+        >>> from bhmm import testsystems
+        >>> [model, observations, bhmm] = testsystems.generate_random_bhmm()
+        >>> nburn = 5 # run the sampler a bit before recording samples
+        >>> nsamples = 10 # generate 10 samples
+        >>> nthin = 2 # discard one sample in between each recorded sample
+        >>> samples = bhmm.sample(nsamples, nburn=nburn, nthin=nthin)
 
         """
 
@@ -101,7 +116,10 @@ class BHMM(object):
             for thin in range(nthin):
                 self._update()
             # Save a copy of the current model.
-            models.append(copy.deepcopy(self.model))
+            model_copy = copy.deepcopy(self.model)
+            if not save_hidden_state_trajectory:
+                model_copy.hidden_state_trajectory = None
+            models.append(model_copy)
 
         # Return the list of models saved.
         return models
@@ -110,12 +128,12 @@ class BHMM(object):
         """Update the current model using one round of Gibbs sampling.
 
         """
-        self._updateStateTrajectories(self.model)
-        self._updateEmissionProbabilities(self.model)
-        self._updateTransitionMatrix(self.model)
+        self._updateHiddenStateTrajectories()
+        self._updateEmissionProbabilities()
+        self._updateTransitionMatrix()
 
 
-    def _updateStateTrajectories(self):
+    def _updateHiddenStateTrajectories(self):
         """Sample a new set of state trajectories from the conditional distribution P(S | T, E, O)
 
         """
@@ -142,7 +160,8 @@ class BHMM(object):
 
         Examples
         --------
-        >>> [model, observations, bhmm] = generate_random_bhmm_model()
+        >>> import testsystems
+        >>> [model, observations, bhmm] = testsystems.generate_random_bhmm()
         >>> o_t = observations[0]
         >>> s_t = bhmm._sampleHiddenStateTrajectory(o_t)
 
@@ -170,7 +189,7 @@ class BHMM(object):
         # TODO: Vectorize in j.
         for t in range(1,T):
             for j in range(nstates):
-                log_alpha_it[j,t] = np.logsumexp(log_alpha_it[:,t-1] + logTij[:,j]) + model.log_emission_probability(j, o_t[t])
+                log_alpha_it[j,t] = logsumexp(log_alpha_it[:,t-1] + logTij[:,j]) + model.log_emission_probability(j, o_t[t])
 
         #
         # Sample state trajectory in backwards part.
@@ -180,15 +199,14 @@ class BHMM(object):
 
         # Sample final state.
         log_p_i = log_alpha_it[:,T-1]
-        p_i = np.exp(log_p_i - np.logsumexp(log_alpha_it[:,T-1]))
-        s_t[T-1] states[0] = np.random.choice(range(nstates), size=1, p=p_i)
+        p_i = np.exp(log_p_i - logsumexp(log_alpha_it[:,T-1]))
+        s_t[T-1] = np.random.choice(range(nstates), size=1, p=p_i)
 
-
-        # Work backwards.
-        for t in range(T-2, 0, -1):
+        # Work backwards from T-2 to 0.
+        for t in range(T-2, -1, -1):
             # Compute P(s_t = i | s_{t+1}..s_T).
             log_p_i = log_alpha_it[:,t] + logTij[:,s_t[t+1]]
-            p_i = np.exp(log_p_i - np.logsumexp(log_p_i))
+            p_i = np.exp(log_p_i - logsumexp(log_p_i))
 
             # Draw from this distribution.
             s_t[t] = np.random.choice(range(nstates), size=1, p=p_i)
@@ -200,7 +218,26 @@ class BHMM(object):
         """Sample a new set of emission probabilites from the conditional distribution P(E | S, O)
 
         """
-        pass
+        model = self.model
+        nstates = model.nstates
+        for state_index in range(nstates):
+            # Extract all observations in this state.
+            collected_observations = model.collect_observations_in_state(self.observations, state_index)
+
+            # Update state emission distribution parameters.
+            state = model.states[state_index]
+            observation_model = state['model']
+            if observation_model == 'gaussian':
+                # Sample new mu.
+                state['mu'] = np.random.randn()*state['sigma']/np.sqrt(nstates) + np.mean(collected_observations)
+
+                # Sample new sigma.
+                # This scheme uses the improper Jeffreys prior on sigma^2, P(mu, sigma^2) \propto 1/sigma
+                chisquared = np.random.chisquare(nstates-1)
+                sigmahat2 = np.mean((collected_observations - state['mu'])**2)
+                state['sigma'] = np.sqrt(sigmahat2) / np.sqrt(chisquared / nstates)
+            else:
+                raise Exception('Observation model "%s" not supported.' % observation_model)
 
     def _updateTransitionMatrix(self):
         """
