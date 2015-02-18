@@ -97,6 +97,7 @@ def dalton_model(nstates = 3, omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 
 
 
 def generate_random_bhmm(nstates=3, ntrajectories=10, length=100,
+                         omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0,
                          lifetime_max = 10000, lifetime_min = 100, reversible = True):
     """Generate a BHMM model from synthetic data from a random HMM model.
 
@@ -128,7 +129,8 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=100,
     """
 
     # Generate a random HMM model.
-    model = dalton_model(nstates, lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible)
+    model = dalton_model(nstates, omin = omin, omax = omax, sigma_min = sigma_min, sigma_max = sigma_max,
+                         lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible)
     # Generate synthetic data.
     observations = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
     # Initialize a new BHMM model.
