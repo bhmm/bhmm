@@ -48,7 +48,7 @@ def generate_transition_matrix(nstates=3, lifetime_max=100, lifetime_min=10, rev
     return T
 
 
-def dalton_model(nstates = 3, omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0, lifetime_max = 100, lifetime_min = 10, reversible = True):
+def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0, lifetime_max = 100, lifetime_min = 10, reversible = True):
     """
     Construct a test two-state model with regular spaced emission means (linearly interpolated between omin and omax)
     and variable emission widths (linearly interpolated between sigma_min and sigma_max).
@@ -57,9 +57,9 @@ def dalton_model(nstates = 3, omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 
     ----------
     nstates : int, optional, default = 3
         number of hidden states
-    omin : float, optional, default = -1
+    omin : float, optional, default = -5
         mean position of the first state.
-    omax : float, optional, default = 1
+    omax : float, optional, default = 5
         mean position of the last state.
     sigma_min : float, optional, default = 0.5
         The width of the observed gaussian distribution for the first state
@@ -94,7 +94,7 @@ def dalton_model(nstates = 3, omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 
 
 
 def generate_synthetic_observations(nstates=3, ntrajectories=10, length=10000,
-                         omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0,
+                         omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0,
                          lifetime_max = 100, lifetime_min = 10, reversible = True):
 
     """Generate synthetic data from a random HMM model.
@@ -107,6 +107,18 @@ def generate_synthetic_observations(nstates=3, ntrajectories=10, length=10000,
         The number of synthetic observation trajectories to generate.
     length : int, optional, default=10000
         The length of synthetic observation trajectories to generate.
+    omin : float, optional, default = -5
+        mean position of the first state.
+    omax : float, optional, default = 5
+        mean position of the last state.
+    sigma_min : float, optional, default = 0.5
+        The width of the observed gaussian distribution for the first state
+    sigma_max : float, optional, default = 2.0
+        The width of the observed gaussian distribution for the last state
+    lifetime_max : float, optional, default = 100
+        maximum lifetime of any state
+    lifetime_min : float, optional, default = 10
+        minimum lifetime of any state
 
     Returns
     -------
@@ -136,7 +148,7 @@ def generate_synthetic_observations(nstates=3, ntrajectories=10, length=10000,
 
 
 def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000, verbose=False,
-                         omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0,
+                         omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0,
                          lifetime_max = 100, lifetime_min = 10, reversible = True):
     """Generate a BHMM model from synthetic data from a random HMM model.
 
@@ -150,6 +162,18 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000, verbose=Fals
         The length of synthetic observation trajectories to generate.
     verbose : bool, optional, default=False
         Verbosity flag to pass to BHMM.
+    omin : float, optional, default = -5
+        mean position of the first state.
+    omax : float, optional, default = 5
+        mean position of the last state.
+    sigma_min : float, optional, default = 0.5
+        The width of the observed gaussian distribution for the first state
+    sigma_max : float, optional, default = 2.0
+        The width of the observed gaussian distribution for the last state
+    lifetime_max : float, optional, default = 100
+        maximum lifetime of any state
+    lifetime_min : float, optional, default = 10
+        minimum lifetime of any state
 
     Returns
     -------
