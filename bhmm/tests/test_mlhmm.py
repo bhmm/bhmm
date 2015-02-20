@@ -1,17 +1,17 @@
 #!/usr/local/bin/env python
 
 """
-Test BHMM using simple analytical models.
+Test MLHMM.
 
 """
 
 from functools import partial
 from bhmm import testsystems
-from bhmm import BHMM
+from bhmm import MLHMM
 
-def run_bhmm(nstates):
+def run_mlhmm(nstates):
     """
-    Run the BHMM on synthetic data with the given number of states.
+    Run the MLHMM on synthetic data with the given number of states.
 
     Parameters
     ----------
@@ -21,10 +21,9 @@ def run_bhmm(nstates):
     """
     # Generate synthetic observations.
     [model, S, O] = model.generate_synthetic_observation_trajectories(nstates=nstates)
-    # Initialize a BHMM.
-    bhmm = bhmm.BHMM(O, nstates)
-    # Sample from the posterior.
-    models = bhmm.sample(nsamples=10)
+    # Fit an MLHMM.
+    mlhmm = mlhmm.MLHMM(O, nstates)
+    model = mlhmm.fit()
 
     return
 

@@ -47,19 +47,53 @@ def generate_transition_matrix(nstates=3, lifetime_max=100, lifetime_min=10, rev
 
     return T
 
-
-def dalton_model(nstates = 3, omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0, lifetime_max = 100, lifetime_min = 10, reversible = True):
+def force_spectroscopy_model():
     """
-    Construct a test two-state model with regular spaced emission means (linearly interpolated between omin and omax)
+    Construct a specific three-state test model intended to be representative of single-molecule force spectroscopy experiments.
+
+    Returns
+    -------
+    model : HMM
+        The synthetic HMM model.
+
+    Examples
+    --------
+
+    >>> model = force_spectroscopy_model()
+
+    """
+    nstates = 3
+
+    # Define state emission probabilities.
+    states = list()
+    states.append({ 'model' : 'gaussian', 'mu' : 3.0, 'sigma' : 1.0 })
+    states.append({ 'model' : 'gaussian', 'mu' : 4.7, 'sigma' : 0.3 })
+    states.append({ 'model' : 'gaussian', 'mu' : 5.6, 'sigma' : 0.2 })
+
+    # Define a reversible transition matrix.
+    Tij = np.array([
+            [0.980, 0.019, 0.001],
+            [0.050, 0.900, 0.050],
+            [0.001, 0.009, 0.990]], np.float64)
+
+    # Construct HMM with these parameters.
+    from bhmm import HMM
+    model = HMM(nstates, Tij, states)
+
+    return model
+
+def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0, lifetime_max = 100, lifetime_min = 10, reversible = True):
+    """
+    Construct a test multistate model with regular spaced emission means (linearly interpolated between omin and omax)
     and variable emission widths (linearly interpolated between sigma_min and sigma_max).
 
     Parameters
     ----------
     nstates : int, optional, default = 3
         number of hidden states
-    omin : float, optional, default = -1
+    omin : float, optional, default = -5
         mean position of the first state.
-    omax : float, optional, default = 1
+    omax : float, optional, default = 5
         mean position of the last state.
     sigma_min : float, optional, default = 0.5
         The width of the observed gaussian distribution for the first state
@@ -71,6 +105,26 @@ def dalton_model(nstates = 3, omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 
         minimum lifetime of any state
     reversible : bool, optional, default=True
         If True, the row-stochastic transition matrix will be reversible.
+
+    Returns
+    -------
+    model : HMM
+        The synthetic HMM model.
+
+    Examples
+    --------
+
+    Generate default model.
+
+    >>> model = dalton_model()
+
+    Generate model with specified number of states.
+
+    >>> model = dalton_model(nstates=5)
+
+    Generate non-reversible model.
+
+    >>> model = dalton_model(reversible=False)
 
     """
     nstates = 3
@@ -94,7 +148,7 @@ def dalton_model(nstates = 3, omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 
 
 
 def generate_synthetic_observations(nstates=3, ntrajectories=10, length=10000,
-                         omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0,
+                         omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0,
                          lifetime_max = 100, lifetime_min = 10, reversible = True):
 
     """Generate synthetic data from a random HMM model.
@@ -107,6 +161,18 @@ def generate_synthetic_observations(nstates=3, ntrajectories=10, length=10000,
         The number of synthetic observation trajectories to generate.
     length : int, optional, default=10000
         The length of synthetic observation trajectories to generate.
+    omin : float, optional, default = -5
+        mean position of the first state.
+    omax : float, optional, default = 5
+        mean position of the last state.
+    sigma_min : float, optional, default = 0.5
+        The width of the observed gaussian distribution for the first state
+    sigma_max : float, optional, default = 2.0
+        The width of the observed gaussian distribution for the last state
+    lifetime_max : float, optional, default = 100
+        maximum lifetime of any state
+    lifetime_min : float, optional, default = 10
+        minimum lifetime of any state
 
     Returns
     -------
@@ -136,7 +202,7 @@ def generate_synthetic_observations(nstates=3, ntrajectories=10, length=10000,
 
 
 def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000, verbose=False,
-                         omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0,
+                         omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0,
                          lifetime_max = 100, lifetime_min = 10, reversible = True):
     """Generate a BHMM model from synthetic data from a random HMM model.
 
@@ -150,6 +216,18 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000, verbose=Fals
         The length of synthetic observation trajectories to generate.
     verbose : bool, optional, default=False
         Verbosity flag to pass to BHMM.
+    omin : float, optional, default = -5
+        mean position of the first state.
+    omax : float, optional, default = 5
+        mean position of the last state.
+    sigma_min : float, optional, default = 0.5
+        The width of the observed gaussian distribution for the first state
+    sigma_max : float, optional, default = 2.0
+        The width of the observed gaussian distribution for the last state
+    lifetime_max : float, optional, default = 100
+        maximum lifetime of any state
+    lifetime_min : float, optional, default = 10
+        minimum lifetime of any state
 
     Returns
     -------
@@ -181,4 +259,27 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000, verbose=Fals
     bhmm = BHMM(O, nstates, verbose=verbose)
 
     return [model, O, S, bhmm]
+
+def total_state_visits(nstates, S):
+    """
+    Return summary statistics for state trajectories.
+
+    Parameters
+    ----------
+    nstates : int
+        The number of states.
+    S : list of numpy.array
+        S[i] is the hidden state trajectory from state i
+
+    """
+
+    N_i = np.zeros([nstates], np.int32)
+    min_state = nstates
+    max_state = 0
+    for s_t in S:
+        for state_index in range(nstates):
+            N_i[state_index] += (s_t == state_index).sum()
+        min_state = min(min_state, s_t.min())
+        max_state = max(max_state, s_t.max())
+    return [N_i, min_state, max_state]
 

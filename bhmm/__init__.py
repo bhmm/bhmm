@@ -9,6 +9,6 @@ BHMM: A toolkit for Bayesian hidden Markov model analysis of single-molecule tra
 import version
 __version__ = version.version
 
-from bhmm_class import BHMM
 from hmm_class import HMM
+from bhmm_class import BHMM
 from mlhmm import MLHMM

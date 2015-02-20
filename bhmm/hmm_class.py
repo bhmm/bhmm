@@ -42,6 +42,8 @@ class HMM(object):
             If `None`, the identity matrix will be used.
         states : list of dict
             `states[i]` is a dict of parameters for state `i`, with Gaussian output parameters `mu` (mean) and `sigma` (standard deviation).
+        reversible : bool, optional, default=True
+            If True, will note that the transition matrix is reversible.
 
         """
         # TODO: Perform sanity checks on data consistency.
@@ -66,6 +68,7 @@ class HMM(object):
 
         # hidden state trajectories are optional
         self.hidden_state_trajectories = None
+        self.reversible = reversible
 
         return
 
@@ -245,7 +248,7 @@ class HMM(object):
         Generate a synthetic state trajectory of a specified length.
 
         >>> from bhmm import testsystems
-        >>> model = testsystems.three_state_model()
+        >>> model = testsystems.dalton_model()
         >>> states = model.generate_synthetic_state_trajectory(length=100)
 
         """
@@ -282,9 +285,8 @@ class HMM(object):
         Generate a synthetic observation from a single state.
 
         >>> from bhmm import testsystems
-        >>> model = testsystems.three_state_model()
-        >>> state_index = 0
-        >>> observation = model.generate_synthetic_observation(state_index)
+        >>> model = testsystems.dalton_model()
+        >>> observation = model.generate_synthetic_observation(state_index=0)
 
         """
         observation_model = self.states[state]['model']
@@ -320,13 +322,13 @@ class HMM(object):
         Generate a synthetic observation trajectory for an equilibrium realization.
 
         >>> from bhmm import testsystems
-        >>> model = testsystems.three_state_model()
+        >>> model = testsystems.dalton_model()
         >>> [o_t, s_t] = model.generate_synthetic_observation_trajectory(length=100)
 
         Use an initial nonequilibrium distribution.
 
         >>> from bhmm import testsystems
-        >>> model = testsystems.three_state_model()
+        >>> model = testsystems.dalton_model()
         >>> [o_t, s_t] = model.generate_synthetic_observation_trajectory(length=100, initial_Pi=np.array([1,0,0]))
 
         """
@@ -367,13 +369,13 @@ class HMM(object):
         Generate a number of synthetic trajectories.
 
         >>> from bhmm import testsystems
-        >>> model = testsystems.three_state_model()
+        >>> model = testsystems.dalton_model()
         >>> [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100)
 
         Use an initial nonequilibrium distribution.
 
         >>> from bhmm import testsystems
-        >>> model = testsystems.three_state_model()
+        >>> model = testsystems.dalton_model(nstates=3)
         >>> [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100, initial_Pi=np.array([1,0,0]))
 
 
