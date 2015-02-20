@@ -20,7 +20,7 @@ class HMM(object):
     >>> model = HMM(nstates, Tij, states)
 
     """
-    def __init__(self, nstates, Tij, states, dtype=np.float64):
+    def __init__(self, nstates, Tij, states, dtype=np.float64, reversible=False):
         """
         Parameters
         ----------
@@ -31,6 +31,8 @@ class HMM(object):
             If `None`, the identity matrix will be used.
         states : list of dict
             `states[i]` is a dict of parameters for state `i`, with Gaussian output parameters `mu` (mean) and `sigma` (standard deviation).
+        reversible : bool, optional, default=True
+            If True, will note that the transition matrix is reversible.
 
         """
         # TODO: Perform sanity checks on data consistency.
@@ -40,6 +42,7 @@ class HMM(object):
         self.Pi = self._compute_stationary_probabilities(self.Tij) # TODO: Rename to 'stationary_probabilities'?
         self.states = states # TODO: Rename to 'state_emission_parameters'?
         self.hidden_state_trajectories = None
+        self.reversible = reversible
 
         return
 

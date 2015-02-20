@@ -70,6 +70,7 @@ def force_spectroscopy_model():
     states.append({ 'model' : 'gaussian', 'mu' : 4.7, 'sigma' : 0.3 })
     states.append({ 'model' : 'gaussian', 'mu' : 5.6, 'sigma' : 0.2 })
 
+    # Define a reversible transition matrix.
     Tij = np.array([
             [0.980, 0.019, 0.001],
             [0.050, 0.900, 0.050],
@@ -258,4 +259,27 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000, verbose=Fals
     bhmm = BHMM(O, nstates, verbose=verbose)
 
     return [model, O, S, bhmm]
+
+def total_state_visits(nstates, S):
+    """
+    Return summary statistics for state trajectories.
+
+    Parameters
+    ----------
+    nstates : int
+        The number of states.
+    S : list of numpy.array
+        S[i] is the hidden state trajectory from state i
+
+    """
+
+    N_i = np.zeros([nstates], np.int32)
+    min_state = nstates
+    max_state = 0
+    for s_t in S:
+        for state_index in range(nstates):
+            N_i[state_index] += (s_t == state_index).sum()
+        min_state = min(min_state, s_t.min())
+        max_state = max(max_state, s_t.max())
+    return [N_i, min_state, max_state]
 

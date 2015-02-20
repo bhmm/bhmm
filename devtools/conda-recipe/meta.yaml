@@ -15,6 +15,9 @@ requirements:
     - setuptools
     - docopt
     - jinja2
+    - scikit-learn
+    - matplotlib
+    - seaborn
 
   run:
     - python
@@ -24,6 +27,9 @@ requirements:
     - docopt
     - pyyaml
     - jinja2
+    - scikit-learn
+    - matplotlib
+    - seaborn
 
 test:
   requires:

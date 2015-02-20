@@ -122,29 +122,6 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
 
     return
 
-def total_state_visits(nstates, S):
-    """
-    Return summary statistics for state trajectories.
-
-    Parameters
-    ----------
-    nstates : int
-        The number of states.
-    S : list of numpy.array
-        S[i] is the hidden state trajectory from state i
-
-    """
-
-    N_i = np.zeros([nstates], np.int32)
-    min_state = nstates
-    max_state = 0
-    for s_t in S:
-        for state_index in range(nstates):
-            N_i[state_index] += (s_t == state_index).sum()
-        min_state = min(min_state, s_t.min())
-        max_state = max(max_state, s_t.max())
-    return [N_i, min_state, max_state]
-
 if __name__ == '__main__':
     # Create plots.
     from bhmm import testsystems

@@ -58,6 +58,10 @@ class BHMM(object):
         Document choice of -1 prior for transition matrix samplng.
 
         """
+        # Sanity checks.
+        if len(observations) == 0:
+            raise Exception("No observations were provided.")
+
         # Store options.
         self.verbose = verbose
         self.reversible = reversible
@@ -273,14 +277,12 @@ class BHMM(object):
             raise Exception('Non-reversible transition matrix sampling not yet implemented.')
 
     def _generateInitialModel(self):
-        """Use a heuristic scheme to generate an initial model.
-
-        TODO
-        ----
-        * Replace this with EM or MLHMM procedure from Matlab code.
+        """Initialize using an MLHMM.
 
         """
-        from bhmm import testsystems
-        model = testsystems.dalton_model(nstates=self.nstates)
+        if self.verbose: print "Generating initial model for BHMM using MLHMM..."
+        from bhmm import MLHMM
+        mlhmm = MLHMM(self.observations, self.nstates, reversible=self.reversible)
+        model = mlhmm.fit()
         return model
 
