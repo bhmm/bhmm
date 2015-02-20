@@ -108,19 +108,16 @@ class OutputModelDiscrete:
         K = len(observations)
         # initialize output probability matrix
         self.B  = np.zeros((N,M))
-        w_sum = np.zeros((N))
         for k in range(K):
             # update nominator
             obs = observations[k]
             for o in range(M):
                 times = np.where(obs == o)[0]
                 self.B[:,o] = np.sum(weights[k][times,:], axis=0)
-            # update denominator
-            w_sum += np.sum(weights[k], axis=0)
 
         # normalize
         for o in range(M):
-            self.B[:,o] /= w_sum
+            self.B[:,o] /= np.sum(self.B[:,o])
 
         # update model
         for i in range(N):
