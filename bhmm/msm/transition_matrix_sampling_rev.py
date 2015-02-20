@@ -28,7 +28,7 @@ class TransitionMatrixSamplerRev:
             assumes a -1 prior!
 
         """
-        self.C = _C
+        self.C = np.array(_C, dtype=np.float64)
         self.n = self.C.shape[0]
         self.sumC = self.C.sum(1)+0.0
         self.X = None
@@ -211,14 +211,10 @@ def main():
     #C = np.array([[2,1,0],
     #              [1,5,1],
     #              [1,2,10]])
-    C = np.array([[5+1,3+1],
-                  [2+1,10+1]], dtype = np.float64)
-    sumC = np.sum(C, axis=1)
-    n = C.shape[0]
+    C = np.array([[787, 54, 27],
+                  [60, 2442, 34],
+                  [22, 39, 6534]], dtype = np.int32)
     sampler = TransitionMatrixSamplerRev(C)
-    X = C + C.T
-    X /= np.sum(X)
-    sumX = np.sum(X,axis=1)
 
     t1 = timer()
     nsample = 300000
