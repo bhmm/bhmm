@@ -31,7 +31,9 @@ class BHMM(object):
     >>> models = bhmm.sample(nsamples=10)
 
     """
-    def __init__(self, observations, nstates, initial_model=None, verbose=False, transition_matrix_sampling_steps=1000):
+    def __init__(self, observations, nstates, initial_model=None,
+                 reversible=True, verbose=False,
+                 transition_matrix_sampling_steps=1000):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -43,13 +45,22 @@ class BHMM(object):
         initial_model : HMM, optional, default=None
             If specified, the given initial model will be used to initialize the BHMM.
             Otherwise, a heuristic scheme is used to generate an initial guess.
+        reversible : bool, optional, default=True
+            If True, a prior that enforces reversible transition matrices (detailed balance) is used;
+            otherwise, a standard  non-reversible prior is used.
         verbose : bool, optional, default=False
             Verbosity flag.
         transition_matrix_sampling_steps : int, optional, default=1000
             number of transition matrix sampling steps per BHMM cycle
 
+        TODO
+        ----
+        Document choice of -1 prior for transition matrix samplng.
+
         """
+        # Store options.
         self.verbose = verbose
+        self.reversible = reversible
 
         # Store the number of states.
         self.nstates = nstates
@@ -94,7 +105,7 @@ class BHMM(object):
         --------
 
         >>> from bhmm import testsystems
-        >>> [model, observations, bhmm] = testsystems.generate_random_bhmm()
+        >>> [model, observations, states, bhmm] = testsystems.generate_random_bhmm()
         >>> nburn = 5 # run the sampler a bit before recording samples
         >>> nsamples = 10 # generate 10 samples
         >>> nthin = 2 # discard one sample in between each recorded sample
@@ -160,7 +171,7 @@ class BHMM(object):
         Examples
         --------
         >>> import testsystems
-        >>> [model, observations, bhmm] = testsystems.generate_random_bhmm()
+        >>> [model, observations, states, bhmm] = testsystems.generate_random_bhmm()
         >>> o_t = observations[0]
         >>> s_t = bhmm._sampleHiddenStateTrajectory(o_t)
 
@@ -249,8 +260,17 @@ class BHMM(object):
 
         """
         C = self.model.count_matrix()
-        sampler = TransitionMatrixSamplerRev(C)
-        self.model.Tij = sampler.sample(self.transition_matrix_sampling_steps)
+
+        #if self.verbose:
+        print "Count matrix:"
+        print C
+
+        if self.reversible == True:
+            sampler = TransitionMatrixSamplerRev(C)
+            self.model.Tij = sampler.sample(self.transition_matrix_sampling_steps)
+        else:
+            # TODO: Implement non-reversible transition matrix sampling.
+            raise Exception('Non-reversible transition matrix sampling not yet implemented.')
 
     def _generateInitialModel(self):
         """Use a heuristic scheme to generate an initial model.

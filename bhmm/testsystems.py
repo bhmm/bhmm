@@ -48,7 +48,7 @@ def generate_transition_matrix(nstates=3, lifetime_max=100, lifetime_min=10, rev
     return T
 
 
-def dalton_model(nstates = 3, omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0, lifetime_max = 10000, lifetime_min = 100, reversible = True):
+def dalton_model(nstates = 3, omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0, lifetime_max = 100, lifetime_min = 10, reversible = True):
     """
     Construct a test two-state model with regular spaced emission means (linearly interpolated between omin and omax)
     and variable emission widths (linearly interpolated between sigma_min and sigma_max).
@@ -93,9 +93,9 @@ def dalton_model(nstates = 3, omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 
     return model
 
 
-def generate_synthetic_observations(nstates=3, ntrajectories=10, length=1000,
+def generate_synthetic_observations(nstates=3, ntrajectories=10, length=10000,
                          omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0,
-                         lifetime_max = 10000, lifetime_min = 100, reversible = True):
+                         lifetime_max = 100, lifetime_min = 10, reversible = True):
 
     """Generate synthetic data from a random HMM model.
 
@@ -112,15 +112,17 @@ def generate_synthetic_observations(nstates=3, ntrajectories=10, length=1000,
     -------
     model : HMM
         The true underlying HMM model.
-    observations : list of numpy arrays
+    O : list of numpy arrays of shape (length)
         The synthetic observation trajectories generated from the HMM model.
+    S : list of numpy arrays of shape (length)
+        The synthetic state trajectories corresponding to the observation trajectories.
 
     Examples
     --------
 
     Generate BHMM with default parameters.
 
-    >>> [model, observations] = generate_synthetic_observations()
+    >>> [model, observations, states] = generate_synthetic_observations()
 
     """
 
@@ -128,14 +130,14 @@ def generate_synthetic_observations(nstates=3, ntrajectories=10, length=1000,
     model = dalton_model(nstates, omin = omin, omax = omax, sigma_min = sigma_min, sigma_max = sigma_max,
                          lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible)
     # Generate synthetic data.
-    observations = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
+    [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
 
-    return [model, observations]
+    return [model, O, S]
 
 
-def generate_random_bhmm(nstates=3, ntrajectories=10, length=100,
+def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000, verbose=False,
                          omin = -1, omax = 1, sigma_min = 0.5, sigma_max = 2.0,
-                         lifetime_max = 10000, lifetime_min = 100, reversible = True):
+                         lifetime_max = 100, lifetime_min = 10, reversible = True):
     """Generate a BHMM model from synthetic data from a random HMM model.
 
     Parameters
@@ -146,13 +148,17 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=100,
         The number of synthetic observation trajectories to generate.
     length : int, optional, default=10000
         The length of synthetic observation trajectories to generate.
+    verbose : bool, optional, default=False
+        Verbosity flag to pass to BHMM.
 
     Returns
     -------
     model : HMM
         The true underlying HMM model.
-    observations : list of numpy arrays
+    O : list of numpy arrays
         The synthetic observation trajectories generated from the HMM model.
+    S : list of numpy arrays
+        The synthetic state trajectories corresponding to the observation trajectories.
     bhmm : BHMM
         The BHMM model generated.
 
@@ -169,10 +175,10 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=100,
     model = dalton_model(nstates, omin = omin, omax = omax, sigma_min = sigma_min, sigma_max = sigma_max,
                          lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible)
     # Generate synthetic data.
-    observations = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
+    [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
     # Initialize a new BHMM model.
     from bhmm import BHMM
-    bhmm = BHMM(observations, nstates)
+    bhmm = BHMM(O, nstates, verbose=verbose)
 
-    return [model, observations, bhmm]
+    return [model, O, S, bhmm]
 

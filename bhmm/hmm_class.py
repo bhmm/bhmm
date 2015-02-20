@@ -1,5 +1,5 @@
 """
-Hidden Markov model
+Hidden Markov model representation.
 
 """
 
@@ -283,7 +283,9 @@ class HMM(object):
 
         Returns
         -------
-        observations : np.array of shape (nstates,) of dtype=np.float32
+        o_t : np.array of shape (nstates,) of dtype=np.float32
+            The trajectory of observations.
+        s_t : np.array of shape (nstates,) of dtype=np.int32
             The trajectory of hidden states, with each element in range(0,nstates).
 
         Examples
@@ -293,24 +295,24 @@ class HMM(object):
 
         >>> from bhmm import testsystems
         >>> model = testsystems.three_state_model()
-        >>> states = model.generate_synthetic_observation_trajectory(length=100)
+        >>> [o_t, s_t] = model.generate_synthetic_observation_trajectory(length=100)
 
         Use an initial nonequilibrium distribution.
 
         >>> from bhmm import testsystems
         >>> model = testsystems.three_state_model()
-        >>> trajectory = model.generate_synthetic_observation_trajectory(length=100, initial_Pi=np.array([1,0,0]))
+        >>> [o_t, s_t] = model.generate_synthetic_observation_trajectory(length=100, initial_Pi=np.array([1,0,0]))
 
         """
         # First, generate synthetic state trajetory.
-        states = self.generate_synthetic_state_trajectory(length, initial_Pi=initial_Pi)
+        s_t = self.generate_synthetic_state_trajectory(length, initial_Pi=initial_Pi)
 
         # Next, generate observations from these states.
-        observations = np.zeros([length], dtype=dtype)
+        o_t = np.zeros([length], dtype=dtype)
         for t in range(length):
-            observations[t] = self.generate_synthetic_observation(states[t])
+            o_t[t] = self.generate_synthetic_observation(s_t[t])
 
-        return observations
+        return [o_t, s_t]
 
     def generate_synthetic_observation_trajectories(self, ntrajectories, length, initial_Pi=None, dtype=np.float32):
         """Generate a number of synthetic realization of observables from this model.
@@ -328,8 +330,10 @@ class HMM(object):
 
         Returns
         -------
-        observations : np.array of shape (nstates,) of dtype=np.float32
-            The trajectory of hidden states, with each element in range(0,nstates).
+        O : list of np.array of shape (nstates,) of dtype=np.float32
+            The trajectories of observations
+        S : list of np.array of shape (nstates,) of dtype=np.int32
+            The trajectories of hidden states
 
         Examples
         --------
@@ -338,22 +342,24 @@ class HMM(object):
 
         >>> from bhmm import testsystems
         >>> model = testsystems.three_state_model()
-        >>> trajectories = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100)
+        >>> [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100)
 
         Use an initial nonequilibrium distribution.
 
         >>> from bhmm import testsystems
         >>> model = testsystems.three_state_model()
-        >>> trajectories = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100, initial_Pi=np.array([1,0,0]))
+        >>> [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100, initial_Pi=np.array([1,0,0]))
 
 
         """
-        trajectories = list()
+        O = list() # observations
+        S = list() # state trajectories
         for trajectory_index in range(ntrajectories):
-            trajectory = self.generate_synthetic_observation_trajectory(length=length, initial_Pi=initial_Pi, dtype=dtype)
-            trajectories.append(trajectory)
+            [o_t, s_t] = self.generate_synthetic_observation_trajectory(length=length, initial_Pi=initial_Pi, dtype=dtype)
+            O.append(o_t)
+            S.append(s_t)
 
-        return trajectories
+        return [O, S]
 
     @classmethod
     def _compute_stationary_probabilities(cls, Tij, tol=1e-5, maxits=None, method='arpack'):
