@@ -261,9 +261,9 @@ class BHMM(object):
         """
         C = self.model.count_matrix()
 
-        #if self.verbose:
-        print "Count matrix:"
-        print C
+        if self.verbose:
+            print "Count matrix:"
+            print C
 
         if self.reversible == True:
             sampler = TransitionMatrixSamplerRev(C)
