@@ -16,8 +16,8 @@ class MLHMM(object):
     --------
 
     >>> import testsystems
-    >>> [model, observations] = testsystems.generate_synthetic_observations()
-    >>> mlhmm = MLHMM(observations, model.nstates)
+    >>> [model, O, S] = testsystems.generate_synthetic_observations()
+    >>> mlhmm = MLHMM(O, model.nstates)
     >>> model = mlhmm.fit()
 
     """
@@ -64,6 +64,15 @@ class MLHMM(object):
         -------
         model : HMM
             The maximum likelihood HMM model.
+
+
+        Examples
+        --------
+
+        >>> import testsystems
+        >>> [model, O, S] = testsystems.generate_synthetic_observations()
+        >>> mlhmm = MLHMM(O, model.nstates)
+        >>> model = mlhmm.fit()
 
         """
         # TODO: EM procedure.

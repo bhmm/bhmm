@@ -56,14 +56,12 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
     sns.set(style='white', palette=palette, font_scale=0.75)
 
     # Create subplots.
-    gridspec = { 'width_ratios' : [0.85, 0.15] }
+    gridspec = { 'width_ratios' : [0.9, 0.1] }
     f, axes = plt.subplots(1,2, figsize=figsize, sharey=True, gridspec_kw=gridspec)
     ax1 = axes[0]; ax2 = axes[1]
-    #f.tight_layout()
-    f.subplots_adjust(left=0.05, right=0.95, bottom=0.15, top=0.9, wspace=0.0)
-    #f.subplots_adjust(left=0.2, wspace=0.6)
-    #ax1 = plt.subplot2grid((1,10), (0, 0), colspan=9, figsize=figsize)
-    #ax2 = plt.subplot2grid((1,10), (0, 9), colspan=1, figsize=figsize)
+    f.tight_layout()
+    f.subplots_adjust(wspace=0.0)
+    #f.subplots_adjust(left=0.05, right=0.95, bottom=0.15, top=0.9, wspace=0.0)
 
     ax1.hold(True)
     ax2.hold(True)
@@ -95,15 +93,6 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
         ax1.fill_between(np.array([tmin, tmax]), (mu-sigma)*np.ones([2]), (mu+sigma)*np.ones([2]), facecolor=color, alpha=0.3, linewidth=0)
         # Plot histogram.
         ax2.hist(o_t[indices], nbins, align='mid', orientation='horizontal', color=color, stacked=True, edgecolor=None, alpha=0.5, linewidth=0, normed=True)
-        #ovec = np.linspace(omin, omax, nbins)
-        #N, b, p = plt.hist(o_t[indices], ovec)
-        #dx = (ovec[-1]-ovec[0])/(nbins-1)
-        #ovec = ovec[0:nbins]
-        #pvec = N / N.sum() / dx
-        #print ovec.shape
-        #print pvec.shape
-        #ax2.barh(pvec, ovec, color=color, align='center')
-        # Plot state observable distribtuion.
         ovec = np.linspace(omin, omax, npoints)
         pvec = model.emission_probability(state_index, ovec)
         ax2.plot(pvec, ovec, color=color, linewidth=1)
