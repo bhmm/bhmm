@@ -2,7 +2,7 @@ __author__ = 'noe'
 
 import numpy as np
 import copy
-import kernel.python_obs as kp
+import kernel.python as kp
 
 class BaumWelchHMM:
 
