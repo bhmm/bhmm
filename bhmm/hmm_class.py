@@ -219,7 +219,7 @@ class HMM(object):
         Generate a synthetic state trajectory of a specified length.
 
         >>> from bhmm import testsystems
-        >>> model = testsystems.three_state_model()
+        >>> model = testsystems.dalton_model()
         >>> states = model.generate_synthetic_state_trajectory(length=100)
 
         """

@@ -90,7 +90,7 @@ class MLHMM(object):
         nstates = self.nstates
 
         # Concatenate all observations.
-        collected_observations = np.array([], dtype=dtype)
+        collected_observations = np.array([], dtype=np.float64)
         for (o_t) in self.observations:
             np.append(collected_observations, o_t[indices])
 

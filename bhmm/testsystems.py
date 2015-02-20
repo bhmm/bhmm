@@ -47,10 +47,43 @@ def generate_transition_matrix(nstates=3, lifetime_max=100, lifetime_min=10, rev
 
     return T
 
+def force_spectroscopy_model():
+    """
+    Construct a specific three-state test model intended to be representative of single-molecule force spectroscopy experiments.
+
+    Returns
+    -------
+    model : HMM
+        The synthetic HMM model.
+
+    Examples
+    --------
+
+    >>> model = force_spectroscopy_model()
+
+    """
+    nstates = 3
+
+    # Define state emission probabilities.
+    states = list()
+    states.append({ 'model' : 'gaussian', 'mu' : 3.0, 'sigma' : 1.0 })
+    states.append({ 'model' : 'gaussian', 'mu' : 4.7, 'sigma' : 0.3 })
+    states.append({ 'model' : 'gaussian', 'mu' : 5.6, 'sigma' : 0.2 })
+
+    Tij = np.array([
+            [0.980, 0.019, 0.001],
+            [0.050, 0.900, 0.050],
+            [0.001, 0.009, 0.990]], np.float64)
+
+    # Construct HMM with these parameters.
+    from bhmm import HMM
+    model = HMM(nstates, Tij, states)
+
+    return model
 
 def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0, lifetime_max = 100, lifetime_min = 10, reversible = True):
     """
-    Construct a test two-state model with regular spaced emission means (linearly interpolated between omin and omax)
+    Construct a test multistate model with regular spaced emission means (linearly interpolated between omin and omax)
     and variable emission widths (linearly interpolated between sigma_min and sigma_max).
 
     Parameters
@@ -71,6 +104,26 @@ def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 
         minimum lifetime of any state
     reversible : bool, optional, default=True
         If True, the row-stochastic transition matrix will be reversible.
+
+    Returns
+    -------
+    model : HMM
+        The synthetic HMM model.
+
+    Examples
+    --------
+
+    Generate default model.
+
+    >>> model = dalton_model()
+
+    Generate model with specified number of states.
+
+    >>> model = dalton_model(nstates=5)
+
+    Generate non-reversible model.
+
+    >>> model = dalton_model(reversible=False)
 
     """
     nstates = 3
