@@ -38,6 +38,7 @@ class DiscreteOutputModel(OutputModel):
         np.allclose(np.sum(B, axis=1), np.ones(B.shape[0]))
         # set output matrix
         self.B = B
+        self.nstates,self.nsymbols = B.shape[0],B.shape[1]
 
     def p_o_i(self, o, i):
         """
@@ -131,7 +132,7 @@ class DiscreteOutputModel(OutputModel):
         """
         # TODO: so far we don't use this method. Perhaps we don't need it.
         T = len(obs)
-        N = self.hmm_model.nstates
+        N = self.B.shape[1]
         res = np.zeros((T, N), dtype=np.float32)
         for t in range(T):
             res[t,:] = self.B[:,obs[t]]
@@ -185,11 +186,11 @@ class DiscreteOutputModel(OutputModel):
         >>> nobs = 1000
         >>> obs = np.empty((nobs), dtype = object)
         >>> weights = np.empty((nobs), dtype = object)
-        >>> for i in range(ntrajectories):
-        >>>     gen = stats.rv_discrete(values=(range(len(B[i])), B[i]))
-        >>>     obs[i] = gen.rvs(size=nobs)
-        >>>     weights[i] = np.zeros(nobs, B.shape[1])
-        >>>     weights[:,i] = 1.0
+
+        >>> gens = [stats.rv_discrete(values=(range(len(B[i])), B[i])) for i in range(B.shape[0])]
+        >>> obs = [gens[i].rvs(size=nobs) for i in range(B.shape[0])]
+        >>> weights = [np.zeros((nobs, B.shape[1])) for i in range(B.shape[0])]
+        >>> for i in range(B.shape[0]): weights[i][:,i] = 1.0
 
         Update the observation model parameters my a maximum-likelihood fit.
 
@@ -221,8 +222,8 @@ class DiscreteOutputModel(OutputModel):
 
         Parameters
         ----------
-        observations :  [ numpy.array with shape (N_k,) ] with `nstates` elements
-            observations[k] is a set of observations sampled from state `k`
+        observations :  [ numpy.array with shape (N_k,) ] with nstates elements
+            observations[k] is a set of observations sampled from state k
 
         Examples
         --------
@@ -303,7 +304,7 @@ class DiscreteOutputModel(OutputModel):
 
         """
         import scipy.stats
-        gen = scipy.stats.rv_discrete(values=(range(len(self.B[state_index])), self.B[state_index]))
+        gen = scipy.stats.rv_discrete(values=(range(self.nsymbols), self.B[state_index]))
         gen.rvs(size=nobs)
 
     def generate_observation_trajectory(self, s_t):
