@@ -393,7 +393,7 @@ class GaussianOutputModel(OutputModel):
 
             # Skip update if no observations.
             if len(observations[state_index]) == 0:
-                print "Warning: State %d has no obsevations."
+                print 'Warning: State %d has no obsevations.' % state_index
                 continue
 
             # Sample new mu.
