@@ -3,7 +3,10 @@ __author__ = 'noe'
 import copy
 import numpy as np
 
-class DiscreteOutputModel(object):
+import bhmm.output_models
+from bhmm.output_models import OutputModel
+
+class DiscreteOutputModel(OutputModel):
     """
     HMM output probability model using discrete symbols. This is the "standard" HMM that is classically used in the
     literature

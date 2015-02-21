@@ -5,6 +5,7 @@ Hidden Markov model representation.
 
 import numpy as np
 import msm.linalg as msmalg
+import output_models
 
 class HMM(object):
     """
@@ -28,7 +29,7 @@ class HMM(object):
     >>> model = HMM(nstates, Tij, states)
 
     """
-    def __init__(self, nstates, Tij, states,
+    def __init__(self, nstates, Tij, output_model,
                  Pi = None, stationary = True, # initial / stationary probability
                  reversible = True, # transition matrix reversible?
                  dtype=np.float64):
@@ -40,8 +41,8 @@ class HMM(object):
         Tij : np.array with shape (nstates, nstates), optional, default=None
             Row-stochastic transition matrix among states.
             If `None`, the identity matrix will be used.
-        states : list of dict
-            `states[i]` is a dict of parameters for state `i`, with Gaussian output parameters `mu` (mean) and `sigma` (standard deviation).
+        output_model : bhmm.OutputModel
+            The output model for the states.
         reversible : bool, optional, default=True
             If True, will note that the transition matrix is reversible.
 
@@ -63,8 +64,8 @@ class HMM(object):
             else:
                 self.Pi = Pi
 
-        # state specifications
-        self.states = states # TODO: Rename to 'state_emission_parameters'?
+        # output model
+        self.output_model = output_model
 
         # hidden state trajectories are optional
         self.hidden_state_trajectories = None
