@@ -96,6 +96,10 @@ class MLHMM(object):
         baumwelch = BaumWelchHMM(self.observations, self.model)
         self.model = baumwelch.fit()
 
+        print "maximum likelihood HMM:"
+        print str(self.model)
+        print "-----------------------"
+
         print "computing Viterbi path"
         self.hidden_state_trajectories = baumwelch.viterbi_paths()
 
