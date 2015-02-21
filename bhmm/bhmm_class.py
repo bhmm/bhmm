@@ -193,6 +193,8 @@ class BHMM(object):
         nstates = model.nstates
         logPi = model.logPi
         logTij = model.logTij
+        #logPi = np.log(model.Pi)
+        #logTij = np.log(model.Tij)
 
         #
         # Forward part.
