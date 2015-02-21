@@ -343,6 +343,51 @@ def transition_counts(alpha, beta, A, pobs, dtype=np.float32):
     xi = transition_probabilities(alpha, beta, A, pobs, dtype=dtype)
     return np.sum(xi, axis=0)
 
+
+def viterbi(A, pobs, pi):
+    """ Generate an observation sequence of length T from the model A, B, pi.
+
+    Parameters
+    ----------
+    A : numpy.array shape (N,N)
+        transition matrix of the model
+    pobs : numpy.array of floating numbers and shape (T,N)
+        symbol probability matrix for each time and hidden state
+    pi : numpy.array shape (N)
+        starting probability vector of the model
+
+    Returns
+    -------
+    q : numpy.array shape (T)
+        maximum likelihood hidden path
+
+    """
+    T,N = pobs.shape[0], pobs.shape[1]
+    # temporary viterbi state
+    v = np.zeros((N))
+    psi = np.zeros((T,N), dtype = int)
+    # initialize
+    v      = pi * pobs[0,:]
+    # rescale
+    v     /= v.sum()
+    psi[0] = 0.0
+    # iterate
+    for t in range(1,T):
+        vA = np.dot(np.diag(v), A)
+        # propagate v
+        v  = pobs[t,:] * np.max(vA, axis=0)
+        # rescale
+        v     /= v.sum()
+        psi[t] = np.argmax(vA, axis=0)
+    # iterate
+    q = np.zeros((T), dtype = int)
+    q[T-1] = np.argmax(v)
+    for t in range(T-2, -1, -1):
+        q[t] = psi[t+1,q[t+1]]
+    # done
+    return q
+
+
 def random_sequence(A, B, pi, T):
     """ Generate an observation sequence of length T from the model A, B, pi.
 

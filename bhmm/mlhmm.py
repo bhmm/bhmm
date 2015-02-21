@@ -96,6 +96,9 @@ class MLHMM(object):
         baumwelch = BaumWelchHMM(self.observations, self.model)
         self.model = baumwelch.fit()
 
+        print "computing Viterbi path"
+        self.hidden_state_trajectories = baumwelch.viterbi_paths()
+
         return self.model
 
     @classmethod

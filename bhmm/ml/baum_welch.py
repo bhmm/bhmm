@@ -122,6 +122,28 @@ class BaumWelchHMM:
         self.model.output_model.fit(self.observations, gammas)
 
 
+    def viterbi_paths(self):
+        """
+        Computes the viterbi paths using the current HMM model
+
+        """
+        # get parameters
+        K = len(self.observations)
+        A = self.model.Tij
+        pi = self.model.Pi
+
+        # compute viterbi path for each trajectory
+        hidden = np.empty((K), dtype=object)
+        for itraj in range(K):
+            obs = self.observations[itraj]
+            # compute output probability matrix
+            pobs = self.model.output_model.p_obs(obs)
+            # hidden path
+            hidden[itraj] = self.kernel.viterbi(A, pobs, pi)
+
+        # done
+        return hidden
+
 
     def fit(self):
         """
