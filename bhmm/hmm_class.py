@@ -27,7 +27,7 @@ class HMM(object):
     >>> nstates = 2
     >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
     >>> from output_models import DiscreteOutputModel
-    >>> output_model = DiscreteOutputModel(nstates, nsymbols, pout=[[0.5, 0.1, 0.4], [0.2, 0.3, 0.5]])
+    >>> output_model = DiscreteOutputModel([[0.5, 0.1, 0.4], [0.2, 0.3, 0.5]])
     >>> model = HMM(nstates, Tij, output_model)
 
     """
