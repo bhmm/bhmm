@@ -75,6 +75,22 @@ class HMM(object):
 
         return
 
+    def __repr__(self):
+        return "HMM(%d, %s, %s, Pi=%s, stationary=%s, reversible=%s, dtype=%s)" % (self.nstates, repr(self.Tij), repr(self.output_model), repr(self.Pi), repr(self.stationary), repr(self.reversible), repr(self.dtype))
+
+    def __str__(self):
+        output  = 'Hidden Markov model\n'
+        output += '-------------------\n'
+        output += 'nstates: %d\n' % self.nstates
+        output += 'Tij:\n'
+        output += str(self.Tij) + '\n'
+        output += 'Pi:\n'
+        output += str(self.Pi) + '\n'
+        output += 'output model:\n'
+        output += str(self.output_model)
+        output += '\n'
+        return output
+
     @property
     def logPi(self):
         return np.log(self.Pi)
