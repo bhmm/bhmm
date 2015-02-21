@@ -28,7 +28,7 @@ class GaussianOutputModel(OutputModel):
 
         Create an observation model.
 
-        >>> observation_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
+        >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
 
         """
         self.nstates = nstates
@@ -72,24 +72,66 @@ class GaussianOutputModel(OutputModel):
 
         Create an observation model.
 
-        >>> observation_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
+        >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
 
         Compute the output probability of a single observation from a single state.
 
         >>> observation = 0
         >>> state_index = 0
-        >>> p_o = observation_model.p_o_i(observation, state_index)
+        >>> p_o_i = output_model.p_o_i(observation, state_index)
 
         Compute the output probability of a vector of observations from a single state.
 
         >>> observations = np.random.randn(100)
         >>> state_index = 0
-        >>> p_o_i = observation_model.p_o_i(observations, state_index)
+        >>> p_o_i = output_model.p_o_i(observations, state_index)
 
         """
         C = 1.0 / (np.sqrt(2.0 * np.pi) * self.sigmas[i])
         Pobs = C * np.exp(-0.5 * ((o - self.means[i]) / self.sigmas[i])**2)
         return Pobs
+
+    def log_p_o_i(self, o, i):
+        """
+        Returns the log output probability for symbol o given hidden state i
+
+        Parameters
+        ----------
+        o : float or array_like
+            observation or observations for which probability is to be computed
+        i : int
+            the hidden state index
+
+        Return
+        ------
+        log_p_o_i : float
+            the probability that hidden state i generates symbol o
+
+        Examples
+        --------
+
+        Compute the log output probability of a single observation from a given hidden state.
+
+        Create an observation model.
+
+        >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
+
+        Compute the output probability of a single observation from a single state.
+
+        >>> observation = 0
+        >>> state_index = 0
+        >>> log_p_o_i = output_model.log_p_o_i(observation, state_index)
+
+        Compute the output probability of a vector of observations from a single state.
+
+        >>> observations = np.random.randn(100)
+        >>> state_index = 0
+        >>> p_o_i = output_model.p_o_i(observations, state_index)
+
+        """
+        log_C = - 0.5 * np.log(2.0 * np.pi) - np.log(self.sigmas[i])
+        log_Pobs = log_C - 0.5 * ((o - self.means[i]) / self.sigmas[i])**2
+        return log_Pobs
 
     def p_o(self, o):
         """
@@ -110,17 +152,48 @@ class GaussianOutputModel(OutputModel):
 
         Create an observation model.
 
-        >>> observation_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
+        >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
 
         Compute the output probability of a single observation from all hidden states.
 
         >>> observation = 0
-        >>> p_o = observation_model.p_o(observation)
+        >>> p_o = output_model.p_o(observation)
 
         """
         C = 1.0 / (np.sqrt(2.0 * np.pi) * self.sigmas)
         Pobs = C * np.exp(-0.5 * ((o-self.means)/self.sigmas)**2)
         return Pobs
+
+    def log_p_o(self, o):
+        """
+        Returns the log output probability for symbol o from all hidden states
+
+        Parameters
+        ----------
+        o : float
+            A single observation.
+
+        Return
+        ------
+        log_p_o : ndarray (N)
+            log_p_o[i] is the log probability density of the observation o from state i emission distribution
+
+        Examples
+        --------
+
+        Create an observation model.
+
+        >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
+
+        Compute the output probability of a single observation from all hidden states.
+
+        >>> observation = 0
+        >>> log_p_o = output_model.log_p_o(observation)
+
+        """
+        log_C = - 0.5 * np.log(2.0 * np.pi) - np.log(self.sigmas)
+        log_Pobs = log_C - 0.5 * ((o-self.means)/self.sigmas)**2
+        return log_Pobs
 
     def p_obs(self, obs, dtype=np.float32):
         """
@@ -133,6 +206,7 @@ class GaussianOutputModel(OutputModel):
         dtype : numpy.dtype, optional, default=numpy.float32
             The datatype to return the resulting observations in.
 
+
         Return
         ------
         p_o : ndarray (T,N)
@@ -141,6 +215,16 @@ class GaussianOutputModel(OutputModel):
         Examples
         --------
 
+        Generate an observation model and synthetic observation trajectory.
+
+        >>> nobs = 1000
+        >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, +1], sigmas=[0.5, 1, 2])
+        >>> s_t = np.random.randint(0, output_model.nstates, size=[nobs])
+        >>> o_t = output_model.generate_observation_trajectory(s_t)
+
+        Compute output probabilities for entire trajectory and all hidden states.
+
+        >>> p_o = output_model.p_obs(o_t)
 
         """
         T = len(obs)
@@ -148,6 +232,45 @@ class GaussianOutputModel(OutputModel):
         for t in range(T):
             res[t,:] = self.p_o(obs[t])
         return res
+
+
+    def log_p_obs(self, obs, dtype=np.float32):
+        """
+        Returns the log output probabilities for an entire trajectory and all hidden states
+
+        Parameters
+        ----------
+        obs : ndarray((T), dtype=int)
+            a discrete trajectory of length T
+        dtype : numpy.dtype, optional, default=numpy.float32
+            The datatype to return the resulting observations in.
+
+
+        Return
+        ------
+        log_p_o : ndarray (T,N)
+            the log probability of generating the symbol at time point t from any of the N hidden states
+
+        Examples
+        --------
+
+        Generate an observation model and synthetic observation trajectory.
+
+        >>> nobs = 1000
+        >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, +1], sigmas=[0.5, 1, 2])
+        >>> s_t = np.random.randint(0, output_model.nstates, size=[nobs])
+        >>> o_t = output_model.generate_observation_trajectory(s_t)
+
+        Compute log output probabilities for entire trajectory and all hidden states.
+
+        >>> log_p_o = output_model.log_p_obs(o_t)
+
+        """
+        T = len(obs)
+        log_res = np.zeros((T, self.nstates), dtype=dtype)
+        for t in range(T):
+            log_res[t,:] = self.log_p_o(obs[t])
+        return log_res
 
     def fit(self, observations, weights):
         """
@@ -168,13 +291,13 @@ class GaussianOutputModel(OutputModel):
 
         >>> ntrajectories = 3
         >>> nobs = 1000
-        >>> observation_model = GaussianOutputModel(nstates=3, means=[-1, 0, +1], sigmas=[0.5, 1, 2])
+        >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, +1], sigmas=[0.5, 1, 2])
         >>> observations = [ np.random.randn(nobs) for trajectory_index in range(ntrajectories) ] # random observations
         >>> weights = [ np.random.dirichlet([2, 3, 4], size=nobs) for trajectory_index in range(ntrajectories) ] # random weights
 
         Update the observation model parameters my a maximum-likelihood fit.
 
-        >>> observation_model.fit(observations, weights)
+        >>> output_model.fit(observations, weights)
 
         """
         # sizes
@@ -224,13 +347,13 @@ class GaussianOutputModel(OutputModel):
 
         >>> nstates = 3
         >>> nobs = 1000
-        >>> observation_model = GaussianOutputModel(nstates=nstates, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
-        >>> observations = [ observation_model.generate_observations_from_state(state_index, nobs) for state_index in range(nstates) ]
+        >>> output_model = GaussianOutputModel(nstates=nstates, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
+        >>> observations = [ output_model.generate_observations_from_state(state_index, nobs) for state_index in range(nstates) ]
         >>> weights = [ np.zeros([nobs,nstates], np.float32).T for state_index in range(nstates) ]
 
         Update output parameters by sampling.
 
-        >>> observation_model.sample(observations)
+        >>> output_model.sample(observations)
 
         """
         for state_index in range(self.nstates):
@@ -251,6 +374,35 @@ class GaussianOutputModel(OutputModel):
             self.sigmas[state_index] = np.sqrt(sigmahat2) / np.sqrt(chisquared / self.nstates)
 
         return
+
+    def generate_observation_from_state(self, state_index):
+        """
+        Generate a single synthetic observation data from a given state.
+
+        Parameters
+        ----------
+        state_index : int
+            Index of the state from which observations are to be generated.
+
+        Returns
+        -------
+        observation : float
+            A single observation from the given state.
+
+        Examples
+        --------
+
+        Generate an observation model.
+
+        >>> output_model = GaussianOutputModel(nstates=2, means=[0, 1], sigmas=[1, 2])
+
+        Generate sample from each state.
+
+        >>> observation = output_model.generate_observation_from_state(state_index)
+
+        """
+        observation = self.sigmas[state_index] * np.random.randn() + self.means[state_index]
+        return observation
 
     def generate_observations_from_state(self, state_index, nobs, dtype=np.float32):
         """
@@ -275,11 +427,11 @@ class GaussianOutputModel(OutputModel):
 
         Generate an observation model.
 
-        >>> observation_model = GaussianOutputModel(nstates=2, means=[0, 1], sigmas=[1, 2])
+        >>> output_model = GaussianOutputModel(nstates=2, means=[0, 1], sigmas=[1, 2])
 
         Generate samples from each state.
 
-        >>> observations = [ observation_model.generate_observations_from_state(state_index, nobs=100) for state_index in range(observation_model.nstates) ]
+        >>> observations = [ output_model.generate_observations_from_state(state_index, nobs=100) for state_index in range(output_model.nstates) ]
 
         """
         observations = self.sigmas[state_index] * np.random.randn(nobs) + self.means[state_index]
@@ -307,12 +459,12 @@ class GaussianOutputModel(OutputModel):
         Generate an observation model and synthetic state trajectory.
 
         >>> nobs = 1000
-        >>> observation_model = GaussianOutputModel(nstates=3, means=[-1, 0, +1], sigmas=[0.5, 1, 2])
-        >>> s_t = np.random.randint(0, observation_model.nstates, size=[nobs])
+        >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, +1], sigmas=[0.5, 1, 2])
+        >>> s_t = np.random.randint(0, output_model.nstates, size=[nobs])
 
         Generate a synthetic trajectory
 
-        >>> o_t = observation_model.generate_observation_trajectory(s_t)
+        >>> o_t = output_model.generate_observation_trajectory(s_t)
 
         """
 

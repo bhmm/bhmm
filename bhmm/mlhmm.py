@@ -112,7 +112,14 @@ class MLHMM(object):
         --------
 
         >>> Cij = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-        >>> Tij = MLHMM._transitionMatrixMLE(Cij)
+
+        Non-reversible estimate.
+
+        >>> Tij = MLHMM._transitionMatrixMLE(Cij, reversible=False)
+
+        Reversible estimate.
+
+        >>> Tij = MLHMM._transitionMatrixMLE(Cij, reversible=True)
 
         """
         # Determine size of count matrix.
@@ -121,73 +128,10 @@ class MLHMM(object):
         # Ensure count matrix is double precision.
         Cij = np.array(Cij, dtype=np.float64)
 
-        print "Cij ="
-        print Cij
-
-        if reversible == False:
-            if verbose: print "Using non-reversible transition matrix estimator."
-            Tij = Cij
-            for i in range(nstates):
-                Tij[i,:] /= Tij[i,:].sum()
-            return Tij
+        if reversible:
+            Tij = msm.linalg.transition_matrix_MLE_reversible(Cij)
         else:
-            # Algorithm 1 of Ref [1].
-            # Step 1
-
-            # Add small epsilon for numerical stability if needed.
-            if np.any(Cij < epsilon): Cij += epsilon
-
-            # Compute row sums.
-            Ci = Cij.sum(1)
-
-            # Compute symmetric matrix and row sums.
-            Xij = Cij + Cij.T
-            Xi = Xij.sum(1)
-
-            # Step 2: Iterate until convergence.
-            for iteration in range(maxits):
-                # Store old iterate.
-                Xij_old = copy.deepcopy(Xij)
-
-                # Update step 2.1
-                for i in range(nstates):
-                    Xij[i] = Cij[i,i] * (Xi[i] - Xij[i,i]) / (Ci[i] - Cij[i,i])
-                    Xi[i] = Xij[i,:].sum()
-
-                # Update step 2.2
-                for i in range(nstates-1):
-                    for j in range(i+1,nstates):
-                        a = (Ci[i] - Cij[i,j] + Ci[j] - Cij[j,i])
-                        b = Ci[i]*(Xi[j]-Xij[i,j]) + Ci[j]*(Xi[i]-Xij[i,j]) - (Cij[i,j]+Cij[j,i])*(Xi[i]+Xi[j]-2*Xij[i,j])
-                        c = -(Cij[i,j]+Cij[j,i])*(Xi[i]-Xij[i,j])*(Xi[j]-Xij[i,j])
-                        Xij[i,j] = Xij[j,i] = (-b + np.sqrt(b**2-4*a*c)) / (2*a)
-                for i in range(nstates):
-                    Xi[i] = Xij[i,:].sum()
-
-                print "Xij"
-                print Xij
-
-                # Check for nan.
-                if np.any(np.isnan(Xij)):
-                    print "Xij is nan"
-                    print Xij
-                    print "Cij"
-                    print Cij
-                    raise Exception("Xij is nan.")
-
-                # Check for convergence
-                delta = norm(Xij_old - Xij, ord='fro') / norm(Xij, ord='fro')
-                if (delta < reltol):
-                    if verbose: print "Converged to relative tolerance %s in %d iterations" % (delta, iteration+1)
-                    break
-
-            # Step 3: Compute Tij
-            Tij = Xij
-            for i in range(nstates):
-                Tij[i,:] /= Tij[i,:].sum()
-
-        print "Tij"
-        print Tij
+            Tij = msm.linalg.transition_matrix_MLE_nonreversible(Cij)
 
         return Tij
 

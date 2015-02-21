@@ -233,10 +233,9 @@ class BHMM(object):
         """Sample a new set of emission probabilites from the conditional distribution P(E | S, O)
 
         """
-        model = self.model
-        nstates = model.nstates
-        observations_by_state = [ model.collect_observations_in_state(self.observations, state) for state in range(nstates) ]
-        self.output_model.sample(observations_by_state)
+        observations_by_state = [ self.model.collect_observations_in_state(self.observations, state) for state in range(nstates) ]
+        self.model.output_model.sample(observations_by_state)
+        return
 
     def _updateTransitionMatrix(self):
         """

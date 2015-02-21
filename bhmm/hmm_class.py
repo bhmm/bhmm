@@ -19,14 +19,16 @@ class HMM(object):
     >>> # Gaussian HMM
     >>> nstates = 2
     >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
-    >>> states = [ {'model' : 'gaussian', 'mu' : -1, 'sigma' : 1}, {'model' : 'gaussian', 'mu' : +1, 'sigma' : 1} ]
-    >>> model = HMM(nstates, Tij, states)
+    >>> from output_models import GaussianOutputModel
+    >>> output_model = GaussianOutputModel(nstates, means=[-1, +1], sigmas=[1, 1])
+    >>> model = HMM(nstates, Tij, output_model)
 
     >>> # Discrete HMM
     >>> nstates = 2
     >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
-    >>> states = [ {'model' : 'discrete', 'pout' : [0.5,0.1,0.4]}, {'model' : 'discrete', 'pout' : [0.2,0.3,0.5]} ]
-    >>> model = HMM(nstates, Tij, states)
+    >>> from output_models import DiscreteOutputModel
+    >>> output_model = DiscreteOutputModel(nstates, nsymbols, pout=[[0.5, 0.1, 0.4], [0.2, 0.3, 0.5]])
+    >>> model = HMM(nstates, Tij, output_model)
 
     """
     def __init__(self, nstates, Tij, output_model,
@@ -142,16 +144,7 @@ class HMM(object):
         >>> Pobs = model.emission_probability(state_index, observation)
 
         """
-        observation_model = self.states[state]['model']
-        if observation_model == 'gaussian':
-            mu = self.states[state]['mu']
-            sigma = self.states[state]['sigma']
-            C = 1.0 / (np.sqrt(2.0 * np.pi) * sigma)
-            Pobs = C * np.exp(-0.5 * ((observation-mu)/sigma)**2)
-        else:
-            raise Exception('Observation model "%s" unknown.' % observation_model)
-
-        return Pobs
+        return self.output_model.p_o_i(observation, state)
 
     def log_emission_probability(self, state, observation):
         """Compute the log emission probability of an observation from a given state.
@@ -182,16 +175,7 @@ class HMM(object):
         >>> log_Pobs = model.log_emission_probability(state_index, observation)
 
         """
-        observation_model = self.states[state]['model']
-        if observation_model == 'gaussian':
-            mu = self.states[state]['mu']
-            sigma = self.states[state]['sigma']
-            C = 1.0 / (np.sqrt(2.0 * np.pi) * sigma)
-            log_Pobs = -0.5 * np.log(2.0 * np.pi) - np.log(sigma) - 0.5 * ((observation-mu)/sigma)**2
-        else:
-            raise Exception('Observation model "%s" unknown.' % observation_model)
-
-        return log_Pobs
+        return self.output_model.log_p_o_i(observation, state)
 
     def collect_observations_in_state(self, observations, state_index, dtype=np.float64):
         """Collect a vector of all observations belonging to a specified hidden state.
@@ -290,13 +274,7 @@ class HMM(object):
         >>> observation = model.generate_synthetic_observation(state_index=0)
 
         """
-        observation_model = self.states[state]['model']
-        if observation_model == 'gaussian':
-            observation = self.states[state]['sigma'] * np.random.randn() + self.states[state]['mu']
-        else:
-            raise Exception('Observation model "%s" unknown.' % observation_model)
-
-        return observation
+        return self.output_model.generate_observation_from_state(state)
 
     def generate_synthetic_observation_trajectory(self, length, initial_Pi=None, dtype=np.float32):
         """Generate a synthetic realization of observables.
@@ -337,9 +315,7 @@ class HMM(object):
         s_t = self.generate_synthetic_state_trajectory(length, initial_Pi=initial_Pi)
 
         # Next, generate observations from these states.
-        o_t = np.zeros([length], dtype=dtype)
-        for t in range(length):
-            o_t[t] = self.generate_synthetic_observation(s_t[t])
+        o_t = self.output_model.generate_observation_trajectory(s_t, dtype=dtype)
 
         return [o_t, s_t]
 
