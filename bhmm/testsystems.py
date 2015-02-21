@@ -6,6 +6,8 @@ Test systems for validation
 import numpy as np
 import math
 
+from bhmm.output_models import GaussianOutputModel
+
 def generate_transition_matrix(nstates=3, lifetime_max=100, lifetime_min=10, reversible=True):
     """
     Generates random metastable transition matrices
@@ -65,10 +67,7 @@ def force_spectroscopy_model():
     nstates = 3
 
     # Define state emission probabilities.
-    states = list()
-    states.append({ 'model' : 'gaussian', 'mu' : 3.0, 'sigma' : 1.0 })
-    states.append({ 'model' : 'gaussian', 'mu' : 4.7, 'sigma' : 0.3 })
-    states.append({ 'model' : 'gaussian', 'mu' : 5.6, 'sigma' : 0.2 })
+    output_model = GaussianOutputModel(nstates, means=[3.0, 4.7, 5.6], sigmas=[1.0, 0.3, 0.2])
 
     # Define a reversible transition matrix.
     Tij = np.array([
@@ -78,7 +77,7 @@ def force_spectroscopy_model():
 
     # Construct HMM with these parameters.
     from bhmm import HMM
-    model = HMM(nstates, Tij, states)
+    model = HMM(nstates, Tij, output_model)
 
     return model
 
@@ -134,15 +133,13 @@ def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 
     sigmas = np.linspace(sigma_min, sigma_max, num = nstates)
 
     # Define state emission probabilities.
-    states = list()
-    for i in range(nstates):
-        states.append({ 'model' : 'gaussian', 'mu' : means[i], 'sigma' : sigmas[i] })
+    output_model = GaussianOutputModel(nstates, means=means, sigmas=sigmas)
 
     Tij = generate_transition_matrix(nstates, lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible)
 
     # Construct HMM with these parameters.
     from bhmm import HMM
-    model = HMM(nstates, Tij, states)
+    model = HMM(nstates, Tij, output_model)
 
     return model
 

@@ -23,12 +23,12 @@ class HMM(object):
     >>> output_model = GaussianOutputModel(nstates, means=[-1, +1], sigmas=[1, 1])
     >>> model = HMM(nstates, Tij, output_model)
 
-    >>> # Discrete HMM
-    >>> nstates = 2
-    >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
-    >>> from output_models import DiscreteOutputModel
-    >>> output_model = DiscreteOutputModel(nstates, nsymbols, pout=[[0.5, 0.1, 0.4], [0.2, 0.3, 0.5]])
-    >>> model = HMM(nstates, Tij, output_model)
+    >> # Discrete HMM
+    >> nstates = 2
+    >> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
+    >> from output_models import DiscreteOutputModel
+    >> output_model = DiscreteOutputModel(nstates, nsymbols, pout=[[0.5, 0.1, 0.4], [0.2, 0.3, 0.5]])
+    >> model = HMM(nstates, Tij, output_model)
 
     """
     def __init__(self, nstates, Tij, output_model,
@@ -240,7 +240,7 @@ class HMM(object):
         states = np.zeros([length], dtype=dtype)
 
         # Generate first state sample.
-        if initial_Pi != None:
+        if initial_Pi is not None:
             states[0] = np.random.choice(range(self.nstates), size=1, p=initial_Pi)
         else:
             states[0] = np.random.choice(range(self.nstates), size=1, p=self.Pi)
@@ -271,7 +271,7 @@ class HMM(object):
 
         >>> from bhmm import testsystems
         >>> model = testsystems.dalton_model()
-        >>> observation = model.generate_synthetic_observation(state_index=0)
+        >>> observation = model.generate_synthetic_observation(0)
 
         """
         return self.output_model.generate_observation_from_state(state)
