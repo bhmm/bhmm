@@ -10,6 +10,13 @@ from bhmm import msm
 from bhmm import HMM
 from ml.baum_welch import BaumWelchHMM
 
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "FreeBSD"
+__maintainer__ = "John D. Chodera"
+__email__="jchodera AT gmail DOT com"
+
 class MLHMM(object):
     """
     Maximum likelihood Hidden Markov model (HMM).

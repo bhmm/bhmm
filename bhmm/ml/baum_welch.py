@@ -3,8 +3,15 @@ __author__ = 'noe'
 import numpy as np
 import copy
 import kernel.python as kp
-from multiprocessing import Queue, JoinableQueue, Process, cpu_count
+from multiprocessing import Queue, Process, cpu_count
 import bhmm.msm.linalg
+
+__author__ = "Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["Frank Noe"]
+__license__ = "FreeBSD"
+__maintainer__ = "Frank Noe"
+__email__="frank.noe AT fu-berlin DOT de"
 
 
 class BaumWelchHMM:

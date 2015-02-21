@@ -8,6 +8,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import output_models.gaussian
 
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "FreeBSD"
+__maintainer__ = "John D. Chodera"
+__email__="jchodera AT gmail DOT com"
+
 def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=None, title=None, figsize=(7.5,1.5), markersize=3, pdf_filename=None):
     """
     Plot hidden state assignments and emission probabilities.

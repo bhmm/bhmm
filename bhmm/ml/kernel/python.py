@@ -10,6 +10,14 @@ closely related to Rabiners [1] paper.
 """
 import numpy as np
 
+__author__ = "Maikel Nadolski, Christoph Froehner, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["Maikel Nadolski", "Christoph Froehner", "Frank Noe"]
+__license__ = "FreeBSD"
+__maintainer__ = "Frank Noe"
+__email__="frank.noe AT fu-berlin DOT de"
+
+
 def forward(A, pobs, pi, dtype=np.float32):
     """Compute P(ob|A,B,pi) and all forward coefficients. With scaling!
 
@@ -386,63 +394,5 @@ def viterbi(A, pobs, pi):
     # done
     return q
 
-
-def random_sequence(A, B, pi, T):
-    """ Generate an observation sequence of length T from the model A, B, pi.
-
-    Parameters
-    ----------
-    A : numpy.array shape (N,N)
-        transition matrix of the model
-    B : numpy.array shape (N,M)
-        symbol probability matrix of the model
-    pi : numpy.array shape (N)
-         starting probability vector of the model
-    T : integer
-        length of generated observation sequence
-
-    Returns
-    -------
-    obs : numpy.array shape (T)
-          observation sequence containing only symbols, i.e. ints in [0,M)
-
-    Notes
-    -----
-    This function relies on the function draw_state(distr).
-
-    See Also
-    --------
-    draw_state : draw the index of the state, obeying the probability
-                 distribution vector distr
-
-    """
-    obs    = np.zeros(T, dtype=np.int16)
-    state  = draw_state(pi)
-    obs[0] = state
-    for t in range(1,T):
-        state  = draw_state( A[state] )
-        obs[t] = draw_state( B[state] )
-    return obs
-
-def draw_state(distr):
-    """ helper function for random_sequence to get the state to a given probability
-
-    Parameters
-    ----------
-    distr : array with probabilities where state are the indices
-
-    Returns
-    -------
-    state : integer
-            which randomly chosen with given distribution
-    """
-    x = np.random.random()
-    D = len(distr)
-    for state in range(D):
-        if x < distr[state]:
-            return state
-        else:
-            x -= distr[state]
-    return state
 
 __author__ = 'noe'

@@ -4,6 +4,14 @@ import numpy as np
 import math
 import linalg
 
+__author__ = "Hao Wu, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["Hao Wu", "Frank Noe"]
+__license__ = "FreeBSD"
+__maintainer__ = "Frank Noe"
+__email__="frank.noe AT fu-berlin DOT de"
+
+
 # some shortcuts
 eps=np.spacing(0)
 log=math.log

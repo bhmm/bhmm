@@ -3,6 +3,14 @@ __author__ = 'noe'
 import numpy as np
 from scipy import linalg
 
+__author__ = "Benjamin-Trendelkamp Schroer, Martin Scherer, Fabian Paul, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["Benjamin-Trendelkamp Schroer", "Martin Scherer", "Fabian Paul", "Frank Noe"]
+__license__ = "FreeBSD"
+__maintainer__ = "Martin Scherer"
+__email__="martin DOT scherer AT fu-berlin DOT de"
+
+
 def eigenvalues(A, n):
     """
     Return the eigenvalues of A in order from largest to smallest.

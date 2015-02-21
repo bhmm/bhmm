@@ -9,6 +9,13 @@ from functools import partial
 from bhmm import testsystems
 from bhmm import MLHMM
 
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "FreeBSD"
+__maintainer__ = "John D. Chodera"
+__email__="jchodera AT gmail DOT com"
+
 def run_mlhmm(nstates):
     """
     Run the MLHMM on synthetic data with the given number of states.

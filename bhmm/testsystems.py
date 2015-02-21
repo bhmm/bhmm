@@ -8,6 +8,13 @@ import math
 
 from bhmm.output_models import GaussianOutputModel
 
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "FreeBSD"
+__maintainer__ = "John D. Chodera"
+__email__="jchodera AT gmail DOT com"
+
 def generate_transition_matrix(nstates=3, lifetime_max=100, lifetime_min=10, reversible=True):
     """
     Generates random metastable transition matrices

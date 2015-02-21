@@ -5,6 +5,13 @@ Analysis of BHMM data.
 
 import numpy as np
 
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "FreeBSD"
+__maintainer__ = "John D. Chodera"
+__email__="jchodera AT gmail DOT com"
+
 def confidence_interval()
 def beta_confidence_intervals(ci_X, ntrials, ci=0.95):
     """

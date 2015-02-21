@@ -13,6 +13,13 @@ from bhmm import testsystems
 from nose.tools import assert_equal, assert_almost_equal
 from numpy.testing import assert_array_almost_equal
 
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "FreeBSD"
+__maintainer__ = "John D. Chodera"
+__email__="jchodera AT gmail DOT com"
+
 def test_hmm():
     # Create a simple HMM model.
     model = testsystems.three_state_model()

@@ -9,6 +9,13 @@ from scipy.misc import logsumexp
 
 from bhmm.msm.transition_matrix_sampling_rev import TransitionMatrixSamplerRev
 
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "FreeBSD"
+__maintainer__ = "John D. Chodera"
+__email__="jchodera AT gmail DOT com"
+
 class BHMM(object):
     """Bayesian hidden Markov model sampler.
 

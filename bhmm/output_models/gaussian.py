@@ -4,6 +4,13 @@ import numpy as np
 
 from bhmm.output_models import OutputModel
 
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "FreeBSD"
+__maintainer__ = "John D. Chodera"
+__email__="jchodera AT gmail DOT com"
+
 class GaussianOutputModel(OutputModel):
     """
     HMM output probability model using 1D-Gaussians
