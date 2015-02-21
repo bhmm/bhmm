@@ -23,12 +23,12 @@ class HMM(object):
     >>> output_model = GaussianOutputModel(nstates, means=[-1, +1], sigmas=[1, 1])
     >>> model = HMM(nstates, Tij, output_model)
 
-    >> # Discrete HMM
-    >> nstates = 2
-    >> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
-    >> from output_models import DiscreteOutputModel
-    >> output_model = DiscreteOutputModel(nstates, nsymbols, pout=[[0.5, 0.1, 0.4], [0.2, 0.3, 0.5]])
-    >> model = HMM(nstates, Tij, output_model)
+    >>> # Discrete HMM
+    >>> nstates = 2
+    >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
+    >>> from output_models import DiscreteOutputModel
+    >>> output_model = DiscreteOutputModel(nstates, nsymbols, pout=[[0.5, 0.1, 0.4], [0.2, 0.3, 0.5]])
+    >>> model = HMM(nstates, Tij, output_model)
 
     """
     def __init__(self, nstates, Tij, output_model,

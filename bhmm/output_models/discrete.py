@@ -34,10 +34,10 @@ class DiscreteOutputModel(OutputModel):
         >>> output_model = DiscreteOutputModel(B)
 
         """
+        self.B = np.array(B, dtype=np.float64)
+
         # test if row-stochastic
-        np.allclose(np.sum(B, axis=1), np.ones(B.shape[0]))
-        # set output matrix
-        self.B = B
+        np.allclose(np.sum(self.B, axis=1), np.ones(self.B.shape[0]))
 
     def p_o_i(self, o, i):
         """
