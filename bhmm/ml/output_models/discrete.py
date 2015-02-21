@@ -48,6 +48,7 @@ class OutputModelDiscrete:
             the probability that hidden state i generates symbol o
 
         """
+        # TODO: so far we don't use this method. Perhaps we don't need it.
         return self.B[i,o]
 
     def p_o(self, o):
@@ -82,12 +83,17 @@ class OutputModelDiscrete:
             the probability of generating the symbol at time point t from any of the N hidden states
 
         """
+        # TODO: so far we don't use this method. Perhaps we don't need it.
         T = len(obs)
         N = self.hmm_model.nstates
         res = np.zeros((T, N), dtype=np.float32)
         for t in range(T):
             res[t,:] = self.B[:,obs[t]]
         return res
+
+    # TODO: what about having a p_obs_i(self, i) that gives the observation probability for one state?
+    # TODO: That could be sufficient, because it allows us to do efficient vector operations and is able to do state-based processing
+    
 
     def fit(self, observations, weights):
         """
