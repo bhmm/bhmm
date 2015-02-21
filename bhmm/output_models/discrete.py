@@ -34,11 +34,12 @@ class DiscreteOutputModel(OutputModel):
         >>> output_model = DiscreteOutputModel(B)
 
         """
+        self.B = np.array(B, dtype=np.float64)
+        self.nstates,self.nsymbols = self.B.shape[0],self.B.shape[1]
         # test if row-stochastic
-        np.allclose(np.sum(B, axis=1), np.ones(B.shape[0]))
+        assert np.allclose(np.sum(self.B, axis=1), np.ones(self.nstates)), 'B is not a stochastic matrix'
         # set output matrix
         self.B = B
-        self.nstates,self.nsymbols = B.shape[0],B.shape[1]
 
     def p_o_i(self, o, i):
         """

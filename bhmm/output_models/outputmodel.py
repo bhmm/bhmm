@@ -1,5 +1,14 @@
 __author__ = 'noe'
 
+"""
+Abstract base class for HMM output model.
+
+TODO
+----
+* Allow new derived classes to be registered and retrieved.
+
+"""
+
 import numpy as np
 
 class OutputModel(object):
