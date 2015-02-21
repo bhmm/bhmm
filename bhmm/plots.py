@@ -6,6 +6,7 @@ Plotting utilities for Bayesian hidden Markov models.
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import output_models.gaussian
 
 def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=None, title=None, figsize=(7.5,1.5), markersize=3, pdf_filename=None):
     """
@@ -69,6 +70,9 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
     omin = o_t.min(); omax = o_t.max()
     tmin = 0; tmax = o_t.size * tau
 
+    # get output model
+    output_model = model.output_model
+
     # Plot.
     colors = list()
     npoints=100 # number of points per emission plot
@@ -81,10 +85,9 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
         color = line.get_color() # extract line color for additional plots
         colors.append(color)
         # Plot shading at one standard deviation width.
-        state = model.states[state_index]
-        if state['model'] == 'gaussian':
-            mu = model.states[state_index]['mu']
-            sigma = model.states[state_index]['sigma']
+        if type(output_model) is output_models.gaussian.GaussianOutputModel:
+            mu = output_model.means[state_index]
+            sigma = output_model.sigmas[state_index]
         else:
             # TODO: Generalize this to other kinds of output models.
             raise Exception('Not supported for non-gaussian output models.')
