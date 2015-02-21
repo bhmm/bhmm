@@ -145,8 +145,10 @@ class BaumWelchHMM:
                 ll, gammas[k], count_matrices[k] = self._forward_backward(k)
                 loglik += ll
 
-            # update T, pi
             self._update_model(gammas, count_matrices)
+            #print "output model at it = ",it
+            #print self.model.output_model
+            #print "---------------------"
 
             self.likelihoods[it] = loglik
 

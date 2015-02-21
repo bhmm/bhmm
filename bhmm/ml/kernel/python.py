@@ -104,8 +104,10 @@ def backward(A, pobs, dtype=np.float32):
     for t in range(T-2, -1, -1):
         # beta_i(t) = sum_j A_i,j * beta_j(t+1) * B_j,ob(t+1)
         beta[t,:] = np.dot(A, beta[t+1,:] * pobs[t+1,:])
-        if pobs[t+1,0] == 0:
-            raise ValueError('found 0s in t='+str(t)+' pobs[t+1] = '+str(pobs[t+1]))
+        #if pobs[t+1,0] == 0:
+        #    print "found 0s!"
+        #    print pobs[t:,:]
+        #    raise ValueError('found 0s in t='+str(t)+' pobs[t+1] = '+str(pobs[t+1]))
         # scaling factor
         scale[t] = np.sum(beta[t,:])
         # scale

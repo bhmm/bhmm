@@ -358,6 +358,8 @@ class GaussianOutputModel(OutputModel):
             w_sum += np.sum(weights[k], axis=0)
         # normalize
         self.sigmas /= w_sum
+        self.sigmas = np.sqrt(self.sigmas)
+
 
     def sample(self, observations):
         """
