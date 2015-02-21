@@ -34,7 +34,8 @@ class BHMM(object):
     """
     def __init__(self, observations, nstates, initial_model=None,
                  reversible=True, verbose=False,
-                 transition_matrix_sampling_steps=1000):
+                 transition_matrix_sampling_steps=1000,
+                 output_model_type='gaussian'):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -53,6 +54,8 @@ class BHMM(object):
             Verbosity flag.
         transition_matrix_sampling_steps : int, optional, default=1000
             number of transition matrix sampling steps per BHMM cycle
+        output_model_type : str, optional, default='gaussian'
+            Output model type.  ['gaussian', 'discrete']
 
         TODO
         ----
@@ -81,7 +84,7 @@ class BHMM(object):
             self.model = copy.deepcopy(initial_model)
         else:
             # Generate our own initial model.
-            self.model = self._generateInitialModel()
+            self.model = self._generateInitialModel(output_model_type)
 
         self.transition_matrix_sampling_steps = transition_matrix_sampling_steps
 
@@ -255,13 +258,13 @@ class BHMM(object):
             # TODO: Implement non-reversible transition matrix sampling.
             raise Exception('Non-reversible transition matrix sampling not yet implemented.')
 
-    def _generateInitialModel(self):
+    def _generateInitialModel(self, output_model_type):
         """Initialize using an MLHMM.
 
         """
         if self.verbose: print "Generating initial model for BHMM using MLHMM..."
         from bhmm import MLHMM
-        mlhmm = MLHMM(self.observations, self.nstates, reversible=self.reversible)
+        mlhmm = MLHMM(self.observations, self.nstates, reversible=self.reversible, output_model_type=output_model_type)
         model = mlhmm.fit()
         return model
 

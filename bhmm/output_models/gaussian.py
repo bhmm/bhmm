@@ -49,6 +49,36 @@ class GaussianOutputModel(OutputModel):
 
         return
 
+    def __repr__(self):
+        """
+        >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
+        >>> print repr(output_model)
+        GaussianOutputModel(3, means=array([-1.,  0.,  1.]), sigmas=array([ 0.5,  1. ,  2. ]))
+
+        """
+
+        return "GaussianOutputModel(%d, means=%s, sigmas=%s)" % (self.nstates, repr(self.means), repr(self.sigmas))
+
+    def __str__(self):
+        """
+        >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
+        >>> print str(output_model)
+        --------------------------------------------------------------------------------
+        GaussianOutputModel
+        nstates: 3
+        means: [-1.  0.  1.]
+        sigmas: [ 0.5  1.   2. ]
+        --------------------------------------------------------------------------------
+        """
+
+        output  = "--------------------------------------------------------------------------------\n"
+        output += "GaussianOutputModel\n"
+        output += "nstates: %d\n" % self.nstates
+        output += "means: %s\n" % str(self.means)
+        output += "sigmas: %s\n" % str(self.sigmas)
+        output += "--------------------------------------------------------------------------------"
+        return output
+
     def p_o_i(self, o, i):
         """
         Returns the output probability for symbol o given hidden state i
@@ -396,9 +426,9 @@ class GaussianOutputModel(OutputModel):
 
         >>> output_model = GaussianOutputModel(nstates=2, means=[0, 1], sigmas=[1, 2])
 
-        Generate sample from each state.
+        Generate sample from a state.
 
-        >>> observation = output_model.generate_observation_from_state(state_index)
+        >>> observation = output_model.generate_observation_from_state(0)
 
         """
         observation = self.sigmas[state_index] * np.random.randn() + self.means[state_index]

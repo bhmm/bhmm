@@ -23,7 +23,7 @@ class MLHMM(object):
     >>> model = mlhmm.fit()
 
     """
-    def __init__(self, observations, nstates, initial_model=None, reversible=True, verbose=False):
+    def __init__(self, observations, nstates, initial_model=None, reversible=True, verbose=False, output_model_type='gaussian'):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -40,6 +40,8 @@ class MLHMM(object):
             otherwise, a standard  non-reversible prior is used.
         verbose : bool, optional, default=False
             Verbosity flag.
+        output_model_type : str, optional, default='gaussian'
+            Output model type.  ['gaussian', 'discrete']
 
         """
         # Store options.
@@ -60,7 +62,7 @@ class MLHMM(object):
             self.model = copy.deepcopy(initial_model)
         else:
             # Generate our own initial model.
-            self.model = self._generateInitialModel()
+            self.model = self._generateInitialModel(output_model_type)
 
         return
 
@@ -135,8 +137,13 @@ class MLHMM(object):
 
         return Tij
 
-    def _generateInitialModel(self):
+    def _generateInitialModel(self, output_model_type):
         """Use a heuristic scheme to generate an initial model.
+
+        Parameters
+        ----------
+        output_model_type : str, optional, default='gaussian'
+            Output model type.  ['gaussian', 'discrete']
 
         TODO
         ----
