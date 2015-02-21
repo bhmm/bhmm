@@ -24,6 +24,7 @@ class BHMM(object):
 
     Initialize a new BHMM model.
 
+    >>> from bhmm import BHMM
     >>> bhmm = BHMM(data, nstates)
 
     Sample from the posterior.
