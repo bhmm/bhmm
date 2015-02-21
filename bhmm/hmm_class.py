@@ -219,11 +219,17 @@ class HMM(object):
         if not self.hidden_state_trajectories:
             raise RuntimeError('HMM model does not have a hidden state trajectory.')
 
+        print "Finding observations in state %d." % state_index
+        print self.hidden_state_trajectories
+        print observations
+
         collected_observations = np.array([], dtype=dtype)
         for (s_t, o_t) in zip(self.hidden_state_trajectories, observations):
-            indices = np.where(s_t == state_index)
-            np.append(collected_observations, o_t[indices])
+            indices = np.where(s_t == state_index)[0]
+            collected_observations = np.append(collected_observations, o_t[indices])
 
+        print 'Found %d observations total in hidden state index %d' % (len(collected_observations), state_index)
+        print ''
         return collected_observations
 
     def generate_synthetic_state_trajectory(self, length, initial_Pi=None, dtype=np.int32):
