@@ -4,6 +4,7 @@ import numpy as np
 import copy
 import kernel.python as kp
 from multiprocessing import Queue, JoinableQueue, Process, cpu_count
+import bhmm.msm.linalg
 
 
 class BaumWelchHMM:
@@ -106,11 +107,18 @@ class BaumWelchHMM:
             C += count_matrices[k]
 
         # compute new transition matrix
-        A = C / np.sum(C,axis=1)[:,None]
-        pi = gamma0_sum / np.sum(gamma0_sum)
+        if self.model.reversible:
+            T = bhmm.msm.linalg.transition_matrix_MLE_reversible(C)
+        else:
+            T = bhmm.msm.linalg.transition_matrix_MLE_nonreversible(C)
+        # stationary or init distribution
+        if self.model.stationary:
+            pi = bhmm.msm.linalg.stationary_distribution(T)
+        else:
+            pi = gamma0_sum / np.sum(gamma0_sum)
 
         # update model
-        self.model.Tij = copy.deepcopy(A)
+        self.model.Tij = copy.deepcopy(T)
         self.model.Pi  = copy.deepcopy(pi)
 
         # update output model
