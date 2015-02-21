@@ -86,7 +86,13 @@ class MLHMM(object):
         >>> model = mlhmm.fit()
 
         """
-        # TODO: Perform EM procedure.
+        # DEBUG
+        print "Feeding to Baum Welch:"
+        print "observations:"
+        print self.observations
+        print "initial guess:"
+        print self.model
+
         baumwelch = BaumWelchHMM(self.observations, self.model)
         self.model = baumwelch.fit()
 

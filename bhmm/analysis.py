@@ -5,6 +5,7 @@ Analysis of BHMM data.
 
 import numpy as np
 
+def confidence_interval()
 def beta_confidence_intervals(ci_X, ntrials, ci=0.95):
     """
     Compute confidence intervals of beta distributions.
@@ -94,4 +95,68 @@ def empirical_confidence_interval(sample, interval=0.95):
     high = sample[high_index]
 
     return [low, high]
+
+def generate_latex_table(models, sampling_time, sampling_time='1 ms',
+                         obs_name='force', obs_units='pN'):
+    """
+    Generate a LaTeX column-wide table showing various computed properties and uncertainties.
+
+    """
+    nstates = models[0].nstates
+
+    table = """\
+\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lcc}
+\hline
+\multicolumn{2}{l}{\bf Property} & \bf Value\\ \hline
+"""
+    # Stationary probability.
+    for i in range(nstates):
+        # TODO: Compute means and confidence intervals.
+        if (i == 0): table += 'Equilibrium probability '
+        table += '& $\pi_{%d}$ & $%0.3f_{\:%0.3f}^{\:%0.3f}$ \\' % (i, Pi[i], Pi_low[i], Pi_high[i]) + '\n'
+    table += '\hline' + '\n'
+
+    # Transition probabilities.
+    for i in range(nstates):
+        for j in range(nstates):
+            # TODO: Compute means and confidence intervals.
+            if (i == 0) and (j==0): table += 'Transition probability ($\Delta t = $%s) ' % (sampling_time)
+            table += '& $T_{%d%d}$ & $0.033_{\:0.029}^{\:0.037}$ \\' % (i, j, Tij[i,j], Tij_low[i,j], Tij_high[i,j]) + '\n'
+    table += '\hline' + '\n'
+
+    # State mean forces.
+    for i in range(nstates):
+        # TODO: Compute means and confidence intervals.
+        if (i == 0): table += 'State %s mean (%s) ' % (obs_name, obs_units)
+        table += '& $\mu_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\' % (i, obs[i], obs_low[i], obs_high[i]) + '\n'
+    table += '\hline' + '\n'
+
+    # State force standard deviations.
+    for i in range(nstates):
+        # TODO: Compute means and confidence intervals.
+        if (i == 0): table += 'State %s std dev (%s) ' % (obs_name, obs_units)
+        table += '& $\mu_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\' % (i, obs[i], obs_low[i], obs_high[i]) + '\n'
+    table += '\hline' + '\n'
+
+    # Transition rates.
+    for i in range(nstates):
+        for j in range(nstates):
+            # TODO: Compute means and confidence intervals.
+            if (i == 0) and (j==0): table += 'Transition rate (s$^{-1}$) '
+            table += '& $k_{%d%d}$ & $%.1f_{\:%.1f}^{\:%.1f}$ \\' % (i, j, Kij[i,j], Kij_low[i,j], Kij_high[i,j]) + '\n'
+    table += '\hline' + '\n'
+
+    # State mean lifetimes.
+    for i in range(nstates):
+        # TODO: Compute means and confidence intervals.
+        if (i == 0): table += 'State mean lifetime (%s) ' % time_unit
+        table += '& $\tau_{%d}$ & $%.1f_{\:%.1f}^{\:%.1f}$ \\' + '\n'
+    table += '\hline' + '\n'
+
+    table += """
+\hline
+\end{tabular*}
+\end{table}
+    """
+    return table
 
