@@ -93,7 +93,7 @@ class OutputModelDiscrete:
 
     # TODO: what about having a p_obs_i(self, i) that gives the observation probability for one state?
     # TODO: That could be sufficient, because it allows us to do efficient vector operations and is able to do state-based processing
-    
+
 
     def fit(self, observations, weights):
         """

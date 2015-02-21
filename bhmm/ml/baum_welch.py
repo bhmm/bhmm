@@ -6,40 +6,15 @@ import kernel.python as kp
 from multiprocessing import Queue, JoinableQueue, Process, cpu_count
 
 
-# class Thread(Process):
-#     def __init__(self, task_queue, result_queue):
-#         Process.__init__(self)
-#         self.task_queue = task_queue
-#         self.result_queue = result_queue
-#
-#     def run(self):
-#         proc_name = self.name
-#         while True:
-#             print "waiting for task"
-#             next_task = self.task_queue.get()
-#             print "got task"
-#             if next_task is None:
-#                 # Poison pill means shutdown
-#                 self.task_queue.task_done()
-#                 break
-#             print "got task, calling it"
-#             answer = next_task()
-#             print "called"
-#             self.task_queue.task_done()
-#             self.result_queue.put(answer)
-#
-#
-# class ForwardBackwardTask(object):
-#     def __init__(self, baum_welch, k):
-#         self.baum_welch = baum_welch
-#         self.k = k
-#
-#     def __call__(self):
-#         print "calling into function ",self.k
-#         return self.baum_welch._forward_backward(self.k)
-
-
 class BaumWelchHMM:
+    """
+    Baum-Welch maximum likelihood method of estimating a Hidden Markov Model
+
+    References
+    ----------
+    [1] L. E. Baum and J. A. Egon, "An inequality with applications to statistical estimation for probabilistic
+        functions of a Markov process and to a model for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
+    """
 
     def __init__(self, output_model, observations, initial_model,
                  kernel = kp, dtype = np.float32,
@@ -74,6 +49,24 @@ class BaumWelchHMM:
 
 
     def _forward_backward(self, itraj):
+        """
+        Estimation step: Runs the forward-back algorithm on trajectory with index itraj
+
+        Parameters
+        ----------
+        itraj : int
+            index of the observation trajectory to process
+
+        Results
+        -------
+        logprob : float
+            The probability to observe the observation sequence given the HMM parameters
+        gamma : ndarray(T,N, dtype=float)
+            state probabilities for each t
+        count_matrix : ndarray(N,N, dtype=float)
+            the Baum-Welch transition count matrix from the hidden state trajectory
+
+        """
         # get parameters
         A = self.model.Tij
         pi = self.model.Pi
@@ -81,15 +74,26 @@ class BaumWelchHMM:
         # compute output probability matrix
         pobs = self.output_model.p_obs(obs)
         # forward backward
-        weight, alpha, scaling = self.kernel.forward(A, pobs, pi, self.dtype)
+        logprob, alpha, scaling = self.kernel.forward(A, pobs, pi, self.dtype)
         beta   = self.kernel.backward(A, pobs, self.dtype)
         gamma  = self.kernel.state_probabilities(alpha, beta, self.dtype)
         # count matrix
         count_matrix = self.kernel.transition_counts(alpha, beta, A, pobs, self.dtype)
-        return itraj, weight, gamma, count_matrix
+        return logprob, gamma, count_matrix
 
 
-    def _update_multiple(self, gammas, count_matrices):
+    def _update_model(self, gammas, count_matrices):
+        """
+        Maximization step: Updates the HMM model given the hidden state assignment and count matrices
+
+        Parameters
+        ----------
+        gamma : [ ndarray(T,N, dtype=float) ]
+            list of state probabilities for each trajectory
+        count_matrix : [ ndarray(N,N, dtype=float) ]
+            list of the Baum-Welch transition count matrices for each hidden state trajectory
+
+        """
         K = len(self.observations)
         N = self.nstates
 
@@ -108,6 +112,10 @@ class BaumWelchHMM:
         # update model
         self.model.Tij = copy.deepcopy(A)
         self.model.Pi  = copy.deepcopy(pi)
+
+        # update output model
+        # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
+        self.output_model.fit(self.observations, gammas)
 
 
 
@@ -130,14 +138,11 @@ class BaumWelchHMM:
         while (not converged):
             loglik = 0.0
             for k in range(K):
-                itraj, w, gammas[k], count_matrices[k] = self._forward_backward(k)
-                loglik += np.sum(w)
+                ll, gammas[k], count_matrices[k] = self._forward_backward(k)
+                loglik += ll
 
             # update T, pi
-            self._update_multiple(gammas, count_matrices)
-
-            # update output model
-            self.output_model.fit(self.observations, gammas)
+            self._update_model(gammas, count_matrices)
 
             self.likelihoods[it] = loglik
 
@@ -155,8 +160,8 @@ class BaumWelchHMM:
     def _forward_backward_worker(self, work_queue, done_queue):
         try:
             for k in iter(work_queue.get, 'STOP'):
-                (itraj, weight, gamma, count_matrix) = self._forward_backward(k)
-                done_queue.put((itraj, weight, gamma, count_matrix))
+                (weight, gamma, count_matrix) = self._forward_backward(k)
+                done_queue.put((k, weight, gamma, count_matrix))
         except Exception, e:
             done_queue.put(e.message)
         return True
@@ -206,17 +211,13 @@ class BaumWelchHMM:
             done_queue.put('STOP')
 
             # get results
-            for (k, w, gamma, count_matrix) in iter(done_queue.get, 'STOP'):
-                loglik += np.sum(w)
+            for (k, ll, gamma, count_matrix) in iter(done_queue.get, 'STOP'):
+                loglik += ll
                 gammas[k] = gamma
                 count_matrices[k] = count_matrix
 
             # update T, pi
-            self._update_multiple(gammas, count_matrices)
-
-            # update output model
-            # TODO: need to parallelize model fitting. Otherwise we can't gain much!
-            self.output_model.fit(self.observations, gammas)
+            self._update_model(gammas, count_matrices)
 
             self.likelihoods[it] = loglik
 
