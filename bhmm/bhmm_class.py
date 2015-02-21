@@ -24,6 +24,7 @@ class BHMM(object):
 
     Initialize a new BHMM model.
 
+    >>> from bhmm import BHMM
     >>> bhmm = BHMM(data, nstates)
 
     Sample from the posterior.
@@ -234,29 +235,8 @@ class BHMM(object):
         """
         model = self.model
         nstates = model.nstates
-        for state_index in range(nstates):
-            # Extract all observations in this state.
-            collected_observations = model.collect_observations_in_state(self.observations, state_index)
-
-            # Don't update any emission probabilities if this state is empty.
-            if len(collected_observations) == 0:
-                print "Warning: state %d has no hidden samples" % state_index
-                break
-
-            # Update state emission distribution parameters.
-            state = model.states[state_index]
-            observation_model = state['model']
-            if observation_model == 'gaussian':
-                # Sample new mu.
-                state['mu'] = np.random.randn()*state['sigma']/np.sqrt(nstates) + np.mean(collected_observations)
-
-                # Sample new sigma.
-                # This scheme uses the improper Jeffreys prior on sigma^2, P(mu, sigma^2) \propto 1/sigma
-                chisquared = np.random.chisquare(nstates-1)
-                sigmahat2 = np.mean((collected_observations - state['mu'])**2)
-                state['sigma'] = np.sqrt(sigmahat2) / np.sqrt(chisquared / nstates)
-            else:
-                raise Exception('Observation model "%s" not supported.' % observation_model)
+        observations_by_state = [ model.collect_observations_in_state(self.observations, state) for state in range(nstates) ]
+        self.output_model.sample(observations_by_state)
 
     def _updateTransitionMatrix(self):
         """

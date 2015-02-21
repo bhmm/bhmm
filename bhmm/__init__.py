@@ -12,3 +12,6 @@ __version__ = version.version
 from hmm_class import HMM
 from bhmm_class import BHMM
 from mlhmm import MLHMM
+
+from output_models import OutputModel, GaussianOutputModel, DiscreteOutputModel
+
