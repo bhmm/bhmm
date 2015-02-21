@@ -10,7 +10,6 @@ closely related to Rabiners [1] paper.
 """
 import numpy as np
 
-
 def forward(A, pobs, pi, dtype=np.float32):
     """Compute P(ob|A,B,pi) and all forward coefficients. With scaling!
 

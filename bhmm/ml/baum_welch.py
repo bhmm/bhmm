@@ -168,7 +168,7 @@ class BaumWelchHMM:
                 loglik += ll
 
             self._update_model(gammas, count_matrices)
-            #print "output model at it = ",it
+            print it, "ll = ", loglik
             #print self.model.output_model
             #print "---------------------"
 
