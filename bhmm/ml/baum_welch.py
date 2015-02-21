@@ -17,16 +17,12 @@ class BaumWelchHMM:
         functions of a Markov process and to a model for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
     """
 
-    def __init__(self, output_model, observations, initial_model,
+    def __init__(self, observations, initial_model,
                  kernel = kp, dtype = np.float32,
                  accuracy=1e-3, maxit=1000):
 
         # Use user-specified initial model
         self.model = copy.deepcopy(initial_model)
-
-        # Store the output model
-        output_model.set_hmm(self.model)
-        self.output_model = output_model
 
         # Store the number of states.
         self.nstates = initial_model.nstates
@@ -73,7 +69,7 @@ class BaumWelchHMM:
         pi = self.model.Pi
         obs = self.observations[itraj]
         # compute output probability matrix
-        pobs = self.output_model.p_obs(obs)
+        pobs = self.model.output_model.p_obs(obs)
         # forward backward
         logprob, alpha, scaling = self.kernel.forward(A, pobs, pi, self.dtype)
         beta   = self.kernel.backward(A, pobs, self.dtype)
@@ -123,7 +119,7 @@ class BaumWelchHMM:
 
         # update output model
         # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
-        self.output_model.fit(self.observations, gammas)
+        self.model.output_model.fit(self.observations, gammas)
 
 
 
@@ -160,7 +156,7 @@ class BaumWelchHMM:
 
             it += 1
 
-        return self.output_model.hmm_model
+        return self.model
 
     ###################
     # MULTIPROCESSING
@@ -235,4 +231,4 @@ class BaumWelchHMM:
 
             it += 1
 
-        return self.output_model.hmm_model
+        return self.model
