@@ -8,6 +8,7 @@ import numpy as np
 from numpy.linalg import norm
 from bhmm import msm
 from bhmm import HMM
+from ml.baum_welch import BaumWelchHMM
 
 class MLHMM(object):
     """
@@ -86,6 +87,8 @@ class MLHMM(object):
 
         """
         # TODO: Perform EM procedure.
+        baumwelch = BaumWelchHMM(self.observations, self.model)
+        self.model = baumwelch.fit()
 
         return self.model
 

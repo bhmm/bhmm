@@ -59,9 +59,13 @@ def stationary_distribution(P):
     Replace this with a call to the EMMA method once we use EMMA as a dependency.
 
     """
+    if not is_connected(P):
+        raise ValueError('Cannot calculate stationary distribution. Input matrix is not connected:\n ',str(P))
     (v,w) = linalg.eig(P.T)
     mu = w[:,np.argmax(v)]
-    return mu / np.sum(mu)
+    mu0 = mu / np.sum(mu)
+    np.real(mu0)
+    return mu0
 
 
 def transition_matrix_MLE_nonreversible(C):
