@@ -6,6 +6,7 @@ Hidden Markov model
 import copy
 import numpy as np
 from numpy.linalg import norm
+from bhmm import msm
 from bhmm import HMM
 
 class MLHMM(object):
@@ -17,7 +18,7 @@ class MLHMM(object):
     Examples
     --------
 
-    >>> import testsystems
+    >>> from bhmm import testsystems
     >>> [model, O, S] = testsystems.generate_synthetic_observations()
     >>> mlhmm = MLHMM(O, model.nstates)
     >>> model = mlhmm.fit()
@@ -78,7 +79,7 @@ class MLHMM(object):
         Examples
         --------
 
-        >>> import testsystems
+        >>> from bhmm import testsystems
         >>> [model, O, S] = testsystems.generate_synthetic_observations()
         >>> mlhmm = MLHMM(O, model.nstates)
         >>> model = mlhmm.fit()
@@ -157,14 +158,15 @@ class MLHMM(object):
         for o_t in self.observations:
             collected_observations = np.append(collected_observations, o_t, axis=0)
 
+        if output_model_type != 'gaussian':
+            raise Exception("Initial model generation for output_model_type %s not implemented yet." % output_model_type)
+
         # Fit a Gaussian mixture model to obtain emission distributions and state stationary probabilities.
         from sklearn import mixture
         gmm = mixture.GMM(n_components=nstates)
         gmm.fit(collected_observations)
-        states = list()
-        for state_index in range(nstates):
-            state = { 'model' : 'gaussian', 'mu' : gmm.means_[state_index,0], 'sigma' : np.sqrt(gmm.covars_[state_index,0]) }
-            states.append(state)
+        from bhmm import GaussianOutputModel
+        output_model = GaussianOutputModel(self.nstates, means=gmm.means_[:,0], sigmas=np.sqrt(gmm.covars_[:,0]))
 
         # Extract stationary distributions.
         Pi = np.zeros([nstates], np.float64)
@@ -174,7 +176,7 @@ class MLHMM(object):
         Tij = np.tile(Pi, [nstates, 1])
 
         # Construct simple model.
-        model = HMM(nstates, Tij, states)
+        model = HMM(nstates, Tij, output_model)
 
         # Compute fractional state memberships.
         from scipy.misc import logsumexp
@@ -200,6 +202,6 @@ class MLHMM(object):
         Tij = self._transitionMatrixMLE(Nij, reversible=self.reversible)
 
         # Update model.
-        model = HMM(nstates, Tij, states, reversible=self.reversible)
+        model = HMM(nstates, Tij, output_model, reversible=self.reversible)
 
         return model

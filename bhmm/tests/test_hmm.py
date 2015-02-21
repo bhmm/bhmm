@@ -30,8 +30,9 @@ def test_two_state_model():
     # Create a simple two-state model.
     nstates = 2
     Tij = testsystems.generate_transition_matrix(reversible=True)
-    states = [ {'mu' : -1, 'sigma' : 1}, {'mu' : +1, 'sigma' : 1} ]
-    model = HMM(nstates, Tij, states)
+    from bhmm import GaussianOutputModel
+    output_model = GaussianOutputModel(nstates, means=[-1,+1], sigmas=[1,1])
+    model = HMM(nstates, Tij, output_model)
     # Compute stationary probability using ARPACK.
     from scipy.sparse.linalg import eigs
     from numpy.linalg import norm
