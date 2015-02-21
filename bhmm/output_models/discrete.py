@@ -41,6 +41,40 @@ class DiscreteOutputModel(OutputModel):
         # set output matrix
         self.B = B
 
+    def __repr__(self):
+        """
+        >>> import numpy as np
+        >>> output_model = DiscreteOutputModel(np.array([[0.5,0.5],[0.1,0.9]]))
+        >>> print repr(output_model)
+        DiscreteOutputModel(array([[ 0.5,  0.5],
+               [ 0.1,  0.9]]))
+
+        """
+
+        return "DiscreteOutputModel(%s)" % repr(self.B)
+
+    def __str__(self):
+        """
+        >>> output_model = DiscreteOutputModel(np.array([[0.5,0.5],[0.1,0.9]]))
+        >>> print str(output_model)
+        --------------------------------------------------------------------------------
+        DiscreteOutputModel
+        nstates: 2
+        nsymbols: 2
+        B[0] = [ 0.5  0.5]
+        B[1] = [ 0.1  0.9]
+        --------------------------------------------------------------------------------
+        """
+
+        output  = "--------------------------------------------------------------------------------\n"
+        output += "DiscreteOutputModel\n"
+        output += "nstates: %d\n" % self.nstates
+        output += "nsymbols: %d\n" % self.nsymbols
+        for i in range(self.nstates):
+            output += "B["+str(i)+"] = %s\n" % str(self.B[i])
+        output += "--------------------------------------------------------------------------------"
+        return output
+
     def p_o_i(self, o, i):
         """
         Returns the output probability for symbol o given hidden state i
