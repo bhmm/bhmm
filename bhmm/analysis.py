@@ -12,7 +12,6 @@ __license__ = "FreeBSD"
 __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
-def confidence_interval()
 def beta_confidence_intervals(ci_X, ntrials, ci=0.95):
     """
     Compute confidence intervals of beta distributions.
