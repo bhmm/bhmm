@@ -84,10 +84,11 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
     # get output model
     output_model = model.output_model
 
+    nsamples = o_t.shape[0] # total number of samples
+
     if s_t is None:
         # Plot all samples as black.
-        T = o_t.shape[0]
-        tvec = tau * np.array(np.arange(T), dtype=np.float32)
+        tvec = tau * np.array(np.arange(nsamples), dtype=np.float32)
         ax1.plot(tvec, o_t, 'k.', markersize=markersize)
         # Plot histogram of all data.
         ax2.hist(o_t, nbins, align='mid', orientation='horizontal', color='k', stacked=True, edgecolor=None, alpha=0.5, linewidth=0, normed=True)
@@ -100,7 +101,8 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
         # Find and plot samples in state.
         if s_t is not None:
             indices = np.where(s_t == state_index)
-            if len(indices) > 0:
+            nsamples_in_state = len(indices)
+            if nsamples_in_state > 0:
                 tvec = tau * np.array(np.squeeze(indices), dtype=np.float32)
                 line, = ax1.plot(tvec, o_t[indices], '.', markersize=markersize, color=color)
 
@@ -114,16 +116,18 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
         ax1.plot(np.array([tmin, tmax]), mu*np.ones([2]), color=color, linewidth=1, alpha=0.7)
         ax1.fill_between(np.array([tmin, tmax]), (mu-sigma)*np.ones([2]), (mu+sigma)*np.ones([2]), facecolor=color, alpha=0.3, linewidth=0)
 
-        if s_t is not None:
+        if (s_t is not None) and (nsamples_in_state > 0):
             # Plot histogram of data assigned to each state.
-            ax2.hist(o_t[indices], nbins, align='mid', orientation='horizontal', color=color, stacked=True, edgecolor=None, alpha=0.5, linewidth=0, normed=True)
+            #ax2.hist(o_t[indices], nbins, align='mid', orientation='horizontal', color=color, stacked=True, edgecolor=None, alpha=0.5, linewidth=0, normed=True)
+            histrange = (o_t[indices].min(), o_t[indices].max())
+            dx = (histrange[1]-histrange[0]) / nbins
+            weights = np.ones(o_t[indices].shape, np.float32) / nsamples / dx
+            [Ni, bins, patches] = ax2.hist(o_t[indices], nbins, align='mid', orientation='horizontal', color=color, stacked=True, edgecolor=None, alpha=0.5, linewidth=0, range=histrange, weights=weights)
 
         # Plot model emission probability distribution.
         ovec = np.linspace(omin, omax, npoints)
         pvec = model.emission_probability(state_index, ovec)
-        if s_t is None:
-            # Scale the Gaussian components since we are plotting the total histogram.
-            pvec *= model.Pi[state_index]
+        pvec *= model.Pi[state_index] # Scale the Gaussian components since we are plotting the total histogram.
         ax2.plot(pvec, ovec, color=color, linewidth=1)
 
     if title:
