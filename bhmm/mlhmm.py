@@ -4,8 +4,11 @@ Hidden Markov model
 """
 
 import copy
+import time
 import numpy as np
+
 from numpy.linalg import norm
+
 from bhmm import msm
 from bhmm import HMM
 from ml.baum_welch import BaumWelchHMM
@@ -93,22 +96,41 @@ class MLHMM(object):
         >>> model = mlhmm.fit()
 
         """
-        # DEBUG
-        print "Feeding to Baum Welch:"
-        print "observations:"
-        print self.observations
-        print "initial guess:"
-        print self.model
+        if self.verbose:
+            print "================================================================================"
+            print "Running Baum-Welch::"
+            print "  input observations:"
+            print self.observations
+            print "  initial HMM guess:"
+            print self.model
 
+        initial_time = time.time()
+
+        # Run Baum-Welch EM algorithm to fit the HMM.
         baumwelch = BaumWelchHMM(self.observations, self.model)
         self.model = baumwelch.fit()
 
-        print "maximum likelihood HMM:"
-        print str(self.model)
-        print "-----------------------"
+        final_time = time.time()
+        elapsed_time = final_time - initial_time
 
-        print "computing Viterbi path"
+        if self.verbose:
+            print "maximum likelihood HMM:"
+            print str(self.model)
+            print "Elapsed time for Baum-Welch solution: %.3f s" % elapsed_time
+            print ""
+            print "Computing Viterbi path:"
+
+        initial_time = time.time()
+
+        # Compute hidden state trajectories using the Viterbi algorithm.
         self.hidden_state_trajectories = baumwelch.viterbi_paths()
+
+        final_time = time.time()
+        elapsed_time = final_time - initial_time
+
+        if self.verbose:
+            print "Elapsed time for Viterbi path computation: %.3f s" % elapsed_time
+            print "================================================================================"
 
         return self.model
 
@@ -191,9 +213,16 @@ class MLHMM(object):
         from bhmm import GaussianOutputModel
         output_model = GaussianOutputModel(self.nstates, means=gmm.means_[:,0], sigmas=np.sqrt(gmm.covars_[:,0]))
 
+        # DEBUG
+        print "Gaussian output model:"
+        print output_model
+
         # Extract stationary distributions.
         Pi = np.zeros([nstates], np.float64)
         Pi[:] = gmm.weights_[:]
+
+        # DEBUG
+        print "GMM weights: %s" % str(gmm.weights_)
 
         # Compute transition matrix that gives specified Pi.
         Tij = np.tile(Pi, [nstates, 1])
@@ -214,12 +243,15 @@ class MLHMM(object):
             # Exponentiate and normalize
             # TODO: Account for initial distribution.
             p_ti = np.zeros([T,nstates], np.float64)
-            for t in range(T-1):
+            for t in range(T):
                 p_ti[t,:] = np.exp(log_p_ti[t,:] - logsumexp(log_p_ti[t,:]))
                 p_ti[t,:] /= p_ti[t,:].sum()
+            print p_ti
             # Accumulate fractional transition counts from this trajectory.
             for t in range(T-1):
-                Nij[:,:] = Nij[:,:] + p_ti[t,:].T * p_ti[t+1,:]
+                Nij[:,:] = Nij[:,:] + np.outer(p_ti[t,:], p_ti[t+1,:])
+            print "Nij"
+            print Nij
 
         # Compute transition matrix maximum likelihood estimate.
         Tij = self._transitionMatrixMLE(Nij, reversible=self.reversible)
