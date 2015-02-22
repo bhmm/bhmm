@@ -398,19 +398,23 @@ class GaussianOutputModel(OutputModel):
         for state_index in range(self.nstates):
             # Update state emission distribution parameters.
 
+            observations_in_state = observations[state_index]
+            # Determine number of samples in this state.
+            nsamples_in_state = len(observations_in_state)
+
             # Skip update if no observations.
-            if len(observations[state_index]) == 0:
+            if nsamples_in_state == 0:
                 print 'Warning: State %d has no obsevations.' % state_index
                 continue
 
             # Sample new mu.
-            self.means[state_index] = np.random.randn()*self.sigmas[state_index]/np.sqrt(self.nstates) + np.mean(observations[state_index])
+            self.means[state_index] = np.random.randn()*self.sigmas[state_index]/np.sqrt(nsamples_in_state) + np.mean(observations_in_state)
 
             # Sample new sigma.
             # This scheme uses the improper Jeffreys prior on sigma^2, P(mu, sigma^2) \propto 1/sigma
-            chisquared = np.random.chisquare(self.nstates-1)
-            sigmahat2 = np.mean((observations[state_index] - self.means[state_index])**2)
-            self.sigmas[state_index] = np.sqrt(sigmahat2) / np.sqrt(chisquared / self.nstates)
+            chisquared = np.random.chisquare(nsamples_in_state-1)
+            sigmahat2 = np.mean((observations_in_state - self.means[state_index])**2)
+            self.sigmas[state_index] = np.sqrt(sigmahat2) / np.sqrt(chisquared / nsamples_in_state)
 
         return
 
