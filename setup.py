@@ -114,7 +114,9 @@ def find_package_data(data_root, package_root):
 # SETUP
 ################################################################################
 
-msm_ext = distutils.extension.Extension("bhmm.msm.tmatrix_sampling", ['./bhmm/msm/tmatrix_sampling.pyx'], include_dirs=[numpy.get_include()])
+cext = cythonize(Extension('bhmm.msm.tmatrix_sampling',
+                           ['./bhmm/msm/tmatrix_sampling.pyx'],
+                           include_dirs = [numpy.get_include()]))
 
 write_version_py()
 setup(
@@ -130,7 +132,8 @@ setup(
     classifiers=CLASSIFIERS.splitlines(),
     package_dir={'bhmm': 'bhmm'},
     #packages=['bhmm', "bhmm.tests"] + ['bhmm.%s' % package for package in find_packages('bhmm')],
-    packages=['bhmm', 'bhmm.msm'] + ['bhmm.%s' % package for package in find_packages('bhmm')],
+    packages=['bhmm', 'bhmm.msm', 'bhmm.ml', 'bhmm.ml.lib', 'bhmm.ml.kernel', 'bhmm.msm', 'bhmm.output_models', 'bhmm.util'],
+    # + ['bhmm.%s' % package for package in find_packages('bhmm')],
     package_data={'bhmm': find_package_data('examples', 'bhmm')},  # NOTE: examples installs to bhmm.egg/examples/, NOT bhmm.egg/bhmm/examples/.  You need to do utils.get_data_filename("../examples/*/setup/").
     zip_safe=False,
     install_requires=[
@@ -143,8 +146,10 @@ setup(
         'nose',
         'docopt>=0.6.1',
         ],
-    ext_modules=cythonize(msm_ext),
-    #entry_points={'console_scripts': ['bhmm = bhmm.cli:main']}
+    ext_modules=[
+		 Extension('bhmm.ml.lib.c',
+			   sources=['./bhmm/ml/lib/c/extension.c', './bhmm/ml/lib/c/hmm.c'],
+			   include_dirs = [numpy.get_include()]),
+		] + cext
     )
-
 

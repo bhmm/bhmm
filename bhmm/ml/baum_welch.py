@@ -1,8 +1,10 @@
 __author__ = 'noe'
 
+import importlib
 import numpy as np
 import copy
 import kernel.python as kp
+#import kernel.c as kc
 from multiprocessing import Queue, Process, cpu_count
 import bhmm.msm.linalg
 
@@ -24,9 +26,14 @@ class BaumWelchHMM:
         functions of a Markov process and to a model for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
     """
 
+
+#                  kernel = kc, dtype = np.float64,
     def __init__(self, observations, initial_model,
                  kernel = kp, dtype = np.float32,
                  accuracy=1e-3, maxit=1000):
+
+        #importlib.import_module('bhmm.ml.kernel.c')
+        #kernel = bhmm.ml.kernel.c
 
         # Use user-specified initial model
         self.model = copy.deepcopy(initial_model)

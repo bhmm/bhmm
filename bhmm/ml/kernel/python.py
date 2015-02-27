@@ -122,55 +122,6 @@ def backward(A, pobs, dtype=np.float32):
     return beta
 
 
-def update(gamma, xi, ob, M, dtype=np.float32):
-    """ Return an updated model for given state and transition counts.
-
-    Parameters
-    ----------
-    gamma : numpy.array shape (T,N)
-            state probabilities for each t
-    xi : numpy.array shape (T,N,N)
-         transition probabilities for each t
-    ob : numpy.array shape (T)
-         observation sequence containing only symbols, i.e. ints in [0,M)
-
-    Returns
-    -------
-    A : numpy.array (N,N)
-        new transition matrix
-    B : numpy.array (N,M)
-        new symbol probabilities
-    pi : numpy.array (N)
-         new initial distribution
-    dtype : { nupmy.float64, numpy.float32 }, optional
-
-    Notes
-    -----
-    This function is part of the Baum-Welch algorithm for a single observation.
-
-    See Also
-    --------
-    state_probabilities : to calculate `gamma`
-    transition_probabilities : to calculate `xi`
-
-    """
-    T,N = len(ob), len(gamma[0])
-    # starting distribution
-    pi = gamma[0,:]
-    # all but the last time step
-    gamma_sum = np.sum(gamma, axis=0) - gamma[T-1,:]
-    # new transition matrix
-    A = np.sum(xi, axis=0) / gamma_sum
-    # add the last time step
-    gamma_sum += gamma[T-1,:]
-    # output probabilities
-    B  = np.zeros((N,M), dtype=dtype)
-    for k in range(M):
-        times = np.where(ob == k)[0]
-        B[:,k] = np.sum(gamma[times,:], axis=0) / gamma_sum
-    return (A, B, pi)
-
-
 def state_probabilities(alpha, beta, dtype=np.float32):
     """ Calculate the (T,N)-probabilty matrix for being in state i at time t.
 
@@ -197,13 +148,15 @@ def state_probabilities(alpha, beta, dtype=np.float32):
     forward, forward_no_scaling : to calculate `alpha`
     backward, backward_no_scaling : to calculate `beta`
     """
-    T, N = len(alpha), len(alpha[0])
-    gamma = np.zeros((T,N), dtype=dtype)
-    for t in range(T):
-        # gamma_i(t) = alpha_i(t) * beta_i(t)
-        gamma[t,:] = alpha[t,:] * beta[t,:]
-        # normalize
-        gamma[t,:] /= np.sum(gamma[t,:])
+    gamma = alpha * beta
+    gamma /= np.sum(gamma, axis=1)[:,None]
+    # T, N = len(alpha), len(alpha[0])
+    # gamma = np.zeros((T,N), dtype=dtype)
+    # for t in range(T):
+    #     # gamma_i(t) = alpha_i(t) * beta_i(t)
+    #     gamma[t,:] = alpha[t,:] * beta[t,:]
+    #     # normalize
+    #     gamma[t,:] /= np.sum(gamma[t,:])
     return gamma
 
 
@@ -235,81 +188,81 @@ def state_counts(gamma, T, dtype=np.float32):
     return np.sum(gamma[0:T], axis=0)
 
 
-def symbol_counts(gamma, ob, M, dtype=np.float32):
-    """ Sum the observed probabilities to see symbol k in state i.
+# def symbol_counts(gamma, ob, M, dtype=np.float32):
+#     """ Sum the observed probabilities to see symbol k in state i.
+#
+#     Parameters
+#     ----------
+#     gamma : numpy.array shape (T,N)
+#             gamma[t,i] is the probabilty at time t to be in state i !
+#     ob : numpy.array shape (T)
+#     M : integer. number of possible observationsymbols
+#     dtype : item datatype, optional
+#
+#     Returns
+#     -------
+#     counts : numpy.array shape (N,M)
+#
+#     Notes
+#     -----
+#     This function is independ of alpha and beta being scaled, as long as their
+#     scaling is independ in i.
+#
+#     See Also
+#     --------
+#     forward, forward_no_scaling : to calculate `alpha`
+#     backward, backward_no_scaling : to calculate `beta`
+#     """
+#     T, N = len(gamma), len(gamma[0])
+#     counts = np.zeros((N,M), dtype=type)
+#     for t in range(T):
+#         for i in range(N):
+#             counts[i,ob[t]] += gamma[t,i]
+#     return counts
 
-    Parameters
-    ----------
-    gamma : numpy.array shape (T,N)
-            gamma[t,i] is the probabilty at time t to be in state i !
-    ob : numpy.array shape (T)
-    M : integer. number of possible observationsymbols
-    dtype : item datatype, optional
 
-    Returns
-    -------
-    counts : numpy.array shape (N,M)
-
-    Notes
-    -----
-    This function is independ of alpha and beta being scaled, as long as their
-    scaling is independ in i.
-
-    See Also
-    --------
-    forward, forward_no_scaling : to calculate `alpha`
-    backward, backward_no_scaling : to calculate `beta`
-    """
-    T, N = len(gamma), len(gamma[0])
-    counts = np.zeros((N,M), dtype=type)
-    for t in range(T):
-        for i in range(N):
-            counts[i,ob[t]] += gamma[t,i]
-    return counts
-
-
-def transition_probabilities(alpha, beta, A, pobs, dtype=np.float32):
-    """ Compute for each t the probability to transition from state i to state j.
-
-    Parameters
-    ----------
-    alpha : numpy.array shape (T,N)
-            forward coefficients
-    beta : numpy.array shape (T,N)
-           backward coefficients
-    A : numpy.array shape (N,N)
-        transition matrix of the model
-    pobs : numpy.array of floating numbers and shape (T,N)
-        symbol probability matrix for each time and hidden state
-    ob : numpy.array shape (T)
-         observation sequence containing only symbols, i.e. ints in [0,M)
-    dtype : item datatype [optional]
-
-    Returns
-    -------
-    xi : numpy.array shape (T-1, N, N)
-         xi[t, i, j] is the probability to transition from i to j at time t.
-
-    Notes
-    -----
-    It does not matter if alpha or beta scaled or not, as long as there scaling
-    does not depend on the second variable.
-
-    See Also
-    --------
-    state_counts : calculate the probability to be in state i at time t
-    forward : calculate forward coefficients `alpha`
-    backward : calculate backward coefficients `beta`
-
-    """
-    T, N = pobs.shape[0], len(A)
-    xi = np.zeros((T-1,N,N), dtype=dtype)
-    for t in range(T-1):
-        # xi_i,j(t) = alpha_i(t) * A_i,j * B_j,ob(t+1) * beta_j(t+1)
-        xi[t,:,:] = np.dot(alpha[t,:][:,None] * A, np.diag(pobs[t+1,:] * beta[t+1,:]))
-        # normalize to 1 for each time step
-        xi[t,:,:] /= np.sum(xi[t,:,:])
-    return xi
+# def transition_probabilities(alpha, beta, A, pobs, dtype=np.float32):
+#     """ Compute for each t the probability to transition from state i to state j.
+#
+#     Parameters
+#     ----------
+#     alpha : numpy.array shape (T,N)
+#             forward coefficients
+#     beta : numpy.array shape (T,N)
+#            backward coefficients
+#     A : numpy.array shape (N,N)
+#         transition matrix of the model
+#     pobs : numpy.array of floating numbers and shape (T,N)
+#         symbol probability matrix for each time and hidden state
+#     ob : numpy.array shape (T)
+#          observation sequence containing only symbols, i.e. ints in [0,M)
+#     dtype : item datatype [optional]
+#
+#     Returns
+#     -------
+#     xi : numpy.array shape (T-1, N, N)
+#          xi[t, i, j] is the probability to transition from i to j at time t.
+#
+#     Notes
+#     -----
+#     It does not matter if alpha or beta scaled or not, as long as there scaling
+#     does not depend on the second variable.
+#
+#     See Also
+#     --------
+#     state_counts : calculate the probability to be in state i at time t
+#     forward : calculate forward coefficients `alpha`
+#     backward : calculate backward coefficients `beta`
+#
+#     """
+#     T, N = pobs.shape[0], len(A)
+#     xi = np.zeros((T-1,N,N), dtype=dtype)
+#     for t in range(T-1):
+#         # xi_i,j(t) = alpha_i(t) * A_i,j * B_j,ob(t+1) * beta_j(t+1)
+#         xi[t,:,:] = np.dot(alpha[t,:][:,None] * A, np.diag(pobs[t+1,:] * beta[t+1,:]))
+#         # normalize to 1 for each time step
+#         xi[t,:,:] /= np.sum(xi[t,:,:])
+#     return xi
 
 
 def transition_counts(alpha, beta, A, pobs, dtype=np.float32):
@@ -346,8 +299,13 @@ def transition_counts(alpha, beta, A, pobs, dtype=np.float32):
     forward : calculate forward coefficients `alpha`
     backward : calculate backward coefficients `beta`
     """
-    #TODO: this function is not needed. Counting should be done in transition probabilities.
-    xi = transition_probabilities(alpha, beta, A, pobs, dtype=dtype)
+    T, N = pobs.shape[0], len(A)
+    xi = np.zeros((T-1,N,N), dtype=dtype)
+    for t in range(T-1):
+        # xi_i,j(t) = alpha_i(t) * A_i,j * B_j,ob(t+1) * beta_j(t+1)
+        xi[t,:,:] = np.dot(alpha[t,:][:,None] * A, np.diag(pobs[t+1,:] * beta[t+1,:]))
+        # normalize to 1 for each time step
+        xi[t,:,:] /= np.sum(xi[t,:,:])
     return np.sum(xi, axis=0)
 
 
