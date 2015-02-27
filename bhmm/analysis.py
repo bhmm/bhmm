@@ -12,7 +12,6 @@ __license__ = "FreeBSD"
 __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
-#def confidence_interval()
 def beta_confidence_intervals(ci_X, ntrials, ci=0.95):
     """
     Compute confidence intervals of beta distributions.
@@ -103,8 +102,7 @@ def empirical_confidence_interval(sample, interval=0.95):
 
     return [low, high]
 
-def generate_latex_table(models, sampling_time, sampling_time='1 ms',
-                         obs_name='force', obs_units='pN'):
+def generate_latex_table(models, sampling_time='1 ms', obs_name='force', obs_units='pN'):
     """
     Generate a LaTeX column-wide table showing various computed properties and uncertainties.
 

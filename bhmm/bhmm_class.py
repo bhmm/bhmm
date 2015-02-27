@@ -5,6 +5,7 @@ Bayesian hidden Markov models.
 
 import numpy as np
 import copy
+import time
 from scipy.misc import logsumexp
 
 from bhmm.msm.transition_matrix_sampling_rev import TransitionMatrixSamplerRev
@@ -153,10 +154,16 @@ class BHMM(object):
         """Update the current model using one round of Gibbs sampling.
 
         """
+        initial_time = time.time()
+
         self._updateHiddenStateTrajectories()
         self._updateEmissionProbabilities()
         self._updateTransitionMatrix()
 
+        final_time = time.time()
+        elapsed_time = final_time - initial_time
+        if self.verbose:
+            print "BHMM update iteration took %.3f s" % elapsed_time
 
     def _updateHiddenStateTrajectories(self):
         """Sample a new set of state trajectories from the conditional distribution P(S | T, E, O)
@@ -255,10 +262,6 @@ class BHMM(object):
 
         """
         C = self.model.count_matrix()
-
-        if self.verbose:
-            print "Count matrix:"
-            print C
 
         if self.reversible == True:
             sampler = TransitionMatrixSamplerRev(C)

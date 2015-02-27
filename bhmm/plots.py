@@ -15,7 +15,7 @@ __license__ = "FreeBSD"
 __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
-def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=None, title=None, figsize=(7.5,1.5), markersize=3, pdf_filename=None):
+def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=None, title=None, figsize=(7.5,1.5), markersize=3, pdf_filename=None, npoints = 100, nbins=40):
     """
     Plot hidden state assignments and emission probabilities.
 
@@ -24,7 +24,7 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
     model : bhmm.HMM
         An HMM model with hidden state assignments to be plotted.
     s_t : numpy.array of shape (T) of int type
-        The state trajectory to be plotted.
+        The state assignments to be used to color the observations during plotting, or None if the observations should be colored black.
     o_t : numpy.array of shape (T) of float type
         The observation trajectory to be plotted.
     tau : float, optional, default=1.0
@@ -37,6 +37,10 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
         Title for the plot, if desired.
     pdf_filename : str, optional, default=None
         If specified, the plot will be written to a PDF file.
+    npoints : int, optional, default=100
+        Number of points for plotting output probability distributions.
+    nbins : int, optional, default=40
+        Number of bins for empirical histograms for each state.
 
     Example
     -------
@@ -80,17 +84,28 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
     # get output model
     output_model = model.output_model
 
+    nsamples = o_t.shape[0] # total number of samples
+
+    if s_t is None:
+        # Plot all samples as black.
+        tvec = tau * np.array(np.arange(nsamples), dtype=np.float32)
+        ax1.plot(tvec, o_t, 'k.', markersize=markersize)
+        # Plot histogram of all data.
+        ax2.hist(o_t, nbins, align='mid', orientation='horizontal', color='k', stacked=True, edgecolor=None, alpha=0.5, linewidth=0, normed=True)
+
     # Plot.
-    colors = list()
-    npoints=100 # number of points per emission plot
-    nbins = 40 # number of bins for histograms
     for state_index in range(model.nstates):
+        # Get color for this state.
+        color = next(ax1._get_lines.color_cycle)
+
         # Find and plot samples in state.
-        indices = np.where(s_t == state_index)
-        tvec = tau * np.array(np.squeeze(indices), dtype=np.float32)
-        line, = ax1.plot(tvec, o_t[indices], '.', markersize=markersize)
-        color = line.get_color() # extract line color for additional plots
-        colors.append(color)
+        if s_t is not None:
+            indices = np.where(s_t == state_index)
+            nsamples_in_state = len(indices)
+            if nsamples_in_state > 0:
+                tvec = tau * np.array(np.squeeze(indices), dtype=np.float32)
+                line, = ax1.plot(tvec, o_t[indices], '.', markersize=markersize, color=color)
+
         # Plot shading at one standard deviation width.
         if type(output_model) is output_models.gaussian.GaussianOutputModel:
             mu = output_model.means[state_index]
@@ -100,10 +115,19 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
             raise Exception('Not supported for non-gaussian output models.')
         ax1.plot(np.array([tmin, tmax]), mu*np.ones([2]), color=color, linewidth=1, alpha=0.7)
         ax1.fill_between(np.array([tmin, tmax]), (mu-sigma)*np.ones([2]), (mu+sigma)*np.ones([2]), facecolor=color, alpha=0.3, linewidth=0)
-        # Plot histogram.
-        ax2.hist(o_t[indices], nbins, align='mid', orientation='horizontal', color=color, stacked=True, edgecolor=None, alpha=0.5, linewidth=0, normed=True)
+
+        if (s_t is not None) and (nsamples_in_state > 0):
+            # Plot histogram of data assigned to each state.
+            #ax2.hist(o_t[indices], nbins, align='mid', orientation='horizontal', color=color, stacked=True, edgecolor=None, alpha=0.5, linewidth=0, normed=True)
+            histrange = (o_t[indices].min(), o_t[indices].max())
+            dx = (histrange[1]-histrange[0]) / nbins
+            weights = np.ones(o_t[indices].shape, np.float32) / nsamples / dx
+            [Ni, bins, patches] = ax2.hist(o_t[indices], nbins, align='mid', orientation='horizontal', color=color, stacked=True, edgecolor=None, alpha=0.5, linewidth=0, range=histrange, weights=weights)
+
+        # Plot model emission probability distribution.
         ovec = np.linspace(omin, omax, npoints)
         pvec = model.emission_probability(state_index, ovec)
+        pvec *= model.Pi[state_index] # Scale the Gaussian components since we are plotting the total histogram.
         ax2.plot(pvec, ovec, color=color, linewidth=1)
 
     if title:
@@ -133,6 +157,8 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
     return
 
 if __name__ == '__main__':
+    # DEBUG
+
     # Create plots.
     from bhmm import testsystems
     [model, O, S, bhmm] = testsystems.generate_random_bhmm(nstates=3, ntrajectories=1, length=10000)
