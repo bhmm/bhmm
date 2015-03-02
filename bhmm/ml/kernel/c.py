@@ -2,13 +2,13 @@ import bhmm.ml.lib.c as ext
 import numpy as np
 
 def forward(A, pobs, pi, dtype=np.float32):
-    print "Inspecting ext module:"
-    print dir(ext)
-    print "-------"
+    print "dtype = ",dtype
     if dtype == np.float32:
         return ext.forward32(A, pobs, pi)
     if dtype == np.float64:
-        return ext.forward(A, pobs, pi)
+        print "AA"
+        return ext.test()
+        #return ext.forward(A, pobs, pi)
     else:
         raise ValueError
 

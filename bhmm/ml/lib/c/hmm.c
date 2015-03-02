@@ -22,6 +22,8 @@ double forward(
     int i, j, t;
     double sum, logprob;
 
+    printf('F1');
+
     // first alpha and scaling factors
     scaling[0] = 0.0;
     for (i = 0; i < N; i++) {
@@ -29,13 +31,18 @@ double forward(
         scaling[0] += alpha[i];
     }
 
+    printf('F2');
+
     // scale first alpha
     if (scaling[0] != 0)
         for (i = 0; i < N; i++)
             alpha[i] /= scaling[0];
 
+    printf('F3');
+
     // iterate trajectory
     for (t = 0; t < T-1; t++) {
+        printf(t);
         scaling[t+1] = 0.0;
         // compute new alpha and scaling
         for (j = 0; j < N; j++) {
@@ -159,6 +166,76 @@ void compute_transition_counts(
                 transition_counts[i*N+j] += tmp[i*N+j] / sum;
     }
     free(tmp);
+}
+
+
+int argmax(double* v, int N)
+{
+    int i;
+    double a = 0;
+    double m = v[0];
+    for (i = 1; i < N; i++)
+        if (v[i] < m){
+            a = i;
+            m = v[i];
+        }
+    return a;
+}
+
+
+void compute_viterbi(
+        int *path,
+        const double *A,
+        const double *pobs,
+        const double *pi,
+        int N, int T)
+{
+    int i, j, t, maxj;
+    double sum, maxprod, p;
+
+    // allocate v
+    double* v = (double*) malloc(N);
+    double* vnext = (double*) malloc(N);
+    double* h = (double*) malloc(N);
+    double* vh;
+
+    // allocate ptr
+    int* ptr = (int*) malloc(T*N);
+
+    // initialization of v
+    sum = 0.0;
+    for (i = 0; i < N; i++)
+        v[i] = pobs[i] * pi[i];
+        sum += v[i];
+    // normalize
+    for (i = 0; i < N; i++)
+        v[i] /= sum;
+
+    // iteration of v
+    for (t = 1; t < T; t++){
+        sum = 0.0;
+        for (i = 0; i < N; i++){
+            for (j = 0; j < N; j++)
+                h[j] = A[j*N+i] * v[j];
+            ptr[t*N + i] = maxj;
+            maxj = argmax(h, N);
+            vnext[i] = v[maxj];
+            sum += vnext[i];
+            }
+        // normalize
+        for (i = 0; i < N; i++)
+            vnext[i] /= sum;
+        // update v
+        vh = v;
+        v = vnext;
+        vnext = vh;
+    }
+
+    // path reconstruction
+    path[T-1] = argmax(v,N);
+    for (t = T-2; t >= 0; t--){
+        path[t] = ptr[(t+1)*N+path[t+1]];
+    }
 }
 
 /*

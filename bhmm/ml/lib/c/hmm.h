@@ -35,6 +35,13 @@ void compute_transition_counts(
         const double *beta,
         int N, int T);
 
+void compute_viterbi(
+        int *path,
+        const double *A,
+        const double *pobs,
+        const double *pi,
+        int N, int T);
+
 /*void computeGamma(
 		double *gamma,
 		const double *alpha,

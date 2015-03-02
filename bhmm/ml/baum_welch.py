@@ -3,8 +3,8 @@ __author__ = 'noe'
 import importlib
 import numpy as np
 import copy
-import kernel.python as kp
-#import kernel.c as kc
+#import kernel.python as kp
+import kernel.c as kc
 from multiprocessing import Queue, Process, cpu_count
 import bhmm.msm.linalg
 
@@ -27,13 +27,10 @@ class BaumWelchHMM:
     """
 
 
-#                  kernel = kc, dtype = np.float64,
+#                  kernel = kp, dtype = np.float32,
     def __init__(self, observations, initial_model,
-                 kernel = kp, dtype = np.float32,
+                 kernel = kc, dtype = np.float64,
                  accuracy=1e-3, maxit=1000):
-
-        #importlib.import_module('bhmm.ml.kernel.c')
-        #kernel = bhmm.ml.kernel.c
 
         # Use user-specified initial model
         self.model = copy.deepcopy(initial_model)
@@ -83,13 +80,18 @@ class BaumWelchHMM:
         pi = self.model.Pi
         obs = self.observations[itraj]
         # compute output probability matrix
-        pobs = self.model.output_model.p_obs(obs)
+        pobs = self.model.output_model.p_obs(obs, dtype=self.dtype)
         # forward backward
+        print "A"
         logprob, alpha, scaling = self.kernel.forward(A, pobs, pi, self.dtype)
+        print "B"
         beta   = self.kernel.backward(A, pobs, self.dtype)
+        print "C"
         gamma  = self.kernel.state_probabilities(alpha, beta, self.dtype)
+        print "D"
         # count matrix
         count_matrix = self.kernel.transition_counts(alpha, beta, A, pobs, self.dtype)
+        print "E"
         return logprob, gamma, count_matrix
 
 

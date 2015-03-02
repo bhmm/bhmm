@@ -3,6 +3,15 @@
 
 #include "hmm.h"
 
+static char test_doc[] = " ";
+
+static PyObject *
+py_test(PyObject *self)
+{
+    printf('test\n');
+    printf('\n');
+}
+
 static char forward_doc[]
 =
 "Compute P(ob|A,B,pi) and all forward coefficients and scaling coefficients.\n" \
@@ -35,6 +44,7 @@ static char forward_doc[]
 static PyObject *
 py_forward(PyObject *self, PyObject *args)
 {
+    printf('E0');
     PyArrayObject *pA, *pobs, *pPi;
     if (!PyArg_ParseTuple(args, "O!O!O!O!",
             &PyArray_Type, &pA,
@@ -42,21 +52,26 @@ py_forward(PyObject *self, PyObject *args)
             &PyArray_Type, &pPi)) {
         return NULL;
     }
+    printf('E1');
     int T = PyArray_DIM(pobs, 0);
     int N = PyArray_DIM(pA, 0);
+    printf('E2');
     const double *A    = (double*)PyArray_DATA(pA);
     const double *obs = (double*)PyArray_DATA(pobs);
     const double *pi   = (double*)PyArray_DATA(pPi);
+    printf('E3');
 
     npy_intp alpha_dims[2] = {T, N};
     npy_intp scale_dims[1] = {T};
     PyObject *pAlpha = PyArray_ZEROS(2, alpha_dims, NPY_FLOAT64, 0);
     PyObject *pScale = PyArray_ZEROS(1, scale_dims, NPY_FLOAT64, 0);
-    
+    printf('E4');
+
     double *alpha = (double*) PyArray_DATA(pAlpha);
     double *scale = (double*) PyArray_DATA(pScale);
     double logprob = forward(alpha, scale, A, obs, pi, N, T);
-    
+    printf('E5');
+
     PyObject *tuple = Py_BuildValue("(d,O,O)", logprob, pAlpha, pScale);
     Py_DECREF(pAlpha);
     Py_DECREF(pScale);
@@ -383,6 +398,7 @@ py_transition_probabilities_32(PyObject *self, PyObject *args)
  * structure to describe our methods to python.
  */
 static PyMethodDef c_methods[] = {
+        {"test", py_test, METH_NOARGS, test_doc},
         {"forward", py_forward, METH_VARARGS, forward_doc},
         //{"forward32", py_forward32, METH_VARARGS, forward_doc},
         {"backward", py_backward, METH_VARARGS, backward_doc},
@@ -403,7 +419,6 @@ static PyMethodDef c_methods[] = {
  * This is the intializer for our functions. Technical stuff
  */
 void initc(void) {
-    printf("INITIALIZE!!!\n\n\n");
     Py_InitModule3("c", c_methods,
                    "HMM C extension");
     //                   printf("INITIALIZE!!!\n\n\n");
