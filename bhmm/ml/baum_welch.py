@@ -82,16 +82,12 @@ class BaumWelchHMM:
         # compute output probability matrix
         pobs = self.model.output_model.p_obs(obs, dtype=self.dtype)
         # forward backward
-        print "A"
-        logprob, alpha, scaling = self.kernel.forward(A, pobs, pi, self.dtype)
-        print "B"
-        beta   = self.kernel.backward(A, pobs, self.dtype)
-        print "C"
-        gamma  = self.kernel.state_probabilities(alpha, beta, self.dtype)
-        print "D"
+        logprob, alpha, scaling = self.kernel.forward(A, pobs, pi, dtype=self.dtype)
+        beta   = self.kernel.backward(A, pobs, dtype=self.dtype)
+        gamma  = self.kernel.state_probabilities(alpha, beta, dtype=self.dtype)
         # count matrix
-        count_matrix = self.kernel.transition_counts(alpha, beta, A, pobs, self.dtype)
-        print "E"
+        count_matrix = self.kernel.transition_counts(alpha, beta, A, pobs, dtype=self.dtype)
+        # return results
         return logprob, gamma, count_matrix
 
 
@@ -133,6 +129,9 @@ class BaumWelchHMM:
         self.model.Tij = copy.deepcopy(T)
         self.model.Pi  = copy.deepcopy(pi)
 
+        print "T: ",T
+        print "pi: ",pi
+
         # update output model
         # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
         self.model.output_model.fit(self.observations, gammas)
@@ -155,7 +154,7 @@ class BaumWelchHMM:
             # compute output probability matrix
             pobs = self.model.output_model.p_obs(obs)
             # hidden path
-            hidden[itraj] = self.kernel.viterbi(A, pobs, pi)
+            hidden[itraj] = self.kernel.viterbi(A, pobs, pi, dtype = self.dtype)
 
         # done
         return hidden

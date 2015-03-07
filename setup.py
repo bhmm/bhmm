@@ -6,6 +6,7 @@ from __future__ import print_function
 import os
 import sys
 import distutils.extension
+
 from setuptools import setup, Extension, find_packages
 import numpy
 import glob
@@ -114,9 +115,14 @@ def find_package_data(data_root, package_root):
 # SETUP
 ################################################################################
 
-cext = cythonize(Extension('bhmm.msm.tmatrix_sampling',
-                           ['./bhmm/msm/tmatrix_sampling.pyx'],
-                           include_dirs = [numpy.get_include()]))
+#cext1 = cythonize(Extension('bhmm.msm.tmatrix_sampling',
+#                            sources = ['./bhmm/msm/tmatrix_sampling.pyx'],
+#                            include_dirs = [numpy.get_include()]))
+extensions = [Extension('bhmm.ml.lib.c.hmm',
+                        sources = ['./bhmm/ml/lib/c/hmm.pyx',
+                                   './bhmm/ml/lib/c/_hmm.c'],
+                        include_dirs = ['/bhmm/ml/lib/c/',numpy.get_include()])]
+#cext2 = cythonize()
 
 write_version_py()
 setup(
@@ -146,10 +152,11 @@ setup(
         'nose',
         'docopt>=0.6.1',
         ],
-    ext_modules=[
-		 Extension('bhmm.ml.lib.c',
-			   sources=['./bhmm/ml/lib/c/extension.c', './bhmm/ml/lib/c/hmm.c'],
-			   include_dirs = [numpy.get_include()]),
-		] + cext
+    ext_modules = cythonize(extensions),
+    #ext_modules=[cext2]#cext1,
+#		 Extension('bhmm.ml.lib.c',
+#			   sources=['./bhmm/ml/lib/c/extension.c', './bhmm/ml/lib/c/hmm.c'],
+#			   include_dirs = [numpy.get_include()]),
+#		] + cext
     )
 

@@ -111,6 +111,7 @@ def backward(A, pobs, dtype=np.float32):
     for t in range(T-2, -1, -1):
         # beta_i(t) = sum_j A_i,j * beta_j(t+1) * B_j,ob(t+1)
         beta[t,:] = np.dot(A, beta[t+1,:] * pobs[t+1,:])
+        print(" pb",t," : ",beta[t,:])
         #if pobs[t+1,0] == 0:
         #    print "found 0s!"
         #    print pobs[t:,:]
@@ -309,7 +310,7 @@ def transition_counts(alpha, beta, A, pobs, dtype=np.float32):
     return np.sum(xi, axis=0)
 
 
-def viterbi(A, pobs, pi):
+def viterbi(A, pobs, pi, dtype=np.float32):
     """ Generate an observation sequence of length T from the model A, B, pi.
 
     Parameters

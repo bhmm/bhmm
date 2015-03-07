@@ -1,7 +1,9 @@
 #ifndef HMM_H_
 #define HMM_H_
 
-double forward(
+double test();
+
+double _forward(
         double *alpha,
         double *scaling,
         const double *A,
@@ -9,25 +11,25 @@ double forward(
         const double *pi,
         int N, int T);
 
-void backward(
+void _backward(
         double *beta,
         double *scaling,
         const double *A,
         const double *pobs,
         int N, int T);
 
-void computeGamma(
+void _computeGamma(
         double *gamma,
         const double *alpha,
         const double *beta,
         int T, int N);
 
-void compute_state_counts(
+void _compute_state_counts(
         double *state_counts,
         const double *gamma,
         int T, int N);
 
-void compute_transition_counts(
+void _compute_transition_counts(
         double *transition_counts,
         const double *A,
         const double *pobs,
@@ -35,7 +37,7 @@ void compute_transition_counts(
         const double *beta,
         int N, int T);
 
-void compute_viterbi(
+void _compute_viterbi(
         int *path,
         const double *A,
         const double *pobs,
