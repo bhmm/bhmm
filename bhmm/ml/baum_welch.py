@@ -45,7 +45,7 @@ class BaumWelchHMM:
         self.ntrajectories = len(self.observations)
 
         # Kernel for computing things
-        self.kernel = kernel
+        hidden.set_implementation(kernel)
 
         # dtype
         self.dtype = dtype
@@ -86,8 +86,6 @@ class BaumWelchHMM:
         pi = self.model.Pi
         obs = self.observations[itraj]
         T = len(obs)
-        # set kernel
-        hidden.set_implementation(self.kernel)
         # compute output probability matrix
         pobs = self.model.output_model.p_obs(obs, dtype=self.dtype)
         # forward variables
@@ -157,25 +155,6 @@ class BaumWelchHMM:
         K = len(self.observations)
         A = self.model.Tij
         pi = self.model.Pi
-
-        # save final pobs
-        #pobs = self.model.output_model.p_obs(self.observations[0], dtype=self.dtype)
-        #np.savetxt('/Users/noe/data/papers/ChoderaEtAl_BHMM/bhmm/examples/rnase-h-d10a/tmp.dat',pobs)
-
-        # # set kernel
-        # hidden.set_implementation('python')
-        #
-        # # compute viterbi path for each trajectory
-        # paths = np.empty((K), dtype=object)
-        # for itraj in range(K):
-        #     obs = self.observations[itraj]
-        #     # compute output probability matrix
-        #     pobs = self.model.output_model.p_obs(obs)
-        #     # hidden path
-        #     paths[itraj] = hidden.viterbi(A, pobs, pi, dtype = self.dtype)
-
-        # set kernel
-        hidden.set_implementation('c')
 
         # compute viterbi path for each trajectory
         paths = np.empty((K), dtype=object)
