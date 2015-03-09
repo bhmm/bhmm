@@ -1,11 +1,8 @@
 #ifndef HMM_H_
 #define HMM_H_
 
-double test();
-
 double _forward(
         double *alpha,
-        double *scaling,
         const double *A,
         const double *pobs,
         const double *pi,
@@ -13,7 +10,6 @@ double _forward(
 
 void _backward(
         double *beta,
-        double *scaling,
         const double *A,
         const double *pobs,
         int N, int T);

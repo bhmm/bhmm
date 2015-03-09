@@ -118,10 +118,10 @@ def find_package_data(data_root, package_root):
 #cext1 = cythonize(Extension('bhmm.msm.tmatrix_sampling',
 #                            sources = ['./bhmm/msm/tmatrix_sampling.pyx'],
 #                            include_dirs = [numpy.get_include()]))
-extensions = [Extension('bhmm.ml.lib.c.hmm',
-                        sources = ['./bhmm/ml/lib/c/hmm.pyx',
-                                   './bhmm/ml/lib/c/_hmm.c'],
-                        include_dirs = ['/bhmm/ml/lib/c/',numpy.get_include()])]
+extensions = [Extension('bhmm.hidden.impl_c.hidden',
+                        sources = ['./bhmm/hidden/impl_c/hidden.pyx',
+                                   './bhmm/hidden/impl_c/_hidden.c'],
+                        include_dirs = ['/bhmm/hidden/impl_c/',numpy.get_include()])]
 #cext2 = cythonize()
 
 write_version_py()
@@ -138,7 +138,7 @@ setup(
     classifiers=CLASSIFIERS.splitlines(),
     package_dir={'bhmm': 'bhmm'},
     #packages=['bhmm', "bhmm.tests"] + ['bhmm.%s' % package for package in find_packages('bhmm')],
-    packages=['bhmm', 'bhmm.msm', 'bhmm.ml', 'bhmm.ml.lib', 'bhmm.ml.kernel', 'bhmm.msm', 'bhmm.output_models', 'bhmm.util'],
+    packages=['bhmm', 'bhmm.msm', 'bhmm.hidden', 'bhmm.ml', 'bhmm.ml.lib', 'bhmm.ml.kernel', 'bhmm.msm', 'bhmm.output_models', 'bhmm.util'],
     # + ['bhmm.%s' % package for package in find_packages('bhmm')],
     package_data={'bhmm': find_package_data('examples', 'bhmm')},  # NOTE: examples installs to bhmm.egg/examples/, NOT bhmm.egg/bhmm/examples/.  You need to do utils.get_data_filename("../examples/*/setup/").
     zip_safe=False,

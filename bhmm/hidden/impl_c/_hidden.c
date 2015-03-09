@@ -1,4 +1,4 @@
-#include "_hmm.h"
+#include "_hidden.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -11,86 +11,85 @@
 #define DIMM3(arr, t, i, j) arr[(t)*N*M + (i)*M + j]
 #endif
 
-double _test()
-{
-    printf("TEST FUNCTION\n");
-}
 
 double _forward(
         double *alpha,
-        double *scaling,
         const double *A,
         const double *pobs,
         const double *pi,
         int N, int T)
 {
     int i, j, t;
-    double sum, logprob;
+    double sum, logprob, scaling;
 
     // first alpha and scaling factors
-    scaling[0] = 0.0;
+    scaling = 0.0;
     for (i = 0; i < N; i++) {
         alpha[i]  = pi[i] * pobs[i];
-        scaling[0] += alpha[i];
+        scaling += alpha[i];
     }
 
+    // initialize likelihood
+    logprob = log(scaling);
+
     // scale first alpha
-    if (scaling[0] != 0)
+    if (scaling != 0)
         for (i = 0; i < N; i++)
-            alpha[i] /= scaling[0];
+            alpha[i] /= scaling;
 
     // iterate trajectory
-    for (t = 0; t < T-1; t++) {
-        scaling[t+1] = 0.0;
+    for (t = 0; t < T-1; t++)
+    {
+        scaling = 0.0;
         // compute new alpha and scaling
-        for (j = 0; j < N; j++) {
+        for (j = 0; j < N; j++)
+        {
             sum = 0.0;
-            for (i = 0; i < N; i++) {
+            for (i = 0; i < N; i++)
+            {
                 sum += alpha[t*N+i]*A[i*N+j];
             }
             alpha[(t+1)*N+j] = sum * pobs[(t+1)*N+j];
-            scaling[t+1] += alpha[(t+1)*N+j];
+            scaling += alpha[(t+1)*N+j];
         }
         // scale this row
-        if (scaling[t+1] != 0)
+        if (scaling != 0)
             for (j = 0; j < N; j++)
-                alpha[(t+1)*N+j] /= scaling[t+1];
+                alpha[(t+1)*N+j] /= scaling;
+
+        // update likelihood
+        logprob += log(scaling);
     }
 
-    // calculate likelihood
-    logprob = 0.0;
-    for (t = 0; t < T; t++)
-        logprob += log(scaling[t]);
     return logprob;
 }
 
 
 void _backward(
         double *beta,
-        double *scaling,
         const double *A,
         const double *pobs,
         int N, int T)
 {
     int i, j, t;
-    double sum;
+    double sum, scaling;
 
     // first beta and scaling factors
-    scaling[T-1] = 0.0;
+    scaling = 0.0;
     for (i = 0; i < N; i++)
     {
         beta[(T-1)*N+i] = 1.0;
-        scaling[T-1] += beta[(T-1)*N+i];
+        scaling += beta[(T-1)*N+i];
     }
 
     // scale first beta
     for (i = 0; i < N; i++)
-        beta[(T-1)*N+i] /= scaling[T-1];
+        beta[(T-1)*N+i] /= scaling;
 
     // iterate trajectory
     for (t = T-2; t >= 0; t--)
     {
-        scaling[t] = 0.0;
+        scaling = 0.0;
         // compute new beta and scaling
         for (i = 0; i < N; i++)
         {
@@ -100,12 +99,12 @@ void _backward(
                 sum += A[i*N+j] * pobs[(t+1)*N+j] * beta[(t+1)*N+j];
             }
             beta[t*N+i] = sum;
-            scaling[t] += sum;
+            scaling += sum;
         }
         // scale this row
-        if (scaling[t] != 0)
+        if (scaling != 0)
             for (j = 0; j < N; j++)
-                beta[t*N+j] /= scaling[t];
+                beta[t*N+j] /= scaling;
     }
 }
 
@@ -155,12 +154,19 @@ void _compute_transition_counts(
 {
     int i, j, t;
     double sum, *tmp;
-    
+
+    // initialize
+    for (i = 0; i < N; i++)
+        for (j = 0; j < N; j++)
+            transition_counts[i*N+j] = 0.0;
+
     tmp = (double*) malloc(N*N * sizeof(double));
-    for (t = 0; t < T-1; t++) {
+    for (t = 0; t < T-1; t++)
+    {
         sum = 0.0;
         for (i = 0; i < N; i++)
-            for (j = 0; j < N; j++) {
+            for (j = 0; j < N; j++)
+            {
                 tmp[i*N+j] = alpha[t*N+i] * A[i*N+j] * pobs[(t+1)*N+j] * beta[(t+1)*N+j];
                 sum += tmp[i*N+j];
             }
@@ -178,10 +184,13 @@ int argmax(double* v, int N)
     int a = 0;
     double m = v[0];
     for (i = 1; i < N; i++)
-        if (v[i] > m){
+    {
+        if (v[i] > m)
+        {
             a = i;
             m = v[i];
         }
+    }
     return a;
 }
 
@@ -203,7 +212,7 @@ void _compute_viterbi(
     double* vh;
 
     // allocate ptr
-    int* ptr = (int*) malloc(T*N);
+    int* ptr = (int*) malloc(T*N * sizeof(int));
 
     // initialization of v
     sum = 0.0;
@@ -244,14 +253,21 @@ void _compute_viterbi(
         vnext = vh;
     }
 
+    for (t = 0; t < T; t++)
+        path[t] = 0;
+
     // path reconstruction
     path[T-1] = argmax(v,N);
-    //printf(" %i ",path[T-1]);
     for (t = T-2; t >= 0; t--)
     {
         path[t] = ptr[(t+1)*N+path[t+1]];
-        //printf(" %i ",path[t]);
     }
+
+    // free memory
+    free(v);
+    free(vnext);
+    free(h);
+    free(ptr);
 }
 
 /*
