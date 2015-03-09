@@ -35,7 +35,8 @@ class MLHMM(object):
     >>> model = mlhmm.fit()
 
     """
-    def __init__(self, observations, nstates, initial_model=None, reversible=True, verbose=False, output_model_type='gaussian'):
+    def __init__(self, observations, nstates, initial_model=None, reversible=True, verbose=False, output_model_type='gaussian',
+                 kernel = 'python'):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -76,6 +77,8 @@ class MLHMM(object):
             # Generate our own initial model.
             self.model = self._generateInitialModel(output_model_type)
 
+        self.kernel = kernel
+
         return
 
     def fit(self):
@@ -107,7 +110,7 @@ class MLHMM(object):
         initial_time = time.time()
 
         # Run Baum-Welch EM algorithm to fit the HMM.
-        baumwelch = BaumWelchHMM(self.observations, self.model)
+        baumwelch = BaumWelchHMM(self.observations, self.model, kernel=self.kernel)
         self.model = baumwelch.fit()
 
         final_time = time.time()

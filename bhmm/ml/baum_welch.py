@@ -3,8 +3,7 @@ __author__ = 'noe'
 import importlib
 import numpy as np
 import copy
-#import kernel.python as kp
-import kernel.c as kc
+import bhmm.hidden as hidden
 from multiprocessing import Queue, Process, cpu_count
 import bhmm.msm.linalg
 
@@ -28,9 +27,7 @@ class BaumWelchHMM:
 
 
 #                  kernel = kp, dtype = np.float32,
-    def __init__(self, observations, initial_model,
-                 kernel = kc, dtype = np.float64,
-                 accuracy=1e-3, maxit=1000):
+    def __init__(self, observations, initial_model, kernel = 'c', dtype = np.float64, accuracy=1e-3, maxit=1000):
 
         # Use user-specified initial model
         self.model = copy.deepcopy(initial_model)
@@ -40,6 +37,9 @@ class BaumWelchHMM:
 
         # Store a copy of the observations.
         self.observations = copy.deepcopy(observations)
+        self.nobs = len(observations)
+        self.Ts = [len(o) for o in observations]
+        self.maxT = np.max(self.Ts)
 
         # Determine number of observation trajectories we have been given.
         self.ntrajectories = len(self.observations)
@@ -49,6 +49,12 @@ class BaumWelchHMM:
 
         # dtype
         self.dtype = dtype
+
+        # pre-construct hidden variables
+        self.alpha = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
+        self.beta = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
+        self.gammas = [np.zeros((self.maxT,self.nstates), dtype=dtype, order='C') for i in range(self.nobs)]
+        self.Cs = [np.zeros((self.nstates,self.nstates), dtype=dtype, order='C') for i in range(self.nobs)]
 
         # convergence options
         self.accuracy = accuracy
@@ -79,16 +85,21 @@ class BaumWelchHMM:
         A = self.model.Tij
         pi = self.model.Pi
         obs = self.observations[itraj]
+        T = len(obs)
+        # set kernel
+        hidden.set_implementation(self.kernel)
         # compute output probability matrix
         pobs = self.model.output_model.p_obs(obs, dtype=self.dtype)
-        # forward backward
-        logprob, alpha, scaling = self.kernel.forward(A, pobs, pi, dtype=self.dtype)
-        beta   = self.kernel.backward(A, pobs, dtype=self.dtype)
-        gamma  = self.kernel.state_probabilities(alpha, beta, dtype=self.dtype)
+        # forward variables
+        logprob = hidden.forward(A, pobs, pi, T = T, alpha_out=self.alpha, dtype=self.dtype)[0]
+        # backward variables
+        hidden.backward(A, pobs, T = T, beta_out=self.beta, dtype=self.dtype)
+        # gamma
+        hidden.state_probabilities(self.alpha, self.beta, gamma_out = self.gammas[itraj])
         # count matrix
-        count_matrix = self.kernel.transition_counts(alpha, beta, A, pobs, dtype=self.dtype)
+        hidden.transition_counts(self.alpha, self.beta, A, pobs, out = self.Cs[itraj], dtype=self.dtype)
         # return results
-        return logprob, gamma, count_matrix
+        return logprob
 
 
     def _update_model(self, gammas, count_matrices):
@@ -147,17 +158,36 @@ class BaumWelchHMM:
         A = self.model.Tij
         pi = self.model.Pi
 
+        # save final pobs
+        #pobs = self.model.output_model.p_obs(self.observations[0], dtype=self.dtype)
+        #np.savetxt('/Users/noe/data/papers/ChoderaEtAl_BHMM/bhmm/examples/rnase-h-d10a/tmp.dat',pobs)
+
+        # # set kernel
+        # hidden.set_implementation('python')
+        #
+        # # compute viterbi path for each trajectory
+        # paths = np.empty((K), dtype=object)
+        # for itraj in range(K):
+        #     obs = self.observations[itraj]
+        #     # compute output probability matrix
+        #     pobs = self.model.output_model.p_obs(obs)
+        #     # hidden path
+        #     paths[itraj] = hidden.viterbi(A, pobs, pi, dtype = self.dtype)
+
+        # set kernel
+        hidden.set_implementation('c')
+
         # compute viterbi path for each trajectory
-        hidden = np.empty((K), dtype=object)
+        paths = np.empty((K), dtype=object)
         for itraj in range(K):
             obs = self.observations[itraj]
             # compute output probability matrix
-            pobs = self.model.output_model.p_obs(obs)
+            pobs = self.model.output_model.p_obs(obs, dtype = self.dtype)
             # hidden path
-            hidden[itraj] = self.kernel.viterbi(A, pobs, pi, dtype = self.dtype)
+            paths[itraj] = hidden.viterbi(A, pobs, pi, dtype = self.dtype)
 
         # done
-        return hidden
+        return paths
 
 
     def fit(self):
@@ -169,20 +199,15 @@ class BaumWelchHMM:
         The hidden markov model
 
         """
-        K = len(self.observations)#, len(A), len(B[0])
-        gammas = np.empty(K, dtype=object)
-        count_matrices = np.empty(K, dtype=object)
-
         it        = 0
         converged = False
 
         while (not converged):
             loglik = 0.0
-            for k in range(K):
-                ll, gammas[k], count_matrices[k] = self._forward_backward(k)
-                loglik += ll
+            for k in range(self.nobs):
+                loglik += self._forward_backward(k)
 
-            self._update_model(gammas, count_matrices)
+            self._update_model(self.gammas, self.Cs)
             print it, "ll = ", loglik
             #print self.model.output_model
             #print "---------------------"
@@ -196,6 +221,7 @@ class BaumWelchHMM:
             it += 1
 
         return self.model
+
 
     ###################
     # MULTIPROCESSING

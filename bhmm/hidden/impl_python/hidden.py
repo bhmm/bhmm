@@ -176,11 +176,11 @@ def transition_counts(alpha, beta, A, pobs, T = None, out = None, dtype=np.float
     N = len(A)
     # output
     if out is None:
-        out = np.zeros( (N,N), dtype=dtype )
+        out = np.zeros( (N,N), dtype=dtype, order='C' )
     else:
         out[:] = 0.0
     # compute transition counts
-    xi = np.zeros( (N,N), dtype=dtype )
+    xi = np.zeros( (N,N), dtype=dtype, order='C' )
     for t in range(T-1):
         # xi_i,j(t) = alpha_i(t) * A_i,j * B_j,ob(t+1) * beta_j(t+1)
         np.dot(alpha[t,:][:,None] * A, np.diag(pobs[t+1,:] * beta[t+1,:]), out = xi)

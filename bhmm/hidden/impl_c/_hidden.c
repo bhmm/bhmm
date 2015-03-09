@@ -206,9 +206,9 @@ void _compute_viterbi(
     double sum, maxprod, p;
 
     // allocate v
-    double* v = (double*) malloc(N);
-    double* vnext = (double*) malloc(N);
-    double* h = (double*) malloc(N);
+    double* v = (double*) malloc(N * sizeof(double));
+    double* vnext = (double*) malloc(N * sizeof(double));
+    double* h = (double*) malloc(N * sizeof(double));
     double* vh;
 
     // allocate ptr
@@ -252,9 +252,6 @@ void _compute_viterbi(
         v = vnext;
         vnext = vh;
     }
-
-    for (t = 0; t < T; t++)
-        path[t] = 0;
 
     // path reconstruction
     path[T-1] = argmax(v,N);

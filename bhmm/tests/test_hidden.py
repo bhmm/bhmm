@@ -6,7 +6,7 @@ import numpy as np
 
 import bhmm.hidden as hidden
 
-class TestBaumWelch(unittest.TestCase):
+class TestHidden(unittest.TestCase):
 
     def setUp(self):
         A = np.array([[0.9, 0.1],
@@ -21,92 +21,65 @@ class TestBaumWelch(unittest.TestCase):
                          [0.9, 0.1],
                          [0.9, 0.1],
                          [0.9, 0.1]])
-        T = pobs.shape[0]
-        N = 2
         pi = np.array([0.5, 0.5])
 
-        # in-memory
-        self.alpha_c_mem = np.zeros( (T,N) )
-        self.beta_c_mem = np.zeros( (T,N) )
-        self.gamma_c_mem = np.zeros( (T,N) )
-        self.C_c_mem = np.zeros( (N,N) )
-        #
-        self.alpha_p_mem = np.zeros( (T,N) )
-        self.beta_p_mem = np.zeros( (T,N) )
-        self.gamma_p_mem = np.zeros( (T,N) )
-        self.C_p_mem = np.zeros( (N,N) )
-
-        # PYTHON IMPL
+        # PYTHON ALLOCATE IMPL
         hidden.set_implementation('python')
-        # forward
-        self.logprob_p, self.alpha_p = hidden.forward(A, pobs, pi, dtype=np.float64)
-        self.logprob_p_mem, self.alpha_p_mem = hidden.forward(A, pobs, pi, alpha_out = self.alpha_p_mem, dtype=np.float64)
-        # backward
-        self.beta_p = hidden.backward(A, pobs, dtype=np.float64)
-        hidden.backward(A, pobs, beta_out = self.beta_p_mem, dtype=np.float64)
-        # gamma
-        self.gamma_p = hidden.state_probabilities(self.alpha_p, self.beta_p)
-        hidden.state_probabilities(self.alpha_p, self.beta_p, gamma_out = self.gamma_p_mem)
-        # state counts
-        self.statecount_p = hidden.state_counts(self.gamma_p, T)
-        # transition counts
-        self.C_p = hidden.transition_counts(self.alpha_p, self.beta_p, A, pobs, dtype=np.float64)
-        hidden.transition_counts(self.alpha_p, self.beta_p, A, pobs, out=self.C_p_mem, dtype=np.float64)
-        # viterbi path
-        self.vpath_p = hidden.viterbi(A, pobs, pi, dtype=np.float64)
+        (self.logprob_p, self.alpha_p, self.beta_p, self.gamma_p, self.statecount_p, self.C_p, self.vpath_p) = self.run_all(A, pobs, pi)
+        # PYTHON PRE-ALLOCATE IMPL
+        hidden.set_implementation('python')
+        (self.logprob_p_mem, self.alpha_p_mem, self.beta_p_mem, self.gamma_p_mem, self.statecount_p_mem, self.C_p_mem, self.vpath_p_mem) = self.run_all(A, pobs, pi)
 
-        # C IMPL
+        # C ALLOCATE IMPL
         hidden.set_implementation('c')
-        # forward
-        self.logprob_c, self.alpha_c = hidden.forward(A, pobs, pi, dtype=np.float64)
-        self.logprob_c_mem, self.alpha_c_mem = hidden.forward(A, pobs, pi, alpha_out = self.alpha_c_mem, dtype=np.float64)
-        # backward
-        self.beta_c = hidden.backward(A, pobs, dtype=np.float64)
-        hidden.backward(A, pobs, beta_out = self.beta_c_mem, dtype=np.float64)
-        # gamma
-        self.gamma_c = hidden.state_probabilities(self.alpha_c, self.beta_c)
-        hidden.state_probabilities(self.alpha_c, self.beta_c, gamma_out = self.gamma_c_mem)
-        # state counts
-        self.statecount_c = hidden.state_counts(self.gamma_c, T)
-        # transition counts
-        self.C_c = hidden.transition_counts(self.alpha_c, self.beta_c, A, pobs, dtype=np.float64)
-        hidden.transition_counts(self.alpha_c, self.beta_c, A, pobs, out=self.C_c_mem, dtype=np.float64)
-        # viterbi path
-        self.vpath_c = hidden.viterbi(A, pobs, pi, dtype=np.float64)
+        (self.logprob_c, self.alpha_c, self.beta_c, self.gamma_c, self.statecount_c, self.C_c, self.vpath_c) = self.run_all(A, pobs, pi)
+        # C PRE-ALLOCATE IMPL
+        hidden.set_implementation('c')
+        (self.logprob_c_mem, self.alpha_c_mem, self.beta_c_mem, self.gamma_c_mem, self.statecount_c_mem, self.C_c_mem, self.vpath_c_mem) = self.run_all(A, pobs, pi)
 
+
+    def run_all(self, A, pobs, pi):
+        # forward
+        logprob, alpha = hidden.forward(A, pobs, pi, dtype=np.float64)
+        # backward
+        beta = hidden.backward(A, pobs, dtype=np.float64)
+        # gamma
+        gamma = hidden.state_probabilities(alpha, beta)
+        # state counts
+        T = pobs.shape[0]
+        statecount = hidden.state_counts(gamma, T)
+        # transition counts
+        C = hidden.transition_counts(alpha, beta, A, pobs, dtype=np.float64)
+        # viterbi path
+        vpath = hidden.viterbi(A, pobs, pi, dtype=np.float64)
+        # return
+        return (logprob, alpha, beta, gamma, statecount, C, vpath)
+
+    def run_all_mem(self, A, pobs, pi):
+        T = pobs.shape[0]
+        N = A.shape[0]
+        alpha = np.zeros( (T,N) )
+        beta  = np.zeros( (T,N) )
+        gamma = np.zeros( (T,N) )
+        C     = np.zeros( (N,N) )
+        logprob, alpha = hidden.forward(A, pobs, pi, alpha_out = alpha, dtype=np.float64)
+        # backward
+        hidden.backward(A, pobs, beta_out = beta, dtype=np.float64)
+        # gamma
+        hidden.state_probabilities(alpha_p, beta_p, gamma_out = gamma)
+        # state counts
+        statecount = hidden.state_counts(gamma, T)
+        # transition counts
+        hidden.transition_counts(alpha, beta, A, pobs, out=self.C, dtype=np.float64)
+        # viterbi path
+        vpath = hidden.viterbi(A, pobs, pi, dtype=np.float64)
+        # return
+        return (logprob, alpha, beta, gamma, statecount, C, vpath)
 
     def tearDown(self):
         pass
 
-    def test_connected_sets(self):
-        print 'logprob'
-        print self.logprob_c
-        print self.logprob_p
-        print
-        print 'alpha'
-        print self.alpha_c
-        print self.alpha_p
-        print
-        print 'beta'
-        print self.beta_c
-        print self.beta_p
-        print
-        print 'gamma'
-        print self.gamma_c
-        print self.gamma_p
-        print
-        print 'state counts'
-        print self.statecount_c
-        print self.statecount_p
-        print
-        print 'transition counts'
-        print self.C_c
-        print self.C_p
-        print
-        print 'viterbi path'
-        print self.vpath_c
-        print self.vpath_p
-
+    def test_forward(self):
         # forward variables
         self.assertTrue(np.allclose(self.logprob_p, self.logprob_c))
         self.assertTrue(np.allclose(self.logprob_p, self.logprob_p_mem))
@@ -116,16 +89,19 @@ class TestBaumWelch(unittest.TestCase):
         self.assertTrue(np.allclose(self.alpha_p, self.alpha_p_mem))
         self.assertTrue(np.allclose(self.alpha_p, self.alpha_c_mem))
 
+    def test_backward(self):
         # backward variables
         self.assertTrue(np.allclose(self.beta_p, self.beta_c))
         self.assertTrue(np.allclose(self.beta_p, self.beta_p_mem))
         self.assertTrue(np.allclose(self.beta_p, self.beta_c_mem))
 
+    def test_gamma(self):
         # gammas / state probabilities
         self.assertTrue(np.allclose(self.gamma_p, self.gamma_c))
         self.assertTrue(np.allclose(self.gamma_p, self.gamma_p_mem))
         self.assertTrue(np.allclose(self.gamma_p, self.gamma_c_mem))
 
+    def test_counts(self):
         # state counts
         self.assertTrue(np.allclose(self.statecount_c, self.statecount_p))
 
@@ -134,6 +110,7 @@ class TestBaumWelch(unittest.TestCase):
         self.assertTrue(np.allclose(self.C_p, self.C_p_mem))
         self.assertTrue(np.allclose(self.C_p, self.C_c_mem))
 
+    def test_viterbi(self):
         # viterbi
         self.assertTrue(np.allclose(self.vpath_c, self.vpath_p))
 
