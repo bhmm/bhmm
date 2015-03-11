@@ -205,6 +205,7 @@ class GaussianOutputModel(OutputModel):
         log_Pobs = log_C - 0.5 * ((o - self.means[i]) / self.sigmas[i])**2
         return log_Pobs
 
+
     def p_o(self, o):
         """
         Returns the output probability for symbol o from all hidden states
@@ -241,6 +242,7 @@ class GaussianOutputModel(OutputModel):
         else:
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
 
+
     def log_p_o(self, o):
         """
         Returns the log output probability for symbol o from all hidden states
@@ -271,6 +273,7 @@ class GaussianOutputModel(OutputModel):
         log_C = - 0.5 * np.log(2.0 * np.pi) - np.log(self.sigmas)
         log_Pobs = log_C - 0.5 * ((o-self.means)/self.sigmas)**2
         return log_Pobs
+
 
     def p_obs(self, obs, out=None, dtype=np.float32):
         """
@@ -317,44 +320,6 @@ class GaussianOutputModel(OutputModel):
         else:
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
 
-
-    def log_p_obs(self, obs, out=None, dtype=np.float32):
-        """
-        Returns the log output probabilities for an entire trajectory and all hidden states
-
-        Parameters
-        ----------
-        obs : ndarray((T), dtype=int)
-            a discrete trajectory of length T
-        dtype : numpy.dtype, optional, default=numpy.float32
-            The datatype to return the resulting observations in.
-
-
-        Return
-        ------
-        log_p_o : ndarray (T,N)
-            the log probability of generating the symbol at time point t from any of the N hidden states
-
-        Examples
-        --------
-
-        Generate an observation model and synthetic observation trajectory.
-
-        >>> nobs = 1000
-        >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, +1], sigmas=[0.5, 1, 2])
-        >>> s_t = np.random.randint(0, output_model.nstates, size=[nobs])
-        >>> o_t = output_model.generate_observation_trajectory(s_t)
-
-        Compute log output probabilities for entire trajectory and all hidden states.
-
-        >>> log_p_o = output_model.log_p_obs(o_t)
-
-        """
-        T = len(obs)
-        log_res = np.zeros((T, self.nstates), dtype=dtype)
-        for t in range(T):
-            log_res[t,:] = self.log_p_o(obs[t])
-        return log_res
 
     def fit(self, observations, weights):
         """
@@ -465,6 +430,7 @@ class GaussianOutputModel(OutputModel):
 
         return
 
+
     def generate_observation_from_state(self, state_index):
         """
         Generate a single synthetic observation data from a given state.
@@ -493,6 +459,7 @@ class GaussianOutputModel(OutputModel):
         """
         observation = self.sigmas[state_index] * np.random.randn() + self.means[state_index]
         return observation
+
 
     def generate_observations_from_state(self, state_index, nobs, dtype=np.float32):
         """
@@ -526,6 +493,7 @@ class GaussianOutputModel(OutputModel):
         """
         observations = self.sigmas[state_index] * np.random.randn(nobs) + self.means[state_index]
         return observations
+
 
     def generate_observation_trajectory(self, s_t, dtype=np.float32):
         """
