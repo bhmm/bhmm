@@ -121,8 +121,12 @@ def find_package_data(data_root, package_root):
 extensions = [Extension('bhmm.hidden.impl_c.hidden',
                         sources = ['./bhmm/hidden/impl_c/hidden.pyx',
                                    './bhmm/hidden/impl_c/_hidden.c'],
-                        include_dirs = ['/bhmm/hidden/impl_c/',numpy.get_include()])]
-#cext2 = cythonize()
+                        include_dirs = ['/bhmm/hidden/impl_c/',numpy.get_include()]),
+	      Extension('bhmm.output_models.impl_c.gaussian',
+                        sources = ['./bhmm/output_models/impl_c/gaussian.pyx',
+                                   './bhmm/output_models/impl_c/_gaussian.c'],
+                        include_dirs = ['/bhmm/output_models/impl_c/',numpy.get_include()])]
+
 
 write_version_py()
 setup(
