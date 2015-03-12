@@ -239,7 +239,7 @@ void _compute_viterbi(
             }
             maxi = argmax(h, N);
             ptr[t*N + j] = maxi;
-            vnext[j] = pobs[t*N + j] * v[maxi];
+            vnext[j] = pobs[t*N + j] * v[maxi] * A[maxi*N+j];
             sum += vnext[j];
         }
         // normalize

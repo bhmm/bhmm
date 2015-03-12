@@ -121,8 +121,12 @@ def find_package_data(data_root, package_root):
 extensions = [Extension('bhmm.hidden.impl_c.hidden',
                         sources = ['./bhmm/hidden/impl_c/hidden.pyx',
                                    './bhmm/hidden/impl_c/_hidden.c'],
-                        include_dirs = ['/bhmm/hidden/impl_c/',numpy.get_include()])]
-#cext2 = cythonize()
+                        include_dirs = ['/bhmm/hidden/impl_c/',numpy.get_include()]),
+	      Extension('bhmm.output_models.impl_c.gaussian',
+                        sources = ['./bhmm/output_models/impl_c/gaussian.pyx',
+                                   './bhmm/output_models/impl_c/_gaussian.c'],
+                        include_dirs = ['/bhmm/output_models/impl_c/',numpy.get_include()])]
+
 
 write_version_py()
 setup(
@@ -138,7 +142,7 @@ setup(
     classifiers=CLASSIFIERS.splitlines(),
     package_dir={'bhmm': 'bhmm'},
     #packages=['bhmm', "bhmm.tests"] + ['bhmm.%s' % package for package in find_packages('bhmm')],
-    packages=['bhmm', 'bhmm.msm', 'bhmm.hidden', 'bhmm.ml', 'bhmm.msm', 'bhmm.output_models', 'bhmm.util'],
+    packages=['bhmm', 'bhmm.msm', 'bhmm.hidden', 'bhmm.ml', 'bhmm.msm', 'bhmm.output_models', 'bhmm.output_models.impl_c', 'bhmm.util', 'bhmm.hidden.impl_python', 'bhmm.hidden.impl_c'],
     # + ['bhmm.%s' % package for package in find_packages('bhmm')],
     package_data={'bhmm': find_package_data('examples', 'bhmm')},  # NOTE: examples installs to bhmm.egg/examples/, NOT bhmm.egg/bhmm/examples/.  You need to do utils.get_data_filename("../examples/*/setup/").
     zip_safe=False,

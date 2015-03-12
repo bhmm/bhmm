@@ -138,6 +138,7 @@ class DiscreteOutputModel(OutputModel):
             the probability that any of the N hidden states generates symbol o
 
         """
+        # TODO: so far we don't use this method. Perhaps we don't need it.
         return self.B[:,o]
 
     def log_p_o(self, o):
@@ -157,7 +158,7 @@ class DiscreteOutputModel(OutputModel):
         """
         return np.log(self.B[:,o])
 
-    def p_obs(self, obs):
+    def p_obs(self, obs, out=None, dtype=np.float32):
         """
         Returns the output probabilities for an entire trajectory and all hidden states
 
@@ -172,33 +173,13 @@ class DiscreteOutputModel(OutputModel):
             the probability of generating the symbol at time point t from any of the N hidden states
 
         """
-        # TODO: so far we don't use this method. Perhaps we don't need it.
-        T = len(obs)
-        N = self.B.shape[1]
-        res = np.zeros((T, N), dtype=np.float32)
-        for t in range(T):
-            res[t,:] = self.B[:,obs[t]]
-        return res
+        # much faster
+        if (out is None):
+            return self.B[:,obs].T
+        else:
+            out[:,:] = self.B[:,obs].T
+            return out
 
-    # TODO: what about having a p_obs_i(self, i) that gives the observation probability for one state?
-    # TODO: That could be sufficient, because it allows us to do efficient vector operations and is able to do state-based processing
-
-    def log_p_obs(self, obs):
-        """
-        Returns the output probabilities for an entire trajectory and all hidden states
-
-        Parameters
-        ----------
-        obs : ndarray((T), dtype=int)
-            a discrete trajectory of length T
-
-        Return
-        ------
-        p_o : ndarray (T,N)
-            the log probability of generating the symbol at time point t from any of the N hidden states
-
-        """
-        return np.log(self.p_obs(obs))
 
     def fit(self, observations, weights):
         """

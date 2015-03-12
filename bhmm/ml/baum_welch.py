@@ -46,6 +46,7 @@ class BaumWelchHMM:
 
         # Kernel for computing things
         hidden.set_implementation(kernel)
+        self.model.output_model.set_implementation(kernel)
 
         # dtype
         self.dtype = dtype
@@ -53,6 +54,7 @@ class BaumWelchHMM:
         # pre-construct hidden variables
         self.alpha = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
         self.beta = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
+        self.pobs = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
         self.gammas = [np.zeros((self.maxT,self.nstates), dtype=dtype, order='C') for i in range(self.nobs)]
         self.Cs = [np.zeros((self.nstates,self.nstates), dtype=dtype, order='C') for i in range(self.nobs)]
 
@@ -87,15 +89,15 @@ class BaumWelchHMM:
         obs = self.observations[itraj]
         T = len(obs)
         # compute output probability matrix
-        pobs = self.model.output_model.p_obs(obs, dtype=self.dtype)
+        self.model.output_model.p_obs(obs, out=self.pobs, dtype=self.dtype)
         # forward variables
-        logprob = hidden.forward(A, pobs, pi, T = T, alpha_out=self.alpha, dtype=self.dtype)[0]
+        logprob = hidden.forward(A, self.pobs, pi, T = T, alpha_out=self.alpha, dtype=self.dtype)[0]
         # backward variables
-        hidden.backward(A, pobs, T = T, beta_out=self.beta, dtype=self.dtype)
+        hidden.backward(A, self.pobs, T = T, beta_out=self.beta, dtype=self.dtype)
         # gamma
         hidden.state_probabilities(self.alpha, self.beta, gamma_out = self.gammas[itraj])
         # count matrix
-        hidden.transition_counts(self.alpha, self.beta, A, pobs, out = self.Cs[itraj], dtype=self.dtype)
+        hidden.transition_counts(self.alpha, self.beta, A, self.pobs, out = self.Cs[itraj], dtype=self.dtype)
         # return results
         return logprob
 
