@@ -3,7 +3,6 @@ __author__ = 'noe'
 import numpy as np
 
 from bhmm.hmm_class import HMM
-import bhmm.msm.linalg as msmest
 
 def initial_model_gaussian1d(observations, nstates, reversible = True):
     """Generate an initial model with 1D-Gaussian output densities
@@ -73,10 +72,8 @@ def initial_model_gaussian1d(observations, nstates, reversible = True):
         print Nij
 
     # Compute transition matrix maximum likelihood estimate.
-    if (reversible):
-        Tij = msmest.transition_matrix_MLE_reversible(Nij)
-    else:
-        Tij = msmest.transition_matrix_MLE_nonreversible(Nij)
+    import pyemma.msm.estimation as msmest
+    msmest.transition_matrix(Tij, reversible=reversible)
 
     # Update model.
     model = HMM(nstates, Tij, output_model, reversible=reversible)

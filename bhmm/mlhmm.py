@@ -199,67 +199,11 @@ class MLHMM(object):
         * Replace this with EM or MLHMM procedure from Matlab code.
 
         """
-        nstates = self.nstates
-
-        # Concatenate all observations.
-        collected_observations = np.array([], dtype=np.float64)
-        for o_t in self.observations:
-            collected_observations = np.append(collected_observations, o_t, axis=0)
-
-        if output_model_type != 'gaussian':
-            raise Exception("Initial model generation for output_model_type %s not implemented yet." % output_model_type)
-
-        # Fit a Gaussian mixture model to obtain emission distributions and state stationary probabilities.
-        from sklearn import mixture
-        gmm = mixture.GMM(n_components=nstates)
-        gmm.fit(collected_observations)
-        from bhmm import GaussianOutputModel
-        output_model = GaussianOutputModel(self.nstates, means=gmm.means_[:,0], sigmas=np.sqrt(gmm.covars_[:,0]))
-
-        # DEBUG
-        print "Gaussian output model:"
-        print output_model
-
-        # Extract stationary distributions.
-        Pi = np.zeros([nstates], np.float64)
-        Pi[:] = gmm.weights_[:]
-
-        # DEBUG
-        print "GMM weights: %s" % str(gmm.weights_)
-
-        # Compute transition matrix that gives specified Pi.
-        Tij = np.tile(Pi, [nstates, 1])
-
-        # Construct simple model.
-        model = HMM(nstates, Tij, output_model)
-
-        # Compute fractional state memberships.
-        from scipy.misc import logsumexp
-        Nij = np.zeros([nstates, nstates], np.float64)
-        for trajectory_index in range(self.ntrajectories):
-            o_t = self.observations[trajectory_index] # extract trajectory
-            T = o_t.shape[0]
-            # Compute log emission probabilities.
-            log_p_ti = np.zeros([T,nstates], np.float64)
-            for i in range(nstates):
-                log_p_ti[:,i] = model.log_emission_probability(i, o_t)
-            # Exponentiate and normalize
-            # TODO: Account for initial distribution.
-            p_ti = np.zeros([T,nstates], np.float64)
-            for t in range(T):
-                p_ti[t,:] = np.exp(log_p_ti[t,:] - logsumexp(log_p_ti[t,:]))
-                p_ti[t,:] /= p_ti[t,:].sum()
-            print p_ti
-            # Accumulate fractional transition counts from this trajectory.
-            for t in range(T-1):
-                Nij[:,:] = Nij[:,:] + np.outer(p_ti[t,:], p_ti[t+1,:])
-            print "Nij"
-            print Nij
-
-        # Compute transition matrix maximum likelihood estimate.
-        Tij = self._transitionMatrixMLE(Nij, reversible=self.reversible)
-
-        # Update model.
-        model = HMM(nstates, Tij, output_model, reversible=self.reversible)
-
-        return model
+        if output_model_type == 'discrete':
+            import bhmm.init.discrete
+            return bhmm.init.discrete.initial_model_discrete(self.observations, self.nstates, lag = 1, reversible = True)
+        elif output_model_type == 'gaussian':
+            import bhmm.init.gaussian
+            return bhmm.init.gaussian.initial_model_gaussian1d(self.observations, self.nstates, reversible=True)
+        else:
+            raise NotImplementedError('output model type '+str(output_model_type)+' not yet implemented.')
