@@ -150,6 +150,7 @@ setup(
         'cython',
         'numpy',
         'scipy',
+        'pyemma',
         'scikit-learn',
         'matplotlib',
         'seaborn',
