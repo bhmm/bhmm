@@ -5,7 +5,6 @@ import numpy as np
 import copy
 import bhmm.hidden as hidden
 from multiprocessing import Queue, Process, cpu_count
-import bhmm.msm.linalg
 
 __author__ = "Frank Noe"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
@@ -126,13 +125,12 @@ class BaumWelchHMM:
             C += count_matrices[k]
 
         # compute new transition matrix
-        if self.model.reversible:
-            T = bhmm.msm.linalg.transition_matrix_MLE_reversible(C)
-        else:
-            T = bhmm.msm.linalg.transition_matrix_MLE_nonreversible(C)
+        import pyemma.msm.estimation as msmest
+        T = msmest.transition_matrix(C, reversible = self.model.reversible)
         # stationary or init distribution
         if self.model.stationary:
-            pi = bhmm.msm.linalg.stationary_distribution(T)
+            import pyemma.msm.analysis as msmana
+            pi = msmana.stationary_distribution(T)
         else:
             pi = gamma0_sum / np.sum(gamma0_sum)
 
