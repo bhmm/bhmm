@@ -4,7 +4,7 @@ Hidden Markov model representation.
 """
 
 import numpy as np
-import msm.linalg as msmalg
+#import msm.linalg as msmalg
 import output_models
 
 __author__ = "John D. Chodera, Frank Noe"
@@ -64,12 +64,13 @@ class HMM(object):
         self.reversible = reversible
 
         # initial / stationary distribution
+        import pyemma.msm.analysis as msmana
         self.stationary = stationary
         if (stationary):
-            self.Pi = msmalg.stationary_distribution(self.Tij) # TODO: Rename to 'stationary_probabilities'?
+            self.Pi = msmana.stationary_distribution(self.Tij) # TODO: Rename to 'stationary_probabilities'?
         else:
             if Pi is None: # no initial distribution given, so use stationary distribution anyway
-                self.Pi = msmalg.stationary_distribution(self.Tij)
+                self.Pi = msmana.stationary_distribution(self.Tij)
             else:
                 self.Pi = Pi
 

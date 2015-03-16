@@ -4,8 +4,6 @@ import numpy as np
 import unittest
 import bhmm.init.discrete as initdisc
 
-import pyemma.msm.generation as msmgen
-import pyemma.msm.analysis as msmana
 
 class TestHMM(unittest.TestCase):
 
@@ -13,6 +11,7 @@ class TestHMM(unittest.TestCase):
         # 2x2 transition matrix
         P = np.array([[0.99,0.01],[0.01,0.99]])
         # generate realization
+        import pyemma.msm.generation as msmgen
         T = 10000
         dtrajs = [msmgen.generate_traj(P, T)]
         # estimate initial HMM with 2 states - should be identical to P
@@ -32,6 +31,7 @@ class TestHMM(unittest.TestCase):
                       [0.00, 0.01, 0.89, 0.10],
                       [0.00, 0.00, 0.10, 0.90]])
         # generate realizations
+        import pyemma.msm.generation as msmgen
         T = 10000
         dtrajs = [msmgen.generate_traj(P, T, start=0), msmgen.generate_traj(P, T, start=2)]
         # estimate initial HMM with 2 states - should be identical to P
