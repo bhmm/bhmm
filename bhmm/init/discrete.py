@@ -30,10 +30,12 @@ def initial_model_discrete(observations, nstates, lag = 1, reversible = True):
     # ------------
     # count matrix
     C = msmest.count_matrix(observations, lag).toarray()
+
     nmicro = C.shape[0]
     # connected count matrix
     C_conn = msmest.connected_cmatrix(C)
     giant = msmest.largest_connected_set(C)
+
     # transition matrix
     P = msmest.transition_matrix(C_conn, reversible=reversible)
 
@@ -49,7 +51,7 @@ def initial_model_discrete(observations, nstates, lag = 1, reversible = True):
     B_conn = np.dot(np.dot(np.diag(1.0/pi_coarse), chi.T), np.diag(pi))
     # expand B to full state space
     B = np.zeros((nstates,nmicro))
-    B[giant,:] = B_conn
+    B[:,giant] = B_conn[:,:]
     # coarse-grained transition matrix
     A = pcca.coarsegrain(P, nstates)
 
