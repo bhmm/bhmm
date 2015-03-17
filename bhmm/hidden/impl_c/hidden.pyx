@@ -22,6 +22,10 @@ cdef extern from "_hidden.h":
 cdef extern from "_hidden.h":
     void _compute_viterbi(int *path, const double *A, const double *pobs, const double *pi, int N, int T)
 
+cdef extern from "_hidden.h":
+    void _sample_path(int *path, const double *alpha, const double *A, const double *pobs, const int N, const int T)
+
+
 def cdef_double_array(n1, n2):
     cdef numpy.ndarray[double, ndim=2, mode="c"] out = numpy.zeros( (n1,n2), dtype=numpy.double, order='C' )
     return out
@@ -32,7 +36,7 @@ def forward(A, pobs, pi, T=None, alpha_out=None, dtype=numpy.float32):
     if (T is None):
         T = pobs.shape[0] # if not set, use the length of pobs as trajectory length
     elif T > pobs.shape[0]:
-        raise ValueError('T must be at most the length of pobs.')
+        raise TypeError('T must be at most the length of pobs.')
     # set N
     N = A.shape[0]
     # prepare alpha array
@@ -41,7 +45,7 @@ def forward(A, pobs, pi, T=None, alpha_out=None, dtype=numpy.float32):
     if alpha_out is None:
         alpha = cdef_double_array(T,N)
     elif T > alpha_out.shape[0]:
-        raise ValueError('alpha_out must at least have length T in order to fit trajectory.')
+        raise TypeError('alpha_out must at least have length T in order to fit trajectory.')
     else:
         alpha = alpha_out
 
@@ -56,7 +60,7 @@ def forward(A, pobs, pi, T=None, alpha_out=None, dtype=numpy.float32):
         logprob = _forward(palpha, pA, ppobs, ppi, N, T)
         return logprob, alpha
     else:
-        raise ValueError
+        raise TypeError
 
 def backward(A, pobs, T=None, beta_out=None, dtype=numpy.float32):
     # set T
@@ -86,7 +90,7 @@ def backward(A, pobs, T=None, beta_out=None, dtype=numpy.float32):
         _backward(pbeta, pA, ppobs, N, T)
         return beta
     else:
-        raise ValueError
+        raise TypeError
 
 
 # def state_probabilities(alpha, beta, gamma_out=None, dtype=numpy.float32):
@@ -140,7 +144,7 @@ def transition_counts(alpha, beta, A, pobs, T = None, out = None, dtype=numpy.fl
         _compute_transition_counts(pC, pA, ppobs, palpha, pbeta, N, T)
         return C
     else:
-        raise ValueError
+        raise TypeError
 
 
 def viterbi(A, pobs, pi, dtype=numpy.float32):
@@ -161,4 +165,27 @@ def viterbi(A, pobs, pi, dtype=numpy.float32):
         _compute_viterbi(ppath, pA, ppobs, ppi, N, T)
         return path
     else:
-        raise ValueError
+        raise TypeError
+
+
+def sample_path(alpha, A, pobs, T = None, dtype=np.float32):
+    N = pobs.shape[1]
+    # set T
+    if (T is None):
+        T = pobs.shape[0] # if not set, use the length of pobs as trajectory length
+    elif T > pobs.shape[0] or T > alpha.shape[0]:
+        raise ValueError('T must be at most the length of pobs and alpha.')
+    # prepare path array
+    cdef numpy.ndarray[int, ndim=1, mode="c"] path
+    path = numpy.zeros( (T), dtype=ctypes.c_int, order='C' )
+
+    if dtype == numpy.float64:
+        ppath  = <int*>    numpy.PyArray_DATA(path)
+        palpha = <double*> numpy.PyArray_DATA(alpha)
+        pA     = <double*> numpy.PyArray_DATA(A)
+        ppobs  = <double*> numpy.PyArray_DATA(pobs)
+        # call
+        _sample_path(ppath, palpha, pA, ppobs, N, T)
+        return path
+    else:
+        raise TypeError

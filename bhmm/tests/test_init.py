@@ -42,7 +42,8 @@ class TestHMM(unittest.TestCase):
         if (B[0,0]<B[1,0]):
             B = B[np.array([1,0]),:]
         Aref = np.array([[0.995,0.005],[0.005,0.995]])
-        Bref = np.array([[0.5,0.48,0.02,0.0],[0.0,0.02,0.48,0.5]])
+        Bref = np.array([[0.5,0.5,0.0,0.0],[0.0,0.00,0.5,0.5]])
+#        Bref = np.array([[0.5,0.48,0.02,0.0],[0.0,0.02,0.48,0.5]])
         assert(np.max(A-Aref) < 0.01)
         assert(np.max(B-Bref) < 0.02)
 
