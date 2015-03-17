@@ -7,9 +7,9 @@ import copy
 import time
 import numpy as np
 
+import pyemma.msm.estimation as msmest
 from numpy.linalg import norm
 
-from bhmm import msm
 from bhmm import HMM
 from ml.baum_welch import BaumWelchHMM
 
@@ -178,11 +178,7 @@ class MLHMM(object):
 
         # Ensure count matrix is double precision.
         Cij = np.array(Cij, dtype=np.float64)
-
-        if reversible:
-            Tij = msm.linalg.transition_matrix_MLE_reversible(Cij)
-        else:
-            Tij = msm.linalg.transition_matrix_MLE_nonreversible(Cij)
+        Tij = msmest.transition_matrix(Cij, reversible=reversible)
 
         return Tij
 

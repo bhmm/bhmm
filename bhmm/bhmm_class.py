@@ -192,7 +192,7 @@ class BHMM(object):
 
         Examples
         --------
-        >>> import testsystems
+        >>> import bhmm.testsystems
         >>> [model, observations, states, bhmm] = testsystems.generate_random_bhmm()
         >>> o_t = observations[0]
         >>> s_t = bhmm._sampleHiddenStateTrajectory(o_t)
