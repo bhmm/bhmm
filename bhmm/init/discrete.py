@@ -54,6 +54,14 @@ def initial_model_discrete(observations, nstates, lag = 1, reversible = True):
     B[:,giant] = B_conn[:,:]
     # coarse-grained transition matrix
     A = pcca.coarsegrain(P, nstates)
+    # renormalize to eliminate numerical errors
+    A /= A.sum(axis=1)[:,None]
+    print type(A)
+    print A.dtype
+    print A.shape
+    print A.sum(axis=1)
+
+    print "A = ",A
 
     # initialize HMM
     # --------------
