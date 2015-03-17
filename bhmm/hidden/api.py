@@ -96,6 +96,8 @@ def backward(A, pobs, T=None, beta_out=None, dtype=np.float32):
         transition matrix of the hidden states
     pobs : ndarray((T,N), dtype = float)
         pobs[t,i] is the observation probability for observation at time t given hidden state i
+    T : int, optional, default = None
+        trajectory length. If not given, T = pobs.shape[0] will be used.
     beta_out : ndarray((T,N), dtype = float), optional, default = None
         containter for the beta result variables. If None, a new container will be created.
     dtype : type, optional, default = np.float32
@@ -116,7 +118,7 @@ def backward(A, pobs, T=None, beta_out=None, dtype=np.float32):
         raise RuntimeError('Nonexisting implementation selected: '+str(__impl__))
 
 
-def state_probabilities(alpha, beta, gamma_out=None):
+def state_probabilities(alpha, beta, T=None, gamma_out=None):
     """ Calculate the (T,N)-probabilty matrix for being in state i at time t.
 
     Parameters
@@ -125,6 +127,11 @@ def state_probabilities(alpha, beta, gamma_out=None):
         alpha[t,i] is the ith forward coefficient of time t.
     beta : ndarray((T,N), dtype = float), optional, default = None
         beta[t,i] is the ith forward coefficient of time t.
+    T : int, optional, default = None
+        trajectory length. If not given, gamma_out.shape[0] will be used. If
+        gamma_out is neither given, T = alpha.shape[0] will be used.
+    gamma_out : ndarray((T,N), dtype = float), optional, default = None
+        containter for the gamma result variables. If None, a new container will be created.
 
     Returns
     -------
@@ -140,11 +147,22 @@ def state_probabilities(alpha, beta, gamma_out=None):
     """
     if alpha.shape[0] != beta.shape[0]:
         raise ValueError('Inconsistent sizes of alpha and beta.')
+    # determine T to use
+    if T is None:
+        if gamma_out is None:
+            T = alpha.shape[0]
+        else:
+            T = gamma_out.shape[0]
     # compute
     if gamma_out is None:
         gamma_out = alpha * beta
+        if T < gamma_out.shape[0]:
+            gamma_out = gamma_out[:T]
     else:
-        np.multiply(alpha, beta, gamma_out)
+        if gamma_out.shape[0] < alpha.shape[0]:
+            np.multiply(alpha[:T], beta[:T], gamma_out)
+        else:
+            np.multiply(alpha, beta, gamma_out)
     # normalize
     np.multiply(gamma_out, 1.0/np.sum(gamma_out, axis=1)[:,None], out = gamma_out)
     # done

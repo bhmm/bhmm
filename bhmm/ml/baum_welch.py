@@ -54,7 +54,7 @@ class BaumWelchHMM:
         self.alpha = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
         self.beta = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
         self.pobs = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
-        self.gammas = [np.zeros((self.maxT,self.nstates), dtype=dtype, order='C') for i in range(self.nobs)]
+        self.gammas = [np.zeros((len(self.observations[i]),self.nstates), dtype=dtype, order='C') for i in range(self.nobs)]
         self.Cs = [np.zeros((self.nstates,self.nstates), dtype=dtype, order='C') for i in range(self.nobs)]
 
         # convergence options
