@@ -24,6 +24,13 @@ class OutputModel(object):
 
     """
 
+    # implementation codes
+    __IMPL_PYTHON__ = 0
+    __IMPL_C__ = 1
+
+    # implementation used
+    __impl__= __IMPL_PYTHON__
+
     def __init__(self, nstates):
         """
         Create a general output model.
@@ -37,6 +44,26 @@ class OutputModel(object):
         self.nstates = nstates
 
         return
+
+
+    def set_implementation(self, impl):
+        """
+        Sets the implementation of this module
+
+        Parameters
+        ----------
+        impl : str
+            One of ["python", "c"]
+
+        """
+        if impl.lower() == 'python':
+            self.__impl__ = self.__IMPL_PYTHON__
+        elif impl.lower() == 'c':
+            self.__impl__ = self.__IMPL_C__
+        else:
+            import warnings
+            warnings.warn('Implementation '+impl+' is not known. Using the fallback python implementation.')
+            self.__impl__ = self.__IMPL_PYTHON__
 
 
     def log_p_obs(self, obs, out=None, dtype=np.float32):
