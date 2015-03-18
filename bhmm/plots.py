@@ -93,6 +93,10 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
         # Plot histogram of all data.
         ax2.hist(o_t, nbins, align='mid', orientation='horizontal', color='k', stacked=True, edgecolor=None, alpha=0.5, linewidth=0, normed=True)
 
+    # output distributions
+    ovec = np.linspace(omin, omax, npoints)
+    pobs = output_model.p_obs(ovec, dtype=np.float64)
+
     # Plot.
     for state_index in range(model.nstates):
         # Get color for this state.
@@ -125,8 +129,7 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
             [Ni, bins, patches] = ax2.hist(o_t[indices], nbins, align='mid', orientation='horizontal', color=color, stacked=True, edgecolor=None, alpha=0.5, linewidth=0, range=histrange, weights=weights)
 
         # Plot model emission probability distribution.
-        ovec = np.linspace(omin, omax, npoints)
-        pvec = model.emission_probability(state_index, ovec)
+        pvec = pobs[:,state_index]
         pvec *= model.Pi[state_index] # Scale the Gaussian components since we are plotting the total histogram.
         ax2.plot(pvec, ovec, color=color, linewidth=1)
 

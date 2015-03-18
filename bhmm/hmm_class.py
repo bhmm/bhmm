@@ -139,36 +139,36 @@ class HMM(object):
                 C[S[t],S[t+1]] += 1
         return C
 
-    def emission_probability(self, state, observation):
-        """Compute the emission probability of an observation from a given state.
-
-        Parameters
-        ----------
-        state : int
-            The state index for which the emission probability is to be computed.
-
-        Returns
-        -------
-        Pobs : float
-            The probability (or probability density, if continuous) of the observation.
-
-        TODO
-        ----
-        * Vectorize
-
-        Examples
-        --------
-
-        Compute the probability of observing an emission of 0 from state 0.
-
-        >>> from bhmm import testsystems
-        >>> model = testsystems.dalton_model(nstates=3)
-        >>> state_index = 0
-        >>> observation = 0.0
-        >>> Pobs = model.emission_probability(state_index, observation)
-
-        """
-        return self.output_model.p_o_i(observation, state)
+    # def emission_probability(self, state, observation):
+    #     """Compute the emission probability of an observation from a given state.
+    #
+    #     Parameters
+    #     ----------
+    #     state : int
+    #         The state index for which the emission probability is to be computed.
+    #
+    #     Returns
+    #     -------
+    #     Pobs : float
+    #         The probability (or probability density, if continuous) of the observation.
+    #
+    #     TODO
+    #     ----
+    #     * Vectorize
+    #
+    #     Examples
+    #     --------
+    #
+    #     Compute the probability of observing an emission of 0 from state 0.
+    #
+    #     >>> from bhmm import testsystems
+    #     >>> model = testsystems.dalton_model(nstates=3)
+    #     >>> state_index = 0
+    #     >>> observation = 0.0
+    #     >>> Pobs = model.emission_probability(state_index, observation)
+    #
+    #     """
+    #     return self.output_model.p_o_i(observation, state)
 
     # def log_emission_probability(self, state, observation):
     #     """Compute the log emission probability of an observation from a given state.
