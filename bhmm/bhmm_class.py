@@ -46,7 +46,7 @@ class BHMM(object):
                  reversible=True, verbose=False,
                  transition_matrix_sampling_steps=1000,
                  output_model_type='gaussian',
-                 dtype = np.float64, kernel = 'python'):
+                 dtype = np.float64, kernel = 'c'):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters

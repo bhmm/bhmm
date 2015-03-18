@@ -36,7 +36,7 @@ class MLHMM(object):
 
     """
     def __init__(self, observations, nstates, initial_model=None, reversible=True, verbose=False, output_model_type='gaussian',
-                 kernel = 'python'):
+                 kernel = 'c'):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
