@@ -55,6 +55,8 @@ class MLHMM(object):
             Verbosity flag.
         output_model_type : str, optional, default='gaussian'
             Output model type.  ['gaussian', 'discrete']
+        kernel: str, optional, default='python'
+            Implementation kernel
 
         """
         # Store options.

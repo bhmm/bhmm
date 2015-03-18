@@ -168,7 +168,7 @@ def viterbi(A, pobs, pi, dtype=numpy.float32):
         raise TypeError
 
 
-def sample_path(alpha, A, pobs, T = None, dtype=np.float32):
+def sample_path(alpha, A, pobs, T = None, dtype=numpy.float32):
     N = pobs.shape[1]
     # set T
     if (T is None):

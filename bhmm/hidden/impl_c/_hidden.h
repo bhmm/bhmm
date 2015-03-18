@@ -46,7 +46,7 @@ void _compute_viterbi(
 
 void _sample_path(
         int *path,
-        const double *alpha
+        const double *alpha,
         const double *A,
         const double *pobs,
         const int N, const int T);

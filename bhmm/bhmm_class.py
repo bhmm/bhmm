@@ -6,7 +6,9 @@ Bayesian hidden Markov models.
 import numpy as np
 import copy
 import time
-from scipy.misc import logsumexp
+#from scipy.misc import logsumexp
+import bhmm.hidden as hidden
+
 
 from bhmm.msm.transition_matrix_sampling_rev import TransitionMatrixSamplerRev
 
@@ -43,7 +45,8 @@ class BHMM(object):
     def __init__(self, observations, nstates, initial_model=None,
                  reversible=True, verbose=False,
                  transition_matrix_sampling_steps=1000,
-                 output_model_type='gaussian'):
+                 output_model_type='gaussian',
+                 dtype = np.float64, kernel = 'python'):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -64,6 +67,8 @@ class BHMM(object):
             number of transition matrix sampling steps per BHMM cycle
         output_model_type : str, optional, default='gaussian'
             Output model type.  ['gaussian', 'discrete']
+        kernel: str, optional, default='python'
+            Implementation kernel
 
         TODO
         ----
@@ -83,10 +88,11 @@ class BHMM(object):
 
         # Store a copy of the observations.
         self.observations = copy.deepcopy(observations)
+        self.nobs = len(observations)
+        self.Ts = [len(o) for o in observations]
+        self.maxT = np.max(self.Ts)
 
-        # Determine number of observation trajectories we have been given.
-        self.ntrajectories = len(self.observations)
-
+        # initial model
         if initial_model:
             # Use user-specified initial model, if provided.
             self.model = copy.deepcopy(initial_model)
@@ -94,7 +100,18 @@ class BHMM(object):
             # Generate our own initial model.
             self.model = self._generateInitialModel(output_model_type)
 
+        # sampling options
         self.transition_matrix_sampling_steps = transition_matrix_sampling_steps
+
+        # implementation options
+        self.dtype = dtype
+        self.kernel = kernel
+        hidden.set_implementation(kernel)
+        self.model.output_model.set_implementation(kernel)
+
+        # pre-construct hidden variables
+        self.alpha = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
+        self.pobs = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
 
         return
 
@@ -170,12 +187,12 @@ class BHMM(object):
 
         """
         self.model.hidden_state_trajectories = list()
-        for trajectory_index in range(self.ntrajectories):
+        for trajectory_index in range(self.nobs):
             hidden_state_trajectory = self._sampleHiddenStateTrajectory(self.observations[trajectory_index])
             self.model.hidden_state_trajectories.append(hidden_state_trajectory)
         return
 
-    def _sampleHiddenStateTrajectory(self, o_t, dtype=np.int32):
+    def _sampleHiddenStateTrajectory(self, obs, dtype=np.int32):
         """Sample a hidden state trajectory from the conditional distribution P(s | T, E, o)
 
         Parameters
@@ -200,53 +217,64 @@ class BHMM(object):
         """
 
         # Determine observation trajectory length
-        T = o_t.shape[0]
+        T = obs.shape[0]
 
         # Convenience access.
-        model = self.model # current HMM model
-        nstates = model.nstates
-        logPi = model.logPi
-        logTij = model.logTij
-        #logPi = np.log(model.Pi)
-        #logTij = np.log(model.Tij)
+        A = self.model.Tij
+        pi = self.model.Pi
 
+        # compute output probability matrix
+        self.model.output_model.p_obs(obs, out=self.pobs, dtype=self.dtype)
+        # forward variables
+        logprob = hidden.forward(A, self.pobs, pi, T = T, alpha_out=self.alpha, dtype=self.dtype)[0]
+        # sample path
+        S = hidden.sample_path(self.alpha, A, self.pobs, T = T, dtype=self.dtype)
+
+        return S
+
+        # TODO: remove this when new impl. successfully tested.
+        # model = self.model # current HMM model
+        # nstates = model.nstates
+        # logPi = model.logPi
+        # logTij = model.logTij
+        # #logPi = np.log(model.Pi)
+        # #logTij = np.log(model.Tij)
         #
-        # Forward part.
+        # #
+        # # Forward part.
+        # #
         #
-
-        log_alpha_it = np.zeros([nstates, T], np.float64)
-
-        # TODO: Vectorize in i.
-        for i in range(nstates):
-            log_alpha_it[i,0] = logPi[i] + model.log_emission_probability(i, o_t[0])
-
-        # TODO: Vectorize in j.
-        for t in range(1,T):
-            for j in range(nstates):
-                log_alpha_it[j,t] = logsumexp(log_alpha_it[:,t-1] + logTij[:,j]) + model.log_emission_probability(j, o_t[t])
-
+        # log_alpha_it = np.zeros([nstates, T], np.float64)
         #
-        # Sample state trajectory in backwards part.
+        # for i in range(nstates):
+        #     log_alpha_it[i,0] = logPi[i] + model.log_emission_probability(i, o_t[0])
         #
-
-        s_t = np.zeros([T], dtype=dtype)
-
-        # Sample final state.
-        log_p_i = log_alpha_it[:,T-1]
-        p_i = np.exp(log_p_i - logsumexp(log_alpha_it[:,T-1]))
-        s_t[T-1] = np.random.choice(range(nstates), size=1, p=p_i)
-
-        # Work backwards from T-2 to 0.
-        for t in range(T-2, -1, -1):
-            # Compute P(s_t = i | s_{t+1}..s_T).
-            log_p_i = log_alpha_it[:,t] + logTij[:,s_t[t+1]]
-            p_i = np.exp(log_p_i - logsumexp(log_p_i))
-
-            # Draw from this distribution.
-            s_t[t] = np.random.choice(range(nstates), size=1, p=p_i)
-
-        # Return trajectory
-        return s_t
+        # for t in range(1,T):
+        #     for j in range(nstates):
+        #         log_alpha_it[j,t] = logsumexp(log_alpha_it[:,t-1] + logTij[:,j]) + model.log_emission_probability(j, o_t[t])
+        #
+        # #
+        # # Sample state trajectory in backwards part.
+        # #
+        #
+        # s_t = np.zeros([T], dtype=dtype)
+        #
+        # # Sample final state.
+        # log_p_i = log_alpha_it[:,T-1]
+        # p_i = np.exp(log_p_i - logsumexp(log_alpha_it[:,T-1]))
+        # s_t[T-1] = np.random.choice(range(nstates), size=1, p=p_i)
+        #
+        # # Work backwards from T-2 to 0.
+        # for t in range(T-2, -1, -1):
+        #     # Compute P(s_t = i | s_{t+1}..s_T).
+        #     log_p_i = log_alpha_it[:,t] + logTij[:,s_t[t+1]]
+        #     p_i = np.exp(log_p_i - logsumexp(log_p_i))
+        #
+        #     # Draw from this distribution.
+        #     s_t[t] = np.random.choice(range(nstates), size=1, p=p_i)
+        #
+        # # Return trajectory
+        # return s_t
 
     def _updateEmissionProbabilities(self):
         """Sample a new set of emission probabilites from the conditional distribution P(E | S, O)

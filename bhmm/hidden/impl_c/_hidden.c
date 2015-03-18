@@ -270,7 +270,9 @@ void _compute_viterbi(
 
 int _random_choice(const double* p, const int N)
 {
-    int r = rand();
+    double dR = (double)rand();
+    double dM = (double)RAND_MAX;
+    double r = dR / (dM + 1.0);
     double s = 0.0;
     int i;
     for (i = 0; i < N; i++)
@@ -283,7 +285,7 @@ int _random_choice(const double* p, const int N)
     }
 
     printf("ERROR: random select method could not select anything. Probably p is not normalized.");
-    return(-1)
+    return(-1);
 }
 
 void _normalize(double* v, const int N)
@@ -303,7 +305,7 @@ void _normalize(double* v, const int N)
 
 void _sample_path(
         int *path,
-        const double *alpha
+        const double *alpha,
         const double *A,
         const double *pobs,
         const int N, const int T)
@@ -317,10 +319,14 @@ void _sample_path(
 
 
     // Sample final state.
-    psel = alpha[T-1,:]
+    for (i = 0; i < N; i++)
+    {
+        psel[i] = alpha[(T-1)*N+i];
+    }
     _normalize(psel, N);
     // Draw from this distribution.
     path[T-1] = _random_choice(psel, N);
+    //printf(" drawn: %i\n",path[T-1]);
 
     // Work backwards from T-2 to 0.
     for (t = T-2; t >= 0; t--)
@@ -332,7 +338,8 @@ void _sample_path(
         }
         _normalize(psel, N);
         // Draw from this distribution.
-        path[t] = _random_choice(psel, N)
+        path[t] = _random_choice(psel, N);
+        //printf(" drawn: %i\n",path[t]);
     }
 }
 
