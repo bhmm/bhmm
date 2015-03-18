@@ -170,36 +170,36 @@ class HMM(object):
         """
         return self.output_model.p_o_i(observation, state)
 
-    def log_emission_probability(self, state, observation):
-        """Compute the log emission probability of an observation from a given state.
-
-        Parameters
-        ----------
-        state : int
-            The state index for which the emission probability is to be computed.
-
-        Returns
-        -------
-        log_Pobs : float
-            The log probability (or probability density, if continuous) of the observation.
-
-        TODO
-        ----
-        * Vectorize
-
-        Examples
-        --------
-
-        Compute the log probability of observing an emission of 0 from state 0.
-
-        >>> from bhmm import testsystems
-        >>> model = testsystems.dalton_model(nstates=3)
-        >>> state_index = 0
-        >>> observation = 0.0
-        >>> log_Pobs = model.log_emission_probability(state_index, observation)
-
-        """
-        return self.output_model.log_p_o_i(observation, state)
+    # def log_emission_probability(self, state, observation):
+    #     """Compute the log emission probability of an observation from a given state.
+    #
+    #     Parameters
+    #     ----------
+    #     state : int
+    #         The state index for which the emission probability is to be computed.
+    #
+    #     Returns
+    #     -------
+    #     log_Pobs : float
+    #         The log probability (or probability density, if continuous) of the observation.
+    #
+    #     TODO
+    #     ----
+    #     * Vectorize
+    #
+    #     Examples
+    #     --------
+    #
+    #     Compute the log probability of observing an emission of 0 from state 0.
+    #
+    #     >>> from bhmm import testsystems
+    #     >>> model = testsystems.dalton_model(nstates=3)
+    #     >>> state_index = 0
+    #     >>> observation = 0.0
+    #     >>> log_Pobs = model.log_emission_probability(state_index, observation)
+    #
+    #     """
+    #     return self.output_model.log_p_o_i(observation, state)
 
     def collect_observations_in_state(self, observations, state_index, dtype=np.float64):
         """Collect a vector of all observations belonging to a specified hidden state.

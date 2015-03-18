@@ -52,22 +52,17 @@ def initial_model_gaussian1d(observations, nstates, reversible = True):
     from scipy.misc import logsumexp
     Nij = np.zeros([nstates, nstates], np.float64)
     for trajectory_index in range(ntrajectories):
-        o_t = observations[trajectory_index] # extract trajectory
+        # extract trajectory
+        o_t = observations[trajectory_index]
+        # length of trajectory
         T = o_t.shape[0]
-        # Compute log emission probabilities.
-        log_p_ti = np.zeros([T,nstates], np.float64)
-        for i in range(nstates):
-            log_p_ti[:,i] = model.log_emission_probability(i, o_t)
-        # Exponentiate and normalize
-        # TODO: Account for initial distribution.
-        p_ti = np.zeros([T,nstates], np.float64)
-        for t in range(T):
-            p_ti[t,:] = np.exp(log_p_ti[t,:] - logsumexp(log_p_ti[t,:]))
-            p_ti[t,:] /= p_ti[t,:].sum()
-        print p_ti
+        # output probability
+        pobs = output_model.p_obs(o_t)
+        # normalize
+        pobs /= pobs.sum(axis=1)[:,None]
         # Accumulate fractional transition counts from this trajectory.
         for t in range(T-1):
-            Nij[:,:] = Nij[:,:] + np.outer(p_ti[t,:], p_ti[t+1,:])
+            Nij[:,:] = Nij[:,:] + np.outer(pobs[t,:], pobs[t+1,:])
         print "Nij"
         print Nij
 
