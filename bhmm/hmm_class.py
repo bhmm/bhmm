@@ -201,7 +201,7 @@ class HMM(object):
     #     """
     #     return self.output_model.log_p_o_i(observation, state)
 
-    def collect_observations_in_state(self, observations, state_index, dtype=np.float64):
+    def collect_observations_in_state(self, observations, state_index):
         """Collect a vector of all observations belonging to a specified hidden state.
 
         Parameters
@@ -227,6 +227,7 @@ class HMM(object):
         if not self.hidden_state_trajectories:
             raise RuntimeError('HMM model does not have a hidden state trajectory.')
 
+        dtype = observations[0].dtype
         collected_observations = np.array([], dtype=dtype)
         for (s_t, o_t) in zip(self.hidden_state_trajectories, observations):
             indices = np.where(s_t == state_index)[0]

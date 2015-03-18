@@ -271,9 +271,16 @@ class DiscreteOutputModel(OutputModel):
 
         """
         from numpy.random import dirichlet
+        # total number of observation symbols
+        M = self.B.shape[1]
+        count_full = np.zeros((M), dtype = int)
         for i in range(len(observations)):
+            # count symbols found in data
             count = np.bincount(observations[i])
-            self.B[i,:] = dirichlet(count + 1)
+            # blow up to full symbol space (if symbols are missing in this observation)
+            count_full[:count.shape[0]] = count[:]
+            # sample dirichlet distribution
+            self.B[i,:] = dirichlet(count_full + 1)
 
     def generate_observation_from_state(self, state_index):
         """
