@@ -5,15 +5,14 @@ BHMM: A toolkit for Bayesian hidden Markov model analysis of single-molecule tra
 from __future__ import print_function
 import os
 import sys
-import distutils.extension
-
+from distutils.version import StrictVersion
 from setuptools import setup, Extension, find_packages
 import numpy
 import glob
-import os
 from os.path import relpath, join
 import subprocess
 from Cython.Build import cythonize
+
 DOCLINES = __doc__.split("\n")
 
 ########################
@@ -115,6 +114,16 @@ def find_package_data(data_root, package_root):
 # SETUP
 ################################################################################
 
+
+try:
+    import pyemma
+    if not StrictVersion(pyemma.__version__) >= '1.1.2':
+        raise ImportError
+except:
+    print('Bulding and running bhmm requires pyemma >= 1.1.2. Install first.')
+    sys.exit(1) 
+
+
 #cython_ext = cythonize(Extension('bhmm.msm.tmatrix_sampling',
 #                       		 sources = ['./bhmm/msm/tmatrix_sampling.pyx'],
 #                       		 include_dirs = [numpy.get_include()]))
@@ -153,7 +162,7 @@ setup(
         'cython',
         'numpy',
         'scipy',
-        'pyemma',
+        'pyemma>=1.1.2',
         'scikit-learn',
         'matplotlib',
         'seaborn',
