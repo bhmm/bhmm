@@ -18,7 +18,7 @@ requirements:
     - scikit-learn
     - matplotlib
     - seaborn
-    - pyemma>=1.1.2
+    - pyemma >=1.1.2
 
   run:
     - python
@@ -31,7 +31,7 @@ requirements:
     - scikit-learn
     - matplotlib
     - seaborn
-    - pyemma>=1.1.2
+    - pyemma >=1.1.2
 
 test:
   requires:
