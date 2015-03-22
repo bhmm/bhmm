@@ -21,7 +21,8 @@ def initial_model_gaussian1d(observations, nstates, reversible=True, verbose=Fal
 
     Generate initial model for a gaussian output model.
 
-    >>> [model, observations, states] = generate_synthetic_observations(output_model_type='gaussian')
+    >>> from bhmm import testsystems
+    >>> [model, observations, states] = testsystems.generate_synthetic_observations(output_model_type='gaussian')
     >>> initial_model = initial_model_gaussian1d(observations, model.nstates)
 
     """
@@ -29,7 +30,10 @@ def initial_model_gaussian1d(observations, nstates, reversible=True, verbose=Fal
 
     # Concatenate all observations.
     collected_observations = np.array([], dtype=np.float64)
+    print "observations"
+    print observations
     for o_t in observations:
+        print o_t
         collected_observations = np.append(collected_observations, o_t, axis=0)
 
     # Fit a Gaussian mixture model to obtain emission distributions and state stationary probabilities.

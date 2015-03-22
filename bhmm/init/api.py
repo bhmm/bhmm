@@ -20,12 +20,14 @@ def generate_initial_model(observations, nstates, output_model_type, verbose=Fal
 
     Generate initial model for a gaussian output model.
 
-    >>> [model, observations, states] = generate_synthetic_observations(output_model_type='gaussian')
+    >>> from bhmm import testsystems
+    >>> [model, observations, states] = testsystems.generate_synthetic_observations(output_model_type='gaussian')
     >>> initial_model = generate_initial_model(observations, model.nstates, 'gaussian')
 
     Generate initial model for a discrete output model.
 
-    >>> [model, observations, states] = generate_synthetic_observations(output_model_type='discreten')
+    >>> from bhmm import testsystems
+    >>> [model, observations, states] = testsystems.generate_synthetic_observations(output_model_type='discreten')
     >>> initial_model = generate_initial_model(observations, model.nstates, 'discrete')
 
     """

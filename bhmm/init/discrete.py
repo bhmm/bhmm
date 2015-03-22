@@ -30,7 +30,8 @@ def initial_model_discrete(observations, nstates, lag=1, reversible=True, verbos
 
     Generate initial model for a discrete output model.
 
-    >>> [model, observations, states] = generate_synthetic_observations(output_model_type='discreten')
+    >>> from bhmm import testsystems
+    >>> [model, observations, states] = testsystems.generate_synthetic_observations(output_model_type='discrete')
     >>> initial_model = initial_model_discrete(observations, model.nstates)
 
     """
