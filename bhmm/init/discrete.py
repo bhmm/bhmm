@@ -6,13 +6,32 @@ from bhmm.output_models.discrete import DiscreteOutputModel
 
 import warnings
 
-def initial_model_discrete(observations, nstates, lag = 1, reversible = True):
+def initial_model_discrete(observations, nstates, lag=1, reversible=True, verbose=False):
     """Generate an initial model with discrete output densities
 
     Parameters
     ----------
     observations : list of ndarray((T_i), dtype=int)
         list of arrays of length T_i with observation data
+    nstates : int
+        The number of states.
+    lag : int, optional, default=1
+        The lag time to use for initializing the model.
+    verbose : bool, optional, default=False
+        If True, will be verbose in output.
+
+    TODO
+    ----
+    * Why do we have a `lag` option?  Isn't the HMM model, by definition, lag=1 everywhere?  Why would this be useful instead of just having the user subsample the data?
+
+    Examples
+    --------
+
+
+    Generate initial model for a discrete output model.
+
+    >>> [model, observations, states] = generate_synthetic_observations(output_model_type='discreten')
+    >>> initial_model = initial_model_discrete(observations, model.nstates)
 
     """
 
@@ -78,12 +97,13 @@ def initial_model_discrete(observations, nstates, lag = 1, reversible = True):
     # renormalize to eliminate numerical errors
     A /= A.sum(axis=1)[:,None]
 
-    print 'Initial model: '
-    print 'A = \n',A
-    print 'B.T = \n'
-    for i in range(B.shape[1]):
-        print B[0,i],B[1,i]
-    print
+    if verbose:
+        print 'Initial model: '
+        print 'A = \n',A
+        print 'B.T = \n'
+        for i in range(B.shape[1]):
+            print B[0,i],B[1,i]
+        print
 
     # initialize HMM
     # --------------

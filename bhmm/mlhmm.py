@@ -117,8 +117,6 @@ class MLHMM(object):
         self.maxit = maxit
         self.likelihoods = np.zeros((maxit))
 
-
-
     def _forward_backward(self, itraj):
         """
         Estimation step: Runs the forward-back algorithm on trajectory with index itraj
