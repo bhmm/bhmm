@@ -64,7 +64,7 @@ def p_o(o, mus, sigmas, out=None, dtype=numpy.float32):
     elif dtype == numpy.float64:
         return p_o_64(o, mus, sigmas, out=out)
     else:
-        raise ValueError
+        raise TypeError
 
 
 def p_obs_64(obs, mus, sigmas, out=None):
@@ -102,4 +102,4 @@ def p_obs(obs, mus, sigmas, out=None, dtype=numpy.float32):
     elif dtype == numpy.float64:
         return p_obs_64(obs, mus, sigmas, out=out)
     else:
-        raise ValueError
+        raise TypeError

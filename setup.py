@@ -5,15 +5,14 @@ BHMM: A toolkit for Bayesian hidden Markov model analysis of single-molecule tra
 from __future__ import print_function
 import os
 import sys
-import distutils.extension
-
+from distutils.version import StrictVersion
 from setuptools import setup, Extension, find_packages
 import numpy
 import glob
-import os
 from os.path import relpath, join
 import subprocess
 from Cython.Build import cythonize
+
 DOCLINES = __doc__.split("\n")
 
 ########################
@@ -115,9 +114,19 @@ def find_package_data(data_root, package_root):
 # SETUP
 ################################################################################
 
-#cext1 = cythonize(Extension('bhmm.msm.tmatrix_sampling',
-#                            sources = ['./bhmm/msm/tmatrix_sampling.pyx'],
-#                            include_dirs = [numpy.get_include()]))
+
+try:
+    import pyemma
+    if not StrictVersion(pyemma.__version__) >= '1.1.2':
+        raise ImportError
+except:
+    print('Bulding and running bhmm requires pyemma >= 1.1.2. Install first.')
+    sys.exit(1) 
+
+
+#cython_ext = cythonize(Extension('bhmm.msm.tmatrix_sampling',
+#                       		 sources = ['./bhmm/msm/tmatrix_sampling.pyx'],
+#                       		 include_dirs = [numpy.get_include()]))
 extensions = [Extension('bhmm.hidden.impl_c.hidden',
                         sources = ['./bhmm/hidden/impl_c/hidden.pyx',
                                    './bhmm/hidden/impl_c/_hidden.c'],
@@ -125,7 +134,10 @@ extensions = [Extension('bhmm.hidden.impl_c.hidden',
 	      Extension('bhmm.output_models.impl_c.gaussian',
                         sources = ['./bhmm/output_models/impl_c/gaussian.pyx',
                                    './bhmm/output_models/impl_c/_gaussian.c'],
-                        include_dirs = ['/bhmm/output_models/impl_c/',numpy.get_include()])]
+                        include_dirs = ['/bhmm/output_models/impl_c/',numpy.get_include()]),
+	      Extension('bhmm.msm.tmatrix_sampling',
+			sources = ['./bhmm/msm/tmatrix_sampling.pyx'],
+			include_dirs = [numpy.get_include()])]
 
 
 write_version_py()
@@ -142,7 +154,7 @@ setup(
     classifiers=CLASSIFIERS.splitlines(),
     package_dir={'bhmm': 'bhmm'},
     #packages=['bhmm', "bhmm.tests"] + ['bhmm.%s' % package for package in find_packages('bhmm')],
-    packages=['bhmm', 'bhmm.msm', 'bhmm.hidden', 'bhmm.ml', 'bhmm.msm', 'bhmm.output_models', 'bhmm.output_models.impl_c', 'bhmm.util', 'bhmm.hidden.impl_python', 'bhmm.hidden.impl_c'],
+    packages=['bhmm', 'bhmm.msm', 'bhmm.hidden', 'bhmm.init', 'bhmm.msm', 'bhmm.output_models', 'bhmm.output_models.impl_c', 'bhmm.util', 'bhmm.hidden.impl_python', 'bhmm.hidden.impl_c'],
     # + ['bhmm.%s' % package for package in find_packages('bhmm')],
     package_data={'bhmm': find_package_data('examples', 'bhmm')},  # NOTE: examples installs to bhmm.egg/examples/, NOT bhmm.egg/bhmm/examples/.  You need to do utils.get_data_filename("../examples/*/setup/").
     zip_safe=False,
@@ -150,6 +162,7 @@ setup(
         'cython',
         'numpy',
         'scipy',
+        'pyemma>=1.1.2',
         'scikit-learn',
         'matplotlib',
         'seaborn',

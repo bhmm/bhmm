@@ -82,81 +82,82 @@ class DiscreteOutputModel(OutputModel):
         output += "--------------------------------------------------------------------------------"
         return output
 
-    def p_o_i(self, o, i):
-        """
-        Returns the output probability for symbol o given hidden state i
-
-        Parameters
-        ----------
-        o : int
-            the discrete symbol o (observation)
-        i : int
-            the hidden state index
-
-        Return
-        ------
-        p_o : float
-            the probability that hidden state i generates symbol o
-
-        """
-        # TODO: so far we don't use this method. Perhaps we don't need it.
-        return self.B[i,o]
-
-    def log_p_o_i(self, o, i):
-        """
-        Returns the logarithm of the output probability for symbol o given hidden state i
-
-        Parameters
-        ----------
-        o : int
-            the discrete symbol o (observation)
-        i : int
-            the hidden state index
-
-        Return
-        ------
-        p_o : float
-            the log probability that hidden state i generates symbol o
-
-        """
-        # TODO: check if we need the log-probabilities
-        return log(self.B[i,o])
-
-
-    def p_o(self, o):
-        """
-        Returns the output probability for symbol o from all hidden states
-
-        Parameters
-        ----------
-        o : int
-            the discrete symbol o (observation)
-
-        Return
-        ------
-        p_o : ndarray (N)
-            the probability that any of the N hidden states generates symbol o
-
-        """
-        # TODO: so far we don't use this method. Perhaps we don't need it.
-        return self.B[:,o]
-
-    def log_p_o(self, o):
-        """
-        Returns the logarithm of the output probabilities for symbol o from all hidden states
-
-        Parameters
-        ----------
-        o : int
-            the discrete symbol o (observation)
-
-        Return
-        ------
-        p_o : ndarray (N)
-            the log probability that any of the N hidden states generates symbol o
-
-        """
-        return np.log(self.B[:,o])
+    # TODO: remove this code if we're sure we don't need it.
+    # def p_o_i(self, o, i):
+    #     """
+    #     Returns the output probability for symbol o given hidden state i
+    #
+    #     Parameters
+    #     ----------
+    #     o : int
+    #         the discrete symbol o (observation)
+    #     i : int
+    #         the hidden state index
+    #
+    #     Return
+    #     ------
+    #     p_o : float
+    #         the probability that hidden state i generates symbol o
+    #
+    #     """
+    #     # TODO: so far we don't use this method. Perhaps we don't need it.
+    #     return self.B[i,o]
+    #
+    # def log_p_o_i(self, o, i):
+    #     """
+    #     Returns the logarithm of the output probability for symbol o given hidden state i
+    #
+    #     Parameters
+    #     ----------
+    #     o : int
+    #         the discrete symbol o (observation)
+    #     i : int
+    #         the hidden state index
+    #
+    #     Return
+    #     ------
+    #     p_o : float
+    #         the log probability that hidden state i generates symbol o
+    #
+    #     """
+    #     # TODO: check if we need the log-probabilities
+    #     return log(self.B[i,o])
+    #
+    #
+    # def p_o(self, o):
+    #     """
+    #     Returns the output probability for symbol o from all hidden states
+    #
+    #     Parameters
+    #     ----------
+    #     o : int
+    #         the discrete symbol o (observation)
+    #
+    #     Return
+    #     ------
+    #     p_o : ndarray (N)
+    #         the probability that any of the N hidden states generates symbol o
+    #
+    #     """
+    #     # TODO: so far we don't use this method. Perhaps we don't need it.
+    #     return self.B[:,o]
+    #
+    # def log_p_o(self, o):
+    #     """
+    #     Returns the logarithm of the output probabilities for symbol o from all hidden states
+    #
+    #     Parameters
+    #     ----------
+    #     o : int
+    #         the discrete symbol o (observation)
+    #
+    #     Return
+    #     ------
+    #     p_o : ndarray (N)
+    #         the log probability that any of the N hidden states generates symbol o
+    #
+    #     """
+    #     return np.log(self.B[:,o])
 
     def p_obs(self, obs, out=None, dtype=np.float32):
         """
@@ -177,7 +178,12 @@ class DiscreteOutputModel(OutputModel):
         if (out is None):
             return self.B[:,obs].T
         else:
-            out[:,:] = self.B[:,obs].T
+            if (obs.shape[0] == out.shape[0]):
+                out[:,:] = self.B[:,obs].T
+            elif (obs.shape[0] < out.shape[0]):
+                out[:obs.shape[0],:] = self.B[:,obs].T
+            else:
+                raise ValueError('output array out is too small: '+str(out.shape[0])+' < '+str(obs.shape[0]))
             return out
 
 
@@ -231,11 +237,13 @@ class DiscreteOutputModel(OutputModel):
             obs = observations[k]
             for o in range(M):
                 times = np.where(obs == o)[0]
-                self.B[:,o] = np.sum(weights[k][times,:], axis=0)
+                self.B[:,o] += np.sum(weights[k][times,:], axis=0)
 
         # normalize
         for o in range(M):
-            self.B[:,o] /= np.sum(self.B[:,o])
+            sum = np.sum(self.B[:,o])
+            if sum > 0:
+                self.B[:,o] /= np.sum(self.B[:,o])
 
     def sample(self, observations):
         """
@@ -263,9 +271,16 @@ class DiscreteOutputModel(OutputModel):
 
         """
         from numpy.random import dirichlet
+        # total number of observation symbols
+        M = self.B.shape[1]
+        count_full = np.zeros((M), dtype = int)
         for i in range(len(observations)):
+            # count symbols found in data
             count = np.bincount(observations[i])
-            self.B[i,:] = dirichlet(count + 1)
+            # blow up to full symbol space (if symbols are missing in this observation)
+            count_full[:count.shape[0]] = count[:]
+            # sample dirichlet distribution
+            self.B[i,:] = dirichlet(count_full + 1)
 
     def generate_observation_from_state(self, state_index):
         """

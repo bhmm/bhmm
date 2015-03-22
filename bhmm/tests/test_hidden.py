@@ -100,22 +100,6 @@ class TestHidden(unittest.TestCase):
         self.nexamples += 1
 
 
-
-        # # PYTHON ALLOCATE IMPL
-        # hidden.set_implementation('python')
-        # (self.logprob_p, self.alpha_p, self.beta_p, self.gamma_p, self.statecount_p, self.C_p, self.vpath_p) = self.run_all(A, pobs, pi)
-        # # PYTHON PRE-ALLOCATE IMPL
-        # hidden.set_implementation('python')
-        # (self.logprob_p_mem, self.alpha_p_mem, self.beta_p_mem, self.gamma_p_mem, self.statecount_p_mem, self.C_p_mem, self.vpath_p_mem) = self.run_all(A, pobs, pi)
-        #
-        # # C ALLOCATE IMPL
-        # hidden.set_implementation('c')
-        # (self.logprob_c, self.alpha_c, self.beta_c, self.gamma_c, self.statecount_c, self.C_c, self.vpath_c) = self.run_all(A, pobs, pi)
-        # # C PRE-ALLOCATE IMPL
-        # hidden.set_implementation('c')
-        # (self.logprob_c_mem, self.alpha_c_mem, self.beta_c_mem, self.gamma_c_mem, self.statecount_c_mem, self.C_c_mem, self.vpath_c_mem) = self.run_all(A, pobs, pi)
-
-
     def run_all(self, A, pobs, pi):
         # forward
         logprob, alpha = hidden.forward(A, pobs, pi, dtype=np.float64)

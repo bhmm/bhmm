@@ -4,7 +4,7 @@ Hidden Markov model representation.
 """
 
 import numpy as np
-import msm.linalg as msmalg
+#import msm.linalg as msmalg
 import output_models
 
 __author__ = "John D. Chodera, Frank Noe"
@@ -64,12 +64,13 @@ class HMM(object):
         self.reversible = reversible
 
         # initial / stationary distribution
+        import pyemma.msm.analysis as msmana
         self.stationary = stationary
         if (stationary):
-            self.Pi = msmalg.stationary_distribution(self.Tij) # TODO: Rename to 'stationary_probabilities'?
+            self.Pi = msmana.stationary_distribution(self.Tij) # TODO: Rename to 'stationary_probabilities'?
         else:
             if Pi is None: # no initial distribution given, so use stationary distribution anyway
-                self.Pi = msmalg.stationary_distribution(self.Tij)
+                self.Pi = msmana.stationary_distribution(self.Tij)
             else:
                 self.Pi = Pi
 
@@ -138,69 +139,69 @@ class HMM(object):
                 C[S[t],S[t+1]] += 1
         return C
 
-    def emission_probability(self, state, observation):
-        """Compute the emission probability of an observation from a given state.
+    # def emission_probability(self, state, observation):
+    #     """Compute the emission probability of an observation from a given state.
+    #
+    #     Parameters
+    #     ----------
+    #     state : int
+    #         The state index for which the emission probability is to be computed.
+    #
+    #     Returns
+    #     -------
+    #     Pobs : float
+    #         The probability (or probability density, if continuous) of the observation.
+    #
+    #     TODO
+    #     ----
+    #     * Vectorize
+    #
+    #     Examples
+    #     --------
+    #
+    #     Compute the probability of observing an emission of 0 from state 0.
+    #
+    #     >>> from bhmm import testsystems
+    #     >>> model = testsystems.dalton_model(nstates=3)
+    #     >>> state_index = 0
+    #     >>> observation = 0.0
+    #     >>> Pobs = model.emission_probability(state_index, observation)
+    #
+    #     """
+    #     return self.output_model.p_o_i(observation, state)
 
-        Parameters
-        ----------
-        state : int
-            The state index for which the emission probability is to be computed.
+    # def log_emission_probability(self, state, observation):
+    #     """Compute the log emission probability of an observation from a given state.
+    #
+    #     Parameters
+    #     ----------
+    #     state : int
+    #         The state index for which the emission probability is to be computed.
+    #
+    #     Returns
+    #     -------
+    #     log_Pobs : float
+    #         The log probability (or probability density, if continuous) of the observation.
+    #
+    #     TODO
+    #     ----
+    #     * Vectorize
+    #
+    #     Examples
+    #     --------
+    #
+    #     Compute the log probability of observing an emission of 0 from state 0.
+    #
+    #     >>> from bhmm import testsystems
+    #     >>> model = testsystems.dalton_model(nstates=3)
+    #     >>> state_index = 0
+    #     >>> observation = 0.0
+    #     >>> log_Pobs = model.log_emission_probability(state_index, observation)
+    #
+    #     """
+    #     return self.output_model.log_p_o_i(observation, state)
 
-        Returns
-        -------
-        Pobs : float
-            The probability (or probability density, if continuous) of the observation.
-
-        TODO
-        ----
-        * Vectorize
-
-        Examples
-        --------
-
-        Compute the probability of observing an emission of 0 from state 0.
-
-        >>> from bhmm import testsystems
-        >>> model = testsystems.dalton_model(nstates=3)
-        >>> state_index = 0
-        >>> observation = 0.0
-        >>> Pobs = model.emission_probability(state_index, observation)
-
-        """
-        return self.output_model.p_o_i(observation, state)
-
-    def log_emission_probability(self, state, observation):
-        """Compute the log emission probability of an observation from a given state.
-
-        Parameters
-        ----------
-        state : int
-            The state index for which the emission probability is to be computed.
-
-        Returns
-        -------
-        log_Pobs : float
-            The log probability (or probability density, if continuous) of the observation.
-
-        TODO
-        ----
-        * Vectorize
-
-        Examples
-        --------
-
-        Compute the log probability of observing an emission of 0 from state 0.
-
-        >>> from bhmm import testsystems
-        >>> model = testsystems.dalton_model(nstates=3)
-        >>> state_index = 0
-        >>> observation = 0.0
-        >>> log_Pobs = model.log_emission_probability(state_index, observation)
-
-        """
-        return self.output_model.log_p_o_i(observation, state)
-
-    def collect_observations_in_state(self, observations, state_index, dtype=np.float64):
+    def collect_observations_in_state(self, observations, state_index):
         """Collect a vector of all observations belonging to a specified hidden state.
 
         Parameters
@@ -226,6 +227,7 @@ class HMM(object):
         if not self.hidden_state_trajectories:
             raise RuntimeError('HMM model does not have a hidden state trajectory.')
 
+        dtype = observations[0].dtype
         collected_observations = np.array([], dtype=dtype)
         for (s_t, o_t) in zip(self.hidden_state_trajectories, observations):
             indices = np.where(s_t == state_index)[0]
