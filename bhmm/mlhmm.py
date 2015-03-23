@@ -95,7 +95,7 @@ class MLHMM(object):
             self.model = copy.deepcopy(initial_model)
         else:
             # Generate our own initial model.
-            self.model = init.generate_initial_model(observations, nstates, output_model_type)
+            self.model = init.generate_initial_model(observations, nstates, output_model_type, verbose=self.verbose)
 
         # Kernel for computing things
         self.kernel = kernel
@@ -116,8 +116,6 @@ class MLHMM(object):
         self.accuracy = accuracy
         self.maxit = maxit
         self.likelihoods = np.zeros((maxit))
-
-
 
     def _forward_backward(self, itraj):
         """
@@ -181,7 +179,8 @@ class MLHMM(object):
             # print 'C['+str(k)+'] = ',count_matrices[k]
             C += count_matrices[k]
 
-        print "Count matrix = \n",C
+        if self.verbose:
+            print "Count matrix = \n",C
 
         # compute new transition matrix
         from msm.tmatrix_disconnected import estimate_P,stationary_distribution
@@ -196,8 +195,9 @@ class MLHMM(object):
         self.model.Tij = copy.deepcopy(T)
         self.model.Pi  = copy.deepcopy(pi)
 
-        print "T: ",T
-        print "pi: ",pi
+        if self.verbose:
+            print "T: ",T
+            print "pi: ",pi
 
         # update output model
         # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
@@ -294,7 +294,7 @@ class MLHMM(object):
                 loglik += self._forward_backward(k)
 
             self._update_model(self.gammas, self.Cs)
-            print it, "ll = ", loglik
+            if self.verbose: print it, "ll = ", loglik
             #print self.model.output_model
             #print "---------------------"
 

@@ -3,6 +3,10 @@ Plotting utilities for Bayesian hidden Markov models.
 
 """
 
+import matplotlib
+# Force matplotlib to not use any Xwindows backend.
+matplotlib.use('Agg')
+
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -48,13 +52,13 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
     >>> import tempfile
     >>> filename = tempfile.NamedTemporaryFile().name
     >>> from bhmm import testsystems
-    >>> [model, O, S, bhmm] = testsystems.generate_random_bhmm(nstates=3, ntrajectories=1, length=10000)
-    >>> models = bhmm.sample(nsamples=1, save_hidden_state_trajectory=True)
+    >>> [model, O, S, bhmm_sampler] = testsystems.generate_random_bhmm(nstates=3, ntrajectories=1, length=10000)
     >>> plot_state_assignments(model, S[0], O[0], pdf_filename=filename)
 
     Label the axes.
 
-    >>> plot_state_assignments(model, models.hidden_state_trajectories[0], O[0], tau=0.001, time_units='ms', obs_label='force / pN', pdf_filename=filename)
+    >>> models = bhmm_sampler.sample(nsamples=1, save_hidden_state_trajectory=True)
+    >>> plot_state_assignments(models[0], models[0].hidden_state_trajectories[0], O[0], tau=0.001, time_units='ms', obs_label='force / pN', pdf_filename=filename)
 
     """
     if pdf_filename:

@@ -345,7 +345,7 @@ class DiscreteOutputModel(OutputModel):
         gen = scipy.stats.rv_discrete(values=(range(self.nsymbols), self.B[state_index]))
         gen.rvs(size=nobs)
 
-    def generate_observation_trajectory(self, s_t):
+    def generate_observation_trajectory(self, s_t, dtype=None):
         """
         Generate synthetic observation data from a given state sequence.
 
@@ -358,6 +358,8 @@ class DiscreteOutputModel(OutputModel):
         -------
         o_t : numpy.array with shape (T,) of type dtype
             o_t[t] is the observation associated with state s_t[t]
+        dtype : numpy.dtype, optional, default=None
+            The datatype to return the resulting observations in. If None, will select int32.
 
         Examples
         --------
@@ -374,15 +376,36 @@ class DiscreteOutputModel(OutputModel):
 
         """
 
+        if dtype == None:
+            dtype = np.int32
+
         # Determine number of samples to generate.
         T = s_t.shape[0]
+        nsymbols = self.B.shape[1]
+
+        if (s_t.max() >= self.nstates) or (s_t.min() < 0):
+            str = ''
+            str += 's_t = %s\n' % s_t
+            str += 's_t.min() = %d, s_t.max() = %d\n' % (s_t.min(), s_t.max())
+            str += 's_t.argmax = %d\n' % s_t.argmax()
+            str += 'self.nstates = %d\n' % self.nstates
+            str += 's_t is out of bounds.\n'
+            raise Exception(str)
+
         # generate random generators
-        import scipy.stats
-        gens = [scipy.stats.rv_discrete(values=(range(len(self.B[state_index])), self.B[state_index])) for state_index in range(self.B.shape[0])]
-        o_t = np.zeros([T], dtype=int)
+        #import scipy.stats
+        #gens = [scipy.stats.rv_discrete(values=(range(len(self.B[state_index])), self.B[state_index])) for state_index in range(self.B.shape[0])]
+        #o_t = np.zeros([T], dtype=dtype)
+        #for t in range(T):
+        #    s = s_t[t]
+        #    o_t[t] = gens[s].rvs(size=1)
+        #return o_t
+
+        o_t = np.zeros([T], dtype=dtype)
         for t in range(T):
             s = s_t[t]
-            o_t[t] = gens[s].rvs(size=1)
+            o_t[t] = np.random.choice(nsymbols, p=self.B[s,:])
+
         return o_t
 
 

@@ -466,7 +466,7 @@ class GaussianOutputModel(OutputModel):
         return observations
 
 
-    def generate_observation_trajectory(self, s_t, dtype=np.float32):
+    def generate_observation_trajectory(self, s_t, dtype=None):
         """
         Generate synthetic observation data from a given state sequence.
 
@@ -474,8 +474,8 @@ class GaussianOutputModel(OutputModel):
         ----------
         s_t : numpy.array with shape (T,) of int type
             s_t[t] is the hidden state sampled at time t
-        dtype : numpy.dtype, optional, default=numpy.float32
-            The datatype to return the resulting observations in.
+        dtype : numpy.dtype, optional, default=None
+            The datatype to return the resulting observations in. If None, will use float32.
 
         Returns
         -------
@@ -496,6 +496,9 @@ class GaussianOutputModel(OutputModel):
         >>> o_t = output_model.generate_observation_trajectory(s_t)
 
         """
+
+        if dtype == None:
+            dtype = np.float32
 
         # Determine number of samples to generate.
         T = s_t.shape[0]
