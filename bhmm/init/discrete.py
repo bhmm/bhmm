@@ -27,7 +27,6 @@ def initial_model_discrete(observations, nstates, lag=1, reversible=True, verbos
     Examples
     --------
 
-
     Generate initial model for a discrete output model.
 
     >>> from bhmm import testsystems

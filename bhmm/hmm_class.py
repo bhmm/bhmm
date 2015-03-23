@@ -301,7 +301,7 @@ class HMM(object):
         """
         return self.output_model.generate_observation_from_state(state)
 
-    def generate_synthetic_observation_trajectory(self, length, initial_Pi=None, dtype=np.float32):
+    def generate_synthetic_observation_trajectory(self, length, initial_Pi=None, dtype=None):
         """Generate a synthetic realization of observables.
 
         Parameters
@@ -310,8 +310,8 @@ class HMM(object):
             Length of synthetic state trajectory to be generated.
         initial_Pi : np.array of shape (nstates,), optional, default=None
             The initial probability distribution, if samples are not to be taken from equilibrium.
-        dtype : numpy.dtype, optional, default=numpy.float32
-            The numpy dtype to use to store the synthetic trajectory.
+        dtype : numpy.dtype, optional, default=None
+            The numpy dtype to use to store the synthetic trajectory.  If None, will use default dtype.
 
         Returns
         -------
@@ -344,7 +344,7 @@ class HMM(object):
 
         return [o_t, s_t]
 
-    def generate_synthetic_observation_trajectories(self, ntrajectories, length, initial_Pi=None, dtype=np.float32):
+    def generate_synthetic_observation_trajectories(self, ntrajectories, length, initial_Pi=None, dtype=None):
         """Generate a number of synthetic realization of observables from this model.
 
         Parameters
@@ -355,8 +355,8 @@ class HMM(object):
             Length of synthetic state trajectory to be generated.
         initial_Pi : np.array of shape (nstates,), optional, default=None
             The initial probability distribution, if samples are not to be taken from equilibrium.
-        dtype : numpy.dtype, optional, default=numpy.float32
-            The numpy dtype to use to store the synthetic trajectory.
+        dtype : numpy.dtype, optional, default=None
+            The numpy dtype to use to store the synthetic trajectory.  If None, will use default.
 
         Returns
         -------
@@ -379,7 +379,6 @@ class HMM(object):
         >>> from bhmm import testsystems
         >>> model = testsystems.dalton_model(nstates=3)
         >>> [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100, initial_Pi=np.array([1,0,0]))
-
 
         """
         O = list() # observations

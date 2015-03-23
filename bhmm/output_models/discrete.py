@@ -345,7 +345,7 @@ class DiscreteOutputModel(OutputModel):
         gen = scipy.stats.rv_discrete(values=(range(self.nsymbols), self.B[state_index]))
         gen.rvs(size=nobs)
 
-    def generate_observation_trajectory(self, s_t, dtype=np.int32):
+    def generate_observation_trajectory(self, s_t, dtype=None):
         """
         Generate synthetic observation data from a given state sequence.
 
@@ -358,8 +358,8 @@ class DiscreteOutputModel(OutputModel):
         -------
         o_t : numpy.array with shape (T,) of type dtype
             o_t[t] is the observation associated with state s_t[t]
-        dtype : numpy.dtype, optional, default=numpy.int32
-            The datatype to return the resulting observations in.
+        dtype : numpy.dtype, optional, default=None
+            The datatype to return the resulting observations in. If None, will select int32.
 
         Examples
         --------
@@ -375,6 +375,9 @@ class DiscreteOutputModel(OutputModel):
         >>> o_t = output_model.generate_observation_trajectory(s_t)
 
         """
+
+        if dtype == None:
+            dtype = np.int32
 
         # Determine number of samples to generate.
         T = s_t.shape[0]
