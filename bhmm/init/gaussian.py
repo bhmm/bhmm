@@ -62,15 +62,7 @@ def initial_model_gaussian1d(observations, nstates, reversible=True, verbose=Fal
     Nij = np.zeros([nstates, nstates], np.float64)
     for o_t in observations:
         # length of trajectory
-        try:
-            T = o_t.shape[0]
-        except Exception as e:
-            out = ""
-            out += str(e) + '\n'
-            out += str(o_t) + '\n'
-            out += 'observations = \n'
-            out += str(observations) + '\n'
-            raise Exception(out)
+        T = o_t.shape[0]
         # output probability
         pobs = output_model.p_obs(o_t)
         # normalize
