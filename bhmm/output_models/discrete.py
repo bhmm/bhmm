@@ -82,82 +82,84 @@ class DiscreteOutputModel(OutputModel):
         output += "--------------------------------------------------------------------------------"
         return output
 
-    def p_o_i(self, o, i):
-        """
-        Returns the output probability for symbol o given hidden state i
+    # TODO: remove this code if we're sure we don't need it.
+    # def p_o_i(self, o, i):
+    #     """
+    #     Returns the output probability for symbol o given hidden state i
+    #
+    #     Parameters
+    #     ----------
+    #     o : int
+    #         the discrete symbol o (observation)
+    #     i : int
+    #         the hidden state index
+    #
+    #     Return
+    #     ------
+    #     p_o : float
+    #         the probability that hidden state i generates symbol o
+    #
+    #     """
+    #     # TODO: so far we don't use this method. Perhaps we don't need it.
+    #     return self.B[i,o]
+    #
+    # def log_p_o_i(self, o, i):
+    #     """
+    #     Returns the logarithm of the output probability for symbol o given hidden state i
+    #
+    #     Parameters
+    #     ----------
+    #     o : int
+    #         the discrete symbol o (observation)
+    #     i : int
+    #         the hidden state index
+    #
+    #     Return
+    #     ------
+    #     p_o : float
+    #         the log probability that hidden state i generates symbol o
+    #
+    #     """
+    #     # TODO: check if we need the log-probabilities
+    #     return log(self.B[i,o])
+    #
+    #
+    # def p_o(self, o):
+    #     """
+    #     Returns the output probability for symbol o from all hidden states
+    #
+    #     Parameters
+    #     ----------
+    #     o : int
+    #         the discrete symbol o (observation)
+    #
+    #     Return
+    #     ------
+    #     p_o : ndarray (N)
+    #         the probability that any of the N hidden states generates symbol o
+    #
+    #     """
+    #     # TODO: so far we don't use this method. Perhaps we don't need it.
+    #     return self.B[:,o]
+    #
+    # def log_p_o(self, o):
+    #     """
+    #     Returns the logarithm of the output probabilities for symbol o from all hidden states
+    #
+    #     Parameters
+    #     ----------
+    #     o : int
+    #         the discrete symbol o (observation)
+    #
+    #     Return
+    #     ------
+    #     p_o : ndarray (N)
+    #         the log probability that any of the N hidden states generates symbol o
+    #
+    #     """
+    #     return np.log(self.B[:,o])
 
-        Parameters
-        ----------
-        o : int
-            the discrete symbol o (observation)
-        i : int
-            the hidden state index
-
-        Return
-        ------
-        p_o : float
-            the probability that hidden state i generates symbol o
-
-        """
-        # TODO: so far we don't use this method. Perhaps we don't need it.
-        return self.B[i,o]
-
-    def log_p_o_i(self, o, i):
-        """
-        Returns the logarithm of the output probability for symbol o given hidden state i
-
-        Parameters
-        ----------
-        o : int
-            the discrete symbol o (observation)
-        i : int
-            the hidden state index
-
-        Return
-        ------
-        p_o : float
-            the log probability that hidden state i generates symbol o
-
-        """
-        # TODO: check if we need the log-probabilities
-        return log(self.B[i,o])
-
-
-    def p_o(self, o):
-        """
-        Returns the output probability for symbol o from all hidden states
-
-        Parameters
-        ----------
-        o : int
-            the discrete symbol o (observation)
-
-        Return
-        ------
-        p_o : ndarray (N)
-            the probability that any of the N hidden states generates symbol o
-
-        """
-        return self.B[:,o]
-
-    def log_p_o(self, o):
-        """
-        Returns the logarithm of the output probabilities for symbol o from all hidden states
-
-        Parameters
-        ----------
-        o : int
-            the discrete symbol o (observation)
-
-        Return
-        ------
-        p_o : ndarray (N)
-            the log probability that any of the N hidden states generates symbol o
-
-        """
-        return np.log(self.B[:,o])
-
-    def p_obs(self, obs):
+    def p_obs(self, obs, out=None, dtype=np.float32):
         """
         Returns the output probabilities for an entire trajectory and all hidden states
 
@@ -172,33 +174,18 @@ class DiscreteOutputModel(OutputModel):
             the probability of generating the symbol at time point t from any of the N hidden states
 
         """
-        # TODO: so far we don't use this method. Perhaps we don't need it.
-        T = len(obs)
-        N = self.B.shape[1]
-        res = np.zeros((T, N), dtype=np.float32)
-        for t in range(T):
-            res[t,:] = self.B[:,obs[t]]
-        return res
+        # much faster
+        if (out is None):
+            return self.B[:,obs].T
+        else:
+            if (obs.shape[0] == out.shape[0]):
+                out[:,:] = self.B[:,obs].T
+            elif (obs.shape[0] < out.shape[0]):
+                out[:obs.shape[0],:] = self.B[:,obs].T
+            else:
+                raise ValueError('output array out is too small: '+str(out.shape[0])+' < '+str(obs.shape[0]))
+            return out
 
-    # TODO: what about having a p_obs_i(self, i) that gives the observation probability for one state?
-    # TODO: That could be sufficient, because it allows us to do efficient vector operations and is able to do state-based processing
-
-    def log_p_obs(self, obs):
-        """
-        Returns the output probabilities for an entire trajectory and all hidden states
-
-        Parameters
-        ----------
-        obs : ndarray((T), dtype=int)
-            a discrete trajectory of length T
-
-        Return
-        ------
-        p_o : ndarray (T,N)
-            the log probability of generating the symbol at time point t from any of the N hidden states
-
-        """
-        return np.log(self.p_obs(obs))
 
     def fit(self, observations, weights):
         """
@@ -250,11 +237,13 @@ class DiscreteOutputModel(OutputModel):
             obs = observations[k]
             for o in range(M):
                 times = np.where(obs == o)[0]
-                self.B[:,o] = np.sum(weights[k][times,:], axis=0)
+                self.B[:,o] += np.sum(weights[k][times,:], axis=0)
 
         # normalize
         for o in range(M):
-            self.B[:,o] /= np.sum(self.B[:,o])
+            sum = np.sum(self.B[:,o])
+            if sum > 0:
+                self.B[:,o] /= np.sum(self.B[:,o])
 
     def sample(self, observations):
         """
@@ -282,9 +271,16 @@ class DiscreteOutputModel(OutputModel):
 
         """
         from numpy.random import dirichlet
+        # total number of observation symbols
+        M = self.B.shape[1]
+        count_full = np.zeros((M), dtype = int)
         for i in range(len(observations)):
+            # count symbols found in data
             count = np.bincount(observations[i])
-            self.B[i,:] = dirichlet(count + 1)
+            # blow up to full symbol space (if symbols are missing in this observation)
+            count_full[:count.shape[0]] = count[:]
+            # sample dirichlet distribution
+            self.B[i,:] = dirichlet(count_full + 1)
 
     def generate_observation_from_state(self, state_index):
         """
@@ -349,7 +345,7 @@ class DiscreteOutputModel(OutputModel):
         gen = scipy.stats.rv_discrete(values=(range(self.nsymbols), self.B[state_index]))
         gen.rvs(size=nobs)
 
-    def generate_observation_trajectory(self, s_t):
+    def generate_observation_trajectory(self, s_t, dtype=None):
         """
         Generate synthetic observation data from a given state sequence.
 
@@ -362,6 +358,8 @@ class DiscreteOutputModel(OutputModel):
         -------
         o_t : numpy.array with shape (T,) of type dtype
             o_t[t] is the observation associated with state s_t[t]
+        dtype : numpy.dtype, optional, default=None
+            The datatype to return the resulting observations in. If None, will select int32.
 
         Examples
         --------
@@ -378,15 +376,36 @@ class DiscreteOutputModel(OutputModel):
 
         """
 
+        if dtype == None:
+            dtype = np.int32
+
         # Determine number of samples to generate.
         T = s_t.shape[0]
+        nsymbols = self.B.shape[1]
+
+        if (s_t.max() >= self.nstates) or (s_t.min() < 0):
+            str = ''
+            str += 's_t = %s\n' % s_t
+            str += 's_t.min() = %d, s_t.max() = %d\n' % (s_t.min(), s_t.max())
+            str += 's_t.argmax = %d\n' % s_t.argmax()
+            str += 'self.nstates = %d\n' % self.nstates
+            str += 's_t is out of bounds.\n'
+            raise Exception(str)
+
         # generate random generators
-        import scipy.stats
-        gens = [scipy.stats.rv_discrete(values=(range(len(self.B[state_index])), self.B[state_index])) for state_index in range(self.B.shape[0])]
-        o_t = np.zeros([T], dtype=int)
+        #import scipy.stats
+        #gens = [scipy.stats.rv_discrete(values=(range(len(self.B[state_index])), self.B[state_index])) for state_index in range(self.B.shape[0])]
+        #o_t = np.zeros([T], dtype=dtype)
+        #for t in range(T):
+        #    s = s_t[t]
+        #    o_t[t] = gens[s].rvs(size=1)
+        #return o_t
+
+        o_t = np.zeros([T], dtype=dtype)
         for t in range(T):
             s = s_t[t]
-            o_t[t] = gens[s].rvs(size=1)
+            o_t[t] = np.random.choice(nsymbols, p=self.B[s,:])
+
         return o_t
 
 

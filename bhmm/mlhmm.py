@@ -3,22 +3,24 @@ Hidden Markov model
 
 """
 
-import copy
 import time
 import numpy as np
+import copy
 
-from numpy.linalg import norm
+# TODO: reactivate multiprocessing
+# from multiprocessing import Queue, Process, cpu_count
 
-from bhmm import msm
-from bhmm import HMM
-from ml.baum_welch import BaumWelchHMM
+# BHMM imports
+import init
+import bhmm.hidden as hidden
 
-__author__ = "John D. Chodera, Frank Noe"
+__author__ = "Frank Noe and John D. Chodera"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
+__credits__ = ["Frank Noe", "John D. Chodera"]
 __license__ = "FreeBSD"
-__maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
+__maintainer__ = "Frank Noe"
+__email__="frank DOT noe AT fu-berlin DOT de"
+
 
 class MLHMM(object):
     """
@@ -34,9 +36,14 @@ class MLHMM(object):
     >>> mlhmm = MLHMM(O, model.nstates)
     >>> model = mlhmm.fit()
 
+    References
+    ----------
+    [1] L. E. Baum and J. A. Egon, "An inequality with applications to statistical estimation for probabilistic
+        functions of a Markov process and to a model for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
+
     """
     def __init__(self, observations, nstates, initial_model=None, reversible=True, verbose=False, output_model_type='gaussian',
-                 kernel = 'python'):
+                 kernel = 'c', dtype = np.float64, accuracy=1e-3, maxit=1000):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -55,6 +62,16 @@ class MLHMM(object):
             Verbosity flag.
         output_model_type : str, optional, default='gaussian'
             Output model type.  ['gaussian', 'discrete']
+        kernel: str, optional, default='python'
+            Implementation kernel
+        dtype : type
+            data type used for hidden state probabilities, transition probabilities and initial probilities
+        accuracy : float
+            convergence terminated for EM iteration. When two the likelihood does not increase by more than accuracy, the
+            iteration is stopped successfully.
+        maxit : int
+            stopping criterion for EM iteration. When so many iterations are performanced without reaching the requested
+            accuracy, the iteration is stopped without convergence (a warning is given)
 
         """
         # Store options.
@@ -66,6 +83,9 @@ class MLHMM(object):
 
         # Store a copy of the observations.
         self.observations = copy.deepcopy(observations)
+        self.nobs = len(observations)
+        self.Ts = [len(o) for o in observations]
+        self.maxT = np.max(self.Ts)
 
         # Determine number of observation trajectories we have been given.
         self.ntrajectories = len(self.observations)
@@ -75,20 +95,179 @@ class MLHMM(object):
             self.model = copy.deepcopy(initial_model)
         else:
             # Generate our own initial model.
-            self.model = self._generateInitialModel(output_model_type)
+            self.model = init.generate_initial_model(observations, nstates, output_model_type, verbose=self.verbose)
 
+        # Kernel for computing things
         self.kernel = kernel
+        hidden.set_implementation(kernel)
+        self.model.output_model.set_implementation(kernel)
 
-        return
+        # dtype
+        self.dtype = dtype
+
+        # pre-construct hidden variables
+        self.alpha = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
+        self.beta = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
+        self.pobs = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
+        self.gammas = [np.zeros((len(self.observations[i]),self.nstates), dtype=dtype, order='C') for i in range(self.nobs)]
+        self.Cs = [np.zeros((self.nstates,self.nstates), dtype=dtype, order='C') for i in range(self.nobs)]
+
+        # convergence options
+        self.accuracy = accuracy
+        self.maxit = maxit
+        self.likelihoods = np.zeros((maxit))
+
+    def _forward_backward(self, itraj):
+        """
+        Estimation step: Runs the forward-back algorithm on trajectory with index itraj
+
+        Parameters
+        ----------
+        itraj : int
+            index of the observation trajectory to process
+
+        Results
+        -------
+        logprob : float
+            The probability to observe the observation sequence given the HMM parameters
+        gamma : ndarray(T,N, dtype=float)
+            state probabilities for each t
+        count_matrix : ndarray(N,N, dtype=float)
+            the Baum-Welch transition count matrix from the hidden state trajectory
+
+        """
+        # get parameters
+        A = self.model.Tij
+        pi = self.model.Pi
+        obs = self.observations[itraj]
+        T = len(obs)
+        # compute output probability matrix
+        self.model.output_model.p_obs(obs, out=self.pobs, dtype=self.dtype)
+        # forward variables
+        logprob = hidden.forward(A, self.pobs, pi, T = T, alpha_out=self.alpha, dtype=self.dtype)[0]
+        # backward variables
+        hidden.backward(A, self.pobs, T = T, beta_out=self.beta, dtype=self.dtype)
+        # gamma
+        hidden.state_probabilities(self.alpha, self.beta, gamma_out = self.gammas[itraj])
+        # count matrix
+        hidden.transition_counts(self.alpha, self.beta, A, self.pobs, out = self.Cs[itraj], dtype=self.dtype)
+        # return results
+        return logprob
+
+
+    def _update_model(self, gammas, count_matrices):
+        """
+        Maximization step: Updates the HMM model given the hidden state assignment and count matrices
+
+        Parameters
+        ----------
+        gamma : [ ndarray(T,N, dtype=float) ]
+            list of state probabilities for each trajectory
+        count_matrix : [ ndarray(N,N, dtype=float) ]
+            list of the Baum-Welch transition count matrices for each hidden state trajectory
+
+        """
+        K = len(self.observations)
+        N = self.nstates
+
+        #C = np.zeros((N,N))
+        gamma0_sum = np.zeros((N))
+        C = np.ones((N,N), dtype=np.float64)
+        #gamma0_sum = np.ones((N), dtype=np.float64)
+        for k in range(K):
+            # update state counts
+            gamma0_sum += gammas[k][0]
+            # update count matrix
+            # print 'C['+str(k)+'] = ',count_matrices[k]
+            C += count_matrices[k]
+
+        if self.verbose:
+            print "Count matrix = \n",C
+
+        # compute new transition matrix
+        import pyemma.msm.estimation as msmest
+        T = msmest.transition_matrix(C, reversible = self.model.reversible)
+        # stationary or init distribution
+        if self.model.stationary:
+            import pyemma.msm.analysis as msmana
+            pi = msmana.stationary_distribution(T)
+        else:
+            pi = gamma0_sum / np.sum(gamma0_sum)
+
+        # update model
+        self.model.Tij = copy.deepcopy(T)
+        self.model.Pi  = copy.deepcopy(pi)
+
+        if self.verbose:
+            print "T: ",T
+            print "pi: ",pi
+
+        # update output model
+        # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
+        self.model.output_model.fit(self.observations, gammas)
+
+
+    @property
+    def hidden_state_probabilities(self):
+        return self.gammas
+
+    @property
+    def output_model(self):
+        return self.model.output_model
+
+    @property
+    def transition_matrix(self):
+        return self.model.Tij
+
+    @property
+    def initial_probability(self):
+        return self.model.Pi
+
+    @property
+    def stationary_probability(self):
+        return self.model.Pi
+
+    @property
+    def is_reversible(self):
+        return self.model.reversible
+
+    @property
+    def is_stationary(self):
+        return self.model.stationary
+
+
+    def compute_viterbi_paths(self):
+        """
+        Computes the viterbi paths using the current HMM model
+
+        """
+        # get parameters
+        K = len(self.observations)
+        A = self.model.Tij
+        pi = self.model.Pi
+
+        # compute viterbi path for each trajectory
+        paths = np.empty((K), dtype=object)
+        for itraj in range(K):
+            obs = self.observations[itraj]
+            # compute output probability matrix
+            pobs = self.model.output_model.p_obs(obs, dtype = self.dtype)
+            # hidden path
+            paths[itraj] = hidden.viterbi(A, pobs, pi, dtype = self.dtype)
+
+        # done
+        return paths
+
+
 
     def fit(self):
-        """Fit a maximum-likelihood HMM model.
+        """
+        Maximum-likelihood estimation of the HMM using the Baum-Welch algorithm
 
         Returns
         -------
         model : HMM
             The maximum likelihood HMM model.
-
 
         Examples
         --------
@@ -109,9 +288,26 @@ class MLHMM(object):
 
         initial_time = time.time()
 
-        # Run Baum-Welch EM algorithm to fit the HMM.
-        baumwelch = BaumWelchHMM(self.observations, self.model, kernel=self.kernel)
-        self.model = baumwelch.fit()
+        it        = 0
+        converged = False
+
+        while (not converged):
+            loglik = 0.0
+            for k in range(self.nobs):
+                loglik += self._forward_backward(k)
+
+            self._update_model(self.gammas, self.Cs)
+            if self.verbose: print it, "ll = ", loglik
+            #print self.model.output_model
+            #print "---------------------"
+
+            self.likelihoods[it] = loglik
+
+            if it > 0:
+                if loglik - self.likelihoods[it-1] < self.accuracy:
+                    converged = True
+
+            it += 1
 
         final_time = time.time()
         elapsed_time = final_time - initial_time
@@ -126,7 +322,7 @@ class MLHMM(object):
         initial_time = time.time()
 
         # Compute hidden state trajectories using the Viterbi algorithm.
-        self.hidden_state_trajectories = baumwelch.viterbi_paths()
+        self.hidden_state_trajectories = self.compute_viterbi_paths()
 
         final_time = time.time()
         elapsed_time = final_time - initial_time
@@ -137,129 +333,79 @@ class MLHMM(object):
 
         return self.model
 
-    @classmethod
-    def _transitionMatrixMLE(cls, Cij, reversible=True, maxits=1000, reltol=1e-5, epsilon=1e-3, verbose=False):
-        """Compute maximum likelihood estimator of transition matrix from fractional transition counts.
 
-        Parameters
-        ----------
-        Cij : np.array with size (nstates,nstates)
-            The transition count matrix.
-        reversible : bool, optional, default=True
-            If True, the reversible transition matrix will be estimated.
-        maxits : int, optional, default=1000
-            The maximum number of iterations.
-        reltol : float, optional, default=1e-5
-            The relative tolerance.
-        verbose : bool, optional, default=False
-            If True, verbose output will be printed.
-
-        References
-        ----------
-        [1] Prinz JH, Wu H, Sarich M, Keller B, Fischbach M, Held M, Chodera JD, Schuette C, and Noe F.
-        Markov models of molecular kinetics: Generation and validation. JCP 134:174105, 2011.
-
-        Examples
-        --------
-
-        >>> Cij = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-
-        Non-reversible estimate.
-
-        >>> Tij = MLHMM._transitionMatrixMLE(Cij, reversible=False)
-
-        Reversible estimate.
-
-        >>> Tij = MLHMM._transitionMatrixMLE(Cij, reversible=True)
-
-        """
-        # Determine size of count matrix.
-        nstates = Cij.shape[0]
-
-        # Ensure count matrix is double precision.
-        Cij = np.array(Cij, dtype=np.float64)
-
-        if reversible:
-            Tij = msm.linalg.transition_matrix_MLE_reversible(Cij)
-        else:
-            Tij = msm.linalg.transition_matrix_MLE_nonreversible(Cij)
-
-        return Tij
-
-    def _generateInitialModel(self, output_model_type):
-        """Use a heuristic scheme to generate an initial model.
-
-        Parameters
-        ----------
-        output_model_type : str, optional, default='gaussian'
-            Output model type.  ['gaussian', 'discrete']
-
-        TODO
-        ----
-        * Replace this with EM or MLHMM procedure from Matlab code.
-
-        """
-        nstates = self.nstates
-
-        # Concatenate all observations.
-        collected_observations = np.array([], dtype=np.float64)
-        for o_t in self.observations:
-            collected_observations = np.append(collected_observations, o_t, axis=0)
-
-        if output_model_type != 'gaussian':
-            raise Exception("Initial model generation for output_model_type %s not implemented yet." % output_model_type)
-
-        # Fit a Gaussian mixture model to obtain emission distributions and state stationary probabilities.
-        from sklearn import mixture
-        gmm = mixture.GMM(n_components=nstates)
-        gmm.fit(collected_observations)
-        from bhmm import GaussianOutputModel
-        output_model = GaussianOutputModel(self.nstates, means=gmm.means_[:,0], sigmas=np.sqrt(gmm.covars_[:,0]))
-
-        # DEBUG
-        print "Gaussian output model:"
-        print output_model
-
-        # Extract stationary distributions.
-        Pi = np.zeros([nstates], np.float64)
-        Pi[:] = gmm.weights_[:]
-
-        # DEBUG
-        print "GMM weights: %s" % str(gmm.weights_)
-
-        # Compute transition matrix that gives specified Pi.
-        Tij = np.tile(Pi, [nstates, 1])
-
-        # Construct simple model.
-        model = HMM(nstates, Tij, output_model)
-
-        # Compute fractional state memberships.
-        from scipy.misc import logsumexp
-        Nij = np.zeros([nstates, nstates], np.float64)
-        for trajectory_index in range(self.ntrajectories):
-            o_t = self.observations[trajectory_index] # extract trajectory
-            T = o_t.shape[0]
-            # Compute log emission probabilities.
-            log_p_ti = np.zeros([T,nstates], np.float64)
-            for i in range(nstates):
-                log_p_ti[:,i] = model.log_emission_probability(i, o_t)
-            # Exponentiate and normalize
-            # TODO: Account for initial distribution.
-            p_ti = np.zeros([T,nstates], np.float64)
-            for t in range(T):
-                p_ti[t,:] = np.exp(log_p_ti[t,:] - logsumexp(log_p_ti[t,:]))
-                p_ti[t,:] /= p_ti[t,:].sum()
-            print p_ti
-            # Accumulate fractional transition counts from this trajectory.
-            for t in range(T-1):
-                Nij[:,:] = Nij[:,:] + np.outer(p_ti[t,:], p_ti[t+1,:])
-            print "Nij"
-            print Nij
-
-        # Compute transition matrix maximum likelihood estimate.
-        Tij = self._transitionMatrixMLE(Nij, reversible=self.reversible)
-
-        # Update model.
-        model = HMM(nstates, Tij, output_model, reversible=self.reversible)
-
-        return model
+    # TODO: reactive multiprocessing
+    # ###################
+    # # MULTIPROCESSING
+    #
+    # def _forward_backward_worker(self, work_queue, done_queue):
+    #     try:
+    #         for k in iter(work_queue.get, 'STOP'):
+    #             (weight, gamma, count_matrix) = self._forward_backward(k)
+    #             done_queue.put((k, weight, gamma, count_matrix))
+    #     except Exception, e:
+    #         done_queue.put(e.message)
+    #     return True
+    #
+    #
+    # def fit_parallel(self):
+    #     """
+    #     Maximum-likelihood estimation of the HMM using the Baum-Welch algorithm
+    #
+    #     Returns
+    #     -------
+    #     The hidden markov model
+    #
+    #     """
+    #     K = len(self.observations)#, len(A), len(B[0])
+    #     gammas = np.empty(K, dtype=object)
+    #     count_matrices = np.empty(K, dtype=object)
+    #
+    #     it        = 0
+    #     converged = False
+    #
+    #     num_threads = min(cpu_count(), K)
+    #     work_queue = Queue()
+    #     done_queue = Queue()
+    #     processes = []
+    #
+    #     while (not converged):
+    #         print "it", it
+    #         loglik = 0.0
+    #
+    #         # fill work queue
+    #         for k in range(K):
+    #             work_queue.put(k)
+    #
+    #         # start processes
+    #         for w in xrange(num_threads):
+    #             p = Process(target=self._forward_backward_worker, args=(work_queue, done_queue))
+    #             p.start()
+    #             processes.append(p)
+    #             work_queue.put('STOP')
+    #
+    #         # end processes
+    #         for p in processes:
+    #             p.join()
+    #
+    #         # done signal
+    #         done_queue.put('STOP')
+    #
+    #         # get results
+    #         for (k, ll, gamma, count_matrix) in iter(done_queue.get, 'STOP'):
+    #             loglik += ll
+    #             gammas[k] = gamma
+    #             count_matrices[k] = count_matrix
+    #
+    #         # update T, pi
+    #         self._update_model(gammas, count_matrices)
+    #
+    #         self.likelihoods[it] = loglik
+    #
+    #         if it > 0:
+    #             if loglik - self.likelihoods[it-1] < self.accuracy:
+    #                 converged = True
+    #
+    #         it += 1
+    #
+    #     return self.model

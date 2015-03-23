@@ -7,6 +7,7 @@ Test HMM functions.
 
 import numpy as np
 import scipy.sparse.linalg
+import unittest
 
 from bhmm import testsystems
 
@@ -20,34 +21,42 @@ __license__ = "FreeBSD"
 __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
-def test_hmm():
-    # Create a simple HMM model.
-    model = testsystems.three_state_model()
-    # Test model parameter access.
-    assert_equal(model.Tij.shape, (3,3))
-    assert_equal(model.Pi.shape, (3,))
-    assert_equal(model.logPi.shape, (3,))
+class TestHMM(unittest.TestCase):
 
-    return
+    def test_hmm(self):
+        # Create a simple HMM model.
+        model = testsystems.dalton_model(nstates=3)
+        # Test model parameter access.
+        assert_equal(model.Tij.shape, (3,3))
+        assert_equal(model.Pi.shape, (3,))
+        assert_equal(model.logPi.shape, (3,))
 
-def test_two_state_model():
-    """Test the creation of a simple two-state HMM model with analytical parameters.
-    """
-    from bhmm import HMM
-    # Create a simple two-state model.
-    nstates = 2
-    Tij = testsystems.generate_transition_matrix(reversible=True)
-    from bhmm import GaussianOutputModel
-    output_model = GaussianOutputModel(nstates, means=[-1,+1], sigmas=[1,1])
-    model = HMM(nstates, Tij, output_model)
-    # Compute stationary probability using ARPACK.
-    from scipy.sparse.linalg import eigs
-    from numpy.linalg import norm
-    [eigenvalues, eigenvectors] = eigs(Tij.T, k=1, which='LR')
-    eigenvectors = np.real(eigenvectors)
-    Pi = eigenvectors[:,0] / eigenvectors[:,0].sum()
-    # Test model is correct.
-    assert_array_almost_equal(model.Tij, Tij)
-    assert_equal(model.states, states)
-    assert_array_almost_equal(model.Pi, Pi)
+        return
 
+    def test_two_state_model(self):
+        """Test the creation of a simple two-state HMM model with analytical parameters.
+        """
+        from bhmm import HMM
+        # Create a simple two-state model.
+        nstates = 2
+        Tij = testsystems.generate_transition_matrix(reversible=True)
+        from bhmm import GaussianOutputModel
+        means=[-1,+1]
+        sigmas=[1,1]
+        output_model = GaussianOutputModel(nstates, means=means, sigmas=sigmas)
+        model = HMM(nstates, Tij, output_model)
+        # Compute stationary probability using ARPACK.
+        from scipy.sparse.linalg import eigs
+        from numpy.linalg import norm
+        [eigenvalues, eigenvectors] = eigs(Tij.T, k=1, which='LR')
+        eigenvectors = np.real(eigenvectors)
+        Pi = eigenvectors[:,0] / eigenvectors[:,0].sum()
+        # Test model is correct.
+        assert_array_almost_equal(model.Tij, Tij)
+        assert_array_almost_equal(model.Pi, Pi)
+        assert(np.allclose(model.output_model.means, np.array(means)))
+        assert(np.allclose(model.output_model.sigmas, np.array(sigmas)))
+
+
+if __name__=="__main__":
+    unittest.main()

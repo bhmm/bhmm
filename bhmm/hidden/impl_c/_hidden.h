@@ -1,6 +1,10 @@
 #ifndef HMM_H_
 #define HMM_H_
 
+/*
+ API FUNCTIONS
+*/
+
 double _forward(
         double *alpha,
         const double *A,
@@ -39,6 +43,21 @@ void _compute_viterbi(
         const double *pobs,
         const double *pi,
         int N, int T);
+
+void _sample_path(
+        int *path,
+        const double *alpha,
+        const double *A,
+        const double *pobs,
+        const int N, const int T);
+
+/*
+ HELPER FUNCTIONS
+*/
+int argmax(double* v, int N);
+int _random_choice(const double* p, const int N);
+void _normalize(double* v, const int N);
+
 
 /*void computeGamma(
 		double *gamma,
