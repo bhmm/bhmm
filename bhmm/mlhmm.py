@@ -186,12 +186,11 @@ class MLHMM(object):
         print "Count matrix = \n",C
 
         # compute new transition matrix
-        import pyemma.msm.estimation as msmest
-        T = msmest.transition_matrix(C, reversible = self.model.reversible)
+        from msm.tmatrix_disconnected import estimate_P,stationary_distribution
+        T = estimate_P(C, reversible=self.model.reversible)
         # stationary or init distribution
         if self.model.stationary:
-            import pyemma.msm.analysis as msmana
-            pi = msmana.stationary_distribution(T)
+            pi = stationary_distribution(C,T)
         else:
             pi = gamma0_sum / np.sum(gamma0_sum)
 
@@ -308,6 +307,11 @@ class MLHMM(object):
                     converged = True
 
             it += 1
+
+        # truncate likelihood history
+        self.likelihoods = self.likelihoods[:it]
+        # set final likelihood
+        self.model.likelihood = loglik
 
         final_time = time.time()
         elapsed_time = final_time - initial_time

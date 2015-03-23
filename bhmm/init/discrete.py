@@ -66,7 +66,7 @@ def initial_model_discrete(observations, nstates, lag = 1, reversible = True):
     # This step is a bit made-up because (A,B) is now not a self-consistent PCCA pair anymore - however it works much better.
     sums = B.sum(axis=0)
     amax = B.argmax(axis=0)
-    B[:,:] = 0.0
+    B[:,:] = eps
     for i in range(B.shape[1]):
         B[amax[i],i] = sums[i]
     # renormalize B to make it row-stochastic

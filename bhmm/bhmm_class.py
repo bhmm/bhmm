@@ -8,9 +8,10 @@ import copy
 import time
 #from scipy.misc import logsumexp
 import bhmm.hidden as hidden
+from msm.tmatrix_disconnected import sample_P
 
 
-from bhmm.msm.transition_matrix_sampling_rev import TransitionMatrixSamplerRev
+#from bhmm.msm.transition_matrix_sampling_rev import TransitionMatrixSamplerRev
 
 __author__ = "John D. Chodera, Frank Noe"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
@@ -227,6 +228,13 @@ class BHMM(object):
         self.model.output_model.p_obs(obs, out=self.pobs, dtype=self.dtype)
         # forward variables
         logprob = hidden.forward(A, self.pobs, pi, T = T, alpha_out=self.alpha, dtype=self.dtype)[0]
+        # test for nan
+        if np.any(np.isnan(self.alpha)):
+            print 'pi\n',pi
+            print 'P\n',A
+            print 'alpha(T-1)',self.alpha[T-1]
+            print 'obs(T-1)',self.pobs[T-1]
+            raise ValueError('Found NaNs in alpha!')
         # sample path
         S = hidden.sample_path(self.alpha, A, self.pobs, T = T, dtype=self.dtype)
 
@@ -290,13 +298,7 @@ class BHMM(object):
 
         """
         C = self.model.count_matrix()
-
-        if self.reversible == True:
-            sampler = TransitionMatrixSamplerRev(C)
-            self.model.Tij = sampler.sample(self.transition_matrix_sampling_steps)
-        else:
-            # TODO: Implement non-reversible transition matrix sampling.
-            raise Exception('Non-reversible transition matrix sampling not yet implemented.')
+        self.model.Tij = sample_P(C, self.transition_matrix_sampling_steps, reversible=self.reversible)
 
     def _generateInitialModel(self, output_model_type):
         """Initialize using an MLHMM.
