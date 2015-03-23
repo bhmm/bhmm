@@ -95,7 +95,7 @@ class MLHMM(object):
             self.model = copy.deepcopy(initial_model)
         else:
             # Generate our own initial model.
-            self.model = init.generate_initial_model(observations, nstates, output_model_type)
+            self.model = init.generate_initial_model(observations, nstates, output_model_type, verbose=self.verbose)
 
         # Kernel for computing things
         self.kernel = kernel

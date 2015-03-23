@@ -27,16 +27,16 @@ def generate_initial_model(observations, nstates, output_model_type, verbose=Fal
     Generate initial model for a discrete output model.
 
     >>> from bhmm import testsystems
-    >>> [model, observations, states] = testsystems.generate_synthetic_observations(output_model_type='discreten')
+    >>> [model, observations, states] = testsystems.generate_synthetic_observations(output_model_type='discrete')
     >>> initial_model = generate_initial_model(observations, model.nstates, 'discrete')
 
     """
     if output_model_type == 'discrete':
-        import bhmm.init.discrete
-        return bhmm.init.discrete.initial_model_discrete(observations, nstates, lag=1, reversible=True, verbose=verbose)
+        from bhmm.init import discrete
+        return discrete.initial_model_discrete(observations, nstates, lag=1, reversible=True, verbose=verbose)
     elif output_model_type == 'gaussian':
-        import bhmm.init.gaussian
-        return bhmm.init.gaussian.initial_model_gaussian1d(observations, nstates, reversible=True, verbose=verbose)
+        from bhmm.init import gaussian
+        return gaussian.initial_model_gaussian1d(observations, nstates, reversible=True, verbose=verbose)
     else:
         raise NotImplementedError('output model type '+str(output_model_type)+' not yet implemented.')
 

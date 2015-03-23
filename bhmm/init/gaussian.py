@@ -30,11 +30,8 @@ def initial_model_gaussian1d(observations, nstates, reversible=True, verbose=Fal
 
     # Concatenate all observations.
     collected_observations = np.array([], dtype=np.float64)
-    print "observations"
-    print observations
     for o_t in observations:
-        print o_t
-        collected_observations = np.append(collected_observations, o_t, axis=0)
+        collected_observations = np.append(collected_observations, o_t)
 
     # Fit a Gaussian mixture model to obtain emission distributions and state stationary probabilities.
     from sklearn import mixture
@@ -63,11 +60,17 @@ def initial_model_gaussian1d(observations, nstates, reversible=True, verbose=Fal
     # Compute fractional state memberships.
     from scipy.misc import logsumexp
     Nij = np.zeros([nstates, nstates], np.float64)
-    for trajectory_index in range(ntrajectories):
-        # extract trajectory
-        o_t = observations[trajectory_index]
+    for o_t in observations:
         # length of trajectory
-        T = o_t.shape[0]
+        try:
+            T = o_t.shape[0]
+        except Exception as e:
+            out = ""
+            out += str(e) + '\n'
+            out += str(o_t) + '\n'
+            out += 'observations = \n'
+            out += str(observations) + '\n'
+            raise Exception(out)
         # output probability
         pobs = output_model.p_obs(o_t)
         # normalize

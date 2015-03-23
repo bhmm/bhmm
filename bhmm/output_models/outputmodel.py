@@ -17,12 +17,16 @@ __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
 import numpy as np
+from abc import ABCMeta, abstractmethod
 
 class OutputModel(object):
     """
     HMM output probability model abstract base class.
 
     """
+
+    # Abstract base class.
+    __metaclass__ = ABCMeta
 
     # implementation codes
     __IMPL_PYTHON__ = 0
@@ -91,3 +95,24 @@ class OutputModel(object):
             self.p_obs(obs, out=out, dtype=dtype)
             np.log(out, out=out)
             return out
+
+    @abstractmethod
+    def generate_observation_trajectory(self, s_t, dtype=None):
+        """
+        Generate synthetic observation data from a given state sequence.
+
+        Parameters
+        ----------
+        s_t : numpy.array with shape (T,) of int type
+            s_t[t] is the hidden state sampled at time t
+        dtype : numpy.dtype, optional, default=None
+            The datatype to return the resulting observations in.
+
+        Returns
+        -------
+        o_t : numpy.array with shape (T,) of type dtype
+            o_t[t] is the observation associated with state s_t[t]
+        """
+        pass
+
+

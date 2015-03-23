@@ -30,16 +30,16 @@ class BHMM(object):
     >>> from bhmm import testsystems
     >>> nstates = 3
     >>> model = testsystems.dalton_model(nstates)
-    >>> data = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=10000)
+    >>> [observations, hidden_states] = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=10000)
 
     Initialize a new BHMM model.
 
     >>> from bhmm import BHMM
-    >>> bhmm = BHMM(data, nstates)
+    >>> bhmm_sampler = BHMM(observations, nstates)
 
     Sample from the posterior.
 
-    >>> models = bhmm.sample(nsamples=10)
+    >>> models = bhmm_sampler.sample(nsamples=10)
 
     """
     def __init__(self, observations, nstates, initial_model=None,
@@ -209,7 +209,7 @@ class BHMM(object):
 
         Examples
         --------
-        >>> import bhmm.testsystems
+        >>> from bhmm import testsystems
         >>> [model, observations, states, bhmm] = testsystems.generate_random_bhmm()
         >>> o_t = observations[0]
         >>> s_t = bhmm._sampleHiddenStateTrajectory(o_t)

@@ -222,7 +222,7 @@ def generate_synthetic_observations(nstates=3, ntrajectories=10, length=10000,
     # Generate a random HMM model.
     model = dalton_model(nstates, omin = omin, omax = omax, sigma_min = sigma_min, sigma_max = sigma_max,
                          lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible,
-                         output_model_type = 'gaussian')
+                         output_model_type = output_model_type)
 
     # Generate synthetic data.
     [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
