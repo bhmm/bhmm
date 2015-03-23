@@ -172,10 +172,8 @@ class MLHMM(object):
         K = len(self.observations)
         N = self.nstates
 
-        #C = np.zeros((N,N))
+        C = np.zeros((N,N))
         gamma0_sum = np.zeros((N))
-        C = np.ones((N,N), dtype=np.float64)
-        #gamma0_sum = np.ones((N), dtype=np.float64)
         for k in range(K):
             # update state counts
             gamma0_sum += gammas[k][0]
@@ -304,6 +302,7 @@ class MLHMM(object):
 
             if it > 0:
                 if loglik - self.likelihoods[it-1] < self.accuracy:
+                    print "CONVERGED! Likelihood change = ",(loglik - self.likelihoods[it-1])
                     converged = True
 
             it += 1
