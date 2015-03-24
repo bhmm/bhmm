@@ -302,7 +302,7 @@ class MLHMM(object):
 
             if it > 0:
                 if loglik - self.likelihoods[it-1] < self.accuracy:
-                    print "CONVERGED! Likelihood change = ",(loglik - self.likelihoods[it-1])
+                    #print "CONVERGED! Likelihood change = ",(loglik - self.likelihoods[it-1])
                     converged = True
 
             it += 1
