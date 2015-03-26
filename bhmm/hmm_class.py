@@ -133,7 +133,7 @@ class HMM(object):
         if self.hidden_state_trajectories is None:
             raise RuntimeError('HMM model does not have a hidden state trajectory.')
 
-        C = np.zeros((self.nstates,self.nstates), dtype=type)
+        C = np.zeros((self.nstates,self.nstates), dtype=dtype)
         for S in self.hidden_state_trajectories:
             for t in range(len(S)-1):
                 C[S[t],S[t+1]] += 1

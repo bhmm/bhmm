@@ -176,7 +176,9 @@ class DiscreteOutputModel(OutputModel):
         """
         # much faster
         if (out is None):
-            return self.B[:,obs].T
+            out = self.B[:,obs].T
+            #out /= np.sum(out, axis=1)[:,None]
+            return out
         else:
             if (obs.shape[0] == out.shape[0]):
                 out[:,:] = self.B[:,obs].T
@@ -184,6 +186,7 @@ class DiscreteOutputModel(OutputModel):
                 out[:obs.shape[0],:] = self.B[:,obs].T
             else:
                 raise ValueError('output array out is too small: '+str(out.shape[0])+' < '+str(obs.shape[0]))
+            #out /= np.sum(out, axis=1)[:,None]
             return out
 
 
@@ -240,10 +243,7 @@ class DiscreteOutputModel(OutputModel):
                 self.B[:,o] += np.sum(weights[k][times,:], axis=0)
 
         # normalize
-        for o in range(M):
-            sum = np.sum(self.B[:,o])
-            if sum > 0:
-                self.B[:,o] /= np.sum(self.B[:,o])
+        self.B /= np.sum(self.B, axis=1)[:,None]
 
     def sample(self, observations):
         """

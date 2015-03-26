@@ -284,8 +284,12 @@ int _random_choice(const double* p, const int N)
         }
     }
 
-    printf("ERROR: random select method could not select anything. Probably p is not normalized.");
-    return(-1);
+    printf("ERROR: random select method could not select anything. Probably p is not normalized.\n");
+    for (i = 0; i < N; i++)
+    {
+        printf("%i \t %f\n",i,p[i]);
+    }
+    exit(1);
 }
 
 void _normalize(double* v, const int N)
@@ -317,12 +321,14 @@ void _sample_path(
     // initialize random number generator
     srand(time(NULL));
 
-
     // Sample final state.
+    //printf("t = %i ",(T-1));
     for (i = 0; i < N; i++)
     {
         psel[i] = alpha[(T-1)*N+i];
+        //printf("%f\t",psel[i]);
     }
+    //printf("\n");
     _normalize(psel, N);
     // Draw from this distribution.
     path[T-1] = _random_choice(psel, N);
@@ -331,11 +337,14 @@ void _sample_path(
     // Work backwards from T-2 to 0.
     for (t = T-2; t >= 0; t--)
     {
+        //printf("t = %i ",t);
         // Compute P(s_t = i | s_{t+1}..s_T).
         for (i = 0; i < N; i++)
         {
-            psel[i] = alpha[t*N+i] * A[i,path[t+1]];
+            psel[i] = alpha[t*N+i] * A[i*N+path[t+1]];
+            //printf("%f\t",psel[i]);
         }
+        //printf("\n");
         _normalize(psel, N);
         // Draw from this distribution.
         path[t] = _random_choice(psel, N);

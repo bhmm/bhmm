@@ -170,10 +170,8 @@ class MLHMM(object):
         K = len(self.observations)
         N = self.nstates
 
-        #C = np.zeros((N,N))
+        C = np.zeros((N,N))
         gamma0_sum = np.zeros((N))
-        C = np.ones((N,N), dtype=np.float64)
-        #gamma0_sum = np.ones((N), dtype=np.float64)
         for k in range(K):
             # update state counts
             gamma0_sum += gammas[k][0]
@@ -185,12 +183,11 @@ class MLHMM(object):
             print "Count matrix = \n",C
 
         # compute new transition matrix
-        import pyemma.msm.estimation as msmest
-        T = msmest.transition_matrix(C, reversible = self.model.reversible)
+        from msm.tmatrix_disconnected import estimate_P,stationary_distribution
+        T = estimate_P(C, reversible=self.model.reversible)
         # stationary or init distribution
         if self.model.stationary:
-            import pyemma.msm.analysis as msmana
-            pi = msmana.stationary_distribution(T)
+            pi = stationary_distribution(C,T)
         else:
             pi = gamma0_sum / np.sum(gamma0_sum)
 
@@ -305,9 +302,15 @@ class MLHMM(object):
 
             if it > 0:
                 if loglik - self.likelihoods[it-1] < self.accuracy:
+                    #print "CONVERGED! Likelihood change = ",(loglik - self.likelihoods[it-1])
                     converged = True
 
             it += 1
+
+        # truncate likelihood history
+        self.likelihoods = self.likelihoods[:it]
+        # set final likelihood
+        self.model.likelihood = loglik
 
         final_time = time.time()
         elapsed_time = final_time - initial_time
