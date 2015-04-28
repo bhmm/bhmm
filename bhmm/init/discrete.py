@@ -34,68 +34,44 @@ def initial_model_discrete(observations, nstates, lag=1, reversible=True, verbos
     >>> initial_model = initial_model_discrete(observations, model.nstates)
 
     """
-
-    # import emma inside function in order to avoid dependency loops
-    import pyemma.msm.estimation as msmest
-    import pyemma.msm.analysis as msmana
-    from pyemma.msm.analysis.dense import pcca
-
     # check input
     if not reversible:
         warnings.warn("nonreversible initialization of discrete HMM currently not supported. Using a reversible matrix for initialization.")
         reversible = True
 
-    # estimate msm
-    # ------------
-    # count matrix
-    C = msmest.count_matrix(observations, lag).toarray()
-    #print 'C = \n',C
+    # import emma inside function in order to avoid dependency loops
+    from pyemma import msm
 
-    nmicro = C.shape[0]
-    # connected count matrix
-    C_conn = msmest.connected_cmatrix(C)
-    giant = msmest.largest_connected_set(C)
+    # estimate Markov model
+    MSM = msm.estimate_markov_model(observations, lag, reversible=True, connectivity='largest')
 
-    # transition matrix
-    P = msmest.transition_matrix(C_conn, reversible=reversible)
-    #print 'P = \n',P
-
-    # pcca coarse-graining
-    # --------------------
-    # PCCA memberships
-    chi = pcca.pcca(P, nstates)
-    #print 'chi = \n',chi
-    # stationary distribution
-    pi = msmana.stationary_distribution(P)
-    # coarse-grained stationary distribution
-    pi_coarse = np.dot(chi.T, pi)
-    #print 'pi_coarse = \n',pi_coarse
+    # PCCA
+    pcca = MSM.pcca(nstates)
 
     # HMM output matrix
-    B_conn = np.dot(np.dot(np.diag(1.0/pi_coarse), chi.T), np.diag(pi))
+    B_conn = MSM.metastable_distributions
 
     #print 'B_conn = \n',B_conn
     # full state space output matrix
-    eps = 0.01 * (1.0/nmicro) # default output probability, in order to avoid zero columns
-    B = eps * np.ones((nstates,nmicro), dtype=np.float64)
+    eps = 0.01 * (1.0/MSM.nstates) # default output probability, in order to avoid zero columns
+    B = eps * np.ones((nstates,MSM.nstates), dtype=np.float64)
     # expand B_conn to full state space
-    B[:,giant] = B_conn[:,:]
-
-    # # DE-MIX populations: Assign all output probability to the largest contributor.
-    # # This step is a bit made-up because (A,B) is now not a self-consistent PCCA pair anymore - however it works much better.
-    # sums = B.sum(axis=0)
-    # amax = B.argmax(axis=0)
-    # B[:,:] = eps
-    # for i in range(B.shape[1]):
-    #     B[amax[i],i] = sums[i]
+    B[:,MSM.active_set] = B_conn[:,:]
     # renormalize B to make it row-stochastic
     B /= B.sum(axis=1)[:,None]
 
-
     # coarse-grained transition matrix
-    A = pcca.coarsegrain(P, nstates)
-    # renormalize to eliminate numerical errors
-    A /= A.sum(axis=1)[:,None]
+    M = pcca.memberships
+    W = np.linalg.inv(np.dot(M.T, M))
+    A = np.dot(np.dot(M.T, MSM.transition_matrix), M)
+    P_coarse = np.dot(W, A)
+
+    # symmetrize and renormalize to eliminate numerical errors
+    X = np.dot(np.diag(pcca.coarse_grained_stationary_probability), P_coarse)
+    # if there are values < 0, set to eps
+    X = np.maximum(X, eps)
+    # turn into coarse-grained transition matrix
+    A = X / X.sum(axis=1)[:, None]
 
     if verbose:
         print 'Initial model: '
