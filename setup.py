@@ -115,13 +115,14 @@ def find_package_data(data_root, package_root):
 ################################################################################
 
 
-try:
-    import pyemma
-    if not StrictVersion(pyemma.__version__) >= '1.1.2':
-        raise ImportError
-except:
-    print('Bulding and running bhmm requires pyemma >= 1.1.2. Install first.')
-    sys.exit(1) 
+#try:
+#    import pyemma
+#    print(pyemma.__version__)
+#    if not StrictVersion(pyemma.__version__) >= '1.1.2':
+#        raise ImportError
+#except:
+#    print('Bulding and running bhmm requires pyemma >= 1.1.2. Install first.')
+#    sys.exit(1) 
 
 
 #cython_ext = cythonize(Extension('bhmm.msm.tmatrix_sampling',
@@ -162,7 +163,7 @@ setup(
         'cython',
         'numpy',
         'scipy',
-        'pyemma>=1.1.2',
+        'pyemma>=1.2',
         'scikit-learn',
         'matplotlib',
         'seaborn',
