@@ -5,7 +5,7 @@ import numpy as np
 from bhmm.hmm_class import HMM
 from bhmm.util.logger import logger
 
-def initial_model_gaussian1d(observations, nstates, reversible=True, verbose=False):
+def initial_model_gaussian1d(observations, nstates, reversible=True):
     """Generate an initial model with 1D-Gaussian output densities
 
     Parameters
@@ -14,8 +14,6 @@ def initial_model_gaussian1d(observations, nstates, reversible=True, verbose=Fal
         list of arrays of length T_i with observation data
     nstates : int
         The number of states.
-    verbose : bool, optional, default=False
-        If True, will be verbose in output.
 
     Examples
     --------

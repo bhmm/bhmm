@@ -7,7 +7,7 @@ from bhmm.util.logger import logger
 
 import warnings
 
-def initial_model_discrete(observations, nstates, lag=1, reversible=True, verbose=False):
+def initial_model_discrete(observations, nstates, lag=1, reversible=True):
     """Generate an initial model with discrete output densities
 
     Parameters
@@ -18,8 +18,6 @@ def initial_model_discrete(observations, nstates, lag=1, reversible=True, verbos
         The number of states.
     lag : int, optional, default=1
         The lag time to use for initializing the model.
-    verbose : bool, optional, default=False
-        If True, will be verbose in output.
 
     TODO
     ----

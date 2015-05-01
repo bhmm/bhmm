@@ -230,7 +230,7 @@ def generate_synthetic_observations(nstates=3, ntrajectories=10, length=10000,
     return [model, O, S]
 
 
-def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000, verbose=False,
+def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000,
                          omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0,
                          lifetime_max = 100, lifetime_min = 10, reversible = True,
                          output_model_type = 'gaussian'):
@@ -244,8 +244,6 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000, verbose=Fals
         The number of synthetic observation trajectories to generate.
     length : int, optional, default=10000
         The length of synthetic observation trajectories to generate.
-    verbose : bool, optional, default=False
-        Verbosity flag to pass to BHMM.
     omin : float, optional, default = -5
         mean position of the first state.
     omax : float, optional, default = 5
@@ -293,7 +291,7 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000, verbose=Fals
     [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
     # Initialize a new BHMM model.
     from bhmm import BHMM
-    bhmm = BHMM(O, nstates, verbose=verbose)
+    bhmm = BHMM(O, nstates)
 
     return [model, O, S, bhmm]
 

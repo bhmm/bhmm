@@ -1,7 +1,7 @@
 __author__ = 'noe'
 
 
-def generate_initial_model(observations, nstates, output_model_type, verbose=False):
+def generate_initial_model(observations, nstates, output_model_type):
     """Use a heuristic scheme to generate an initial model.
 
     Parameters
@@ -12,8 +12,6 @@ def generate_initial_model(observations, nstates, output_model_type, verbose=Fal
         The number of states.
     output_model_type : str, optional, default='gaussian'
         Output model type.  ['gaussian', 'discrete']
-    verbose : bool, optional, default=False
-        If True, will be verbose in output.
 
     Examples
     --------
@@ -33,10 +31,10 @@ def generate_initial_model(observations, nstates, output_model_type, verbose=Fal
     """
     if output_model_type == 'discrete':
         from bhmm.init import discrete
-        return discrete.initial_model_discrete(observations, nstates, lag=1, reversible=True, verbose=verbose)
+        return discrete.initial_model_discrete(observations, nstates, lag=1, reversible=True)
     elif output_model_type == 'gaussian':
         from bhmm.init import gaussian
-        return gaussian.initial_model_gaussian1d(observations, nstates, reversible=True, verbose=verbose)
+        return gaussian.initial_model_gaussian1d(observations, nstates, reversible=True)
     else:
         raise NotImplementedError('output model type '+str(output_model_type)+' not yet implemented.')
 
