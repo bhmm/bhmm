@@ -52,8 +52,8 @@ class TestHMM(unittest.TestCase):
         eigenvectors = np.real(eigenvectors)
         Pi = eigenvectors[:,0] / eigenvectors[:,0].sum()
         # Test model is correct.
-        assert_array_almost_equal(model.Tij, Tij)
-        assert_array_almost_equal(model.Pi, Pi)
+        assert_array_almost_equal(model._Tij, Tij)
+        assert_array_almost_equal(model._Pi, Pi)
         assert(np.allclose(model.output_model.means, np.array(means)))
         assert(np.allclose(model.output_model.sigmas, np.array(sigmas)))
 

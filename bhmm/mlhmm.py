@@ -152,7 +152,6 @@ class MLHMM(object):
         # return results
         return logprob
 
-
     def _update_model(self, gammas, count_matrices):
         """
         Maximization step: Updates the HMM model given the hidden state assignment and count matrices
@@ -200,7 +199,6 @@ class MLHMM(object):
         # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
         self.model.output_model.fit(self.observations, gammas)
 
-
     @property
     def hidden_state_probabilities(self):
         return self.gammas
@@ -229,7 +227,6 @@ class MLHMM(object):
     def is_stationary(self):
         return self.model.stationary
 
-
     def compute_viterbi_paths(self):
         """
         Computes the viterbi paths using the current HMM model
@@ -251,8 +248,6 @@ class MLHMM(object):
 
         # done
         return paths
-
-
 
     def fit(self):
         """

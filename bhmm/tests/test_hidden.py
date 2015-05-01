@@ -8,6 +8,8 @@ import time
 import bhmm.hidden as hidden
 from bhmm.output_models.gaussian import GaussianOutputModel
 
+print_speedup = False
+
 class TestHidden(unittest.TestCase):
 
     def setUp(self):
@@ -224,7 +226,8 @@ class TestHidden(unittest.TestCase):
         """
         for i in range(self.nexamples):
             res = call(i, kernel, None)
-            print('\t'+str(call.__name__)+'\t Example '+str(i)+'\t Impl = '+str(kernel)+' Time = '+str(res[-1]))
+            if (print_speedup):
+                print('\t'+str(call.__name__)+'\t Example '+str(i)+'\t Impl = '+str(kernel)+' Time = '+str(res[-1]))
 
     def run_comp(self, call, kernel, outs, refs, reftime):
         """
@@ -243,7 +246,8 @@ class TestHidden(unittest.TestCase):
                 pkernel = kernel
             else:
                 pkernel = kernel + ' mem'
-            print('\t'+str(call.__name__)+'\t Example '+str(i)+'\t Impl = '+pkernel+' Speedup = '+str(reftime[i]/res[-1]))
+            if (print_speedup):
+                print('\t'+str(call.__name__)+'\t Example '+str(i)+'\t Impl = '+pkernel+' Speedup = '+str(reftime[i]/res[-1]))
 
 
     def test_forward_p(self):
@@ -332,7 +336,8 @@ class TestHidden(unittest.TestCase):
             (C, t) = self.run_transition_counts(i, 'python', self.C_mem[i])
             ttot += t
             tref = self.time_alpha[i] + self.time_beta[i] + self.time_gamma[i] + self.time_c[i] + self.time_C[i]
-            print ('TOTAL speedup forward-backward example '+str(i)+'\t impl=python mem: \t'+str(tref/ttot))
+            if (print_speedup):
+                print ('TOTAL speedup forward-backward example '+str(i)+'\t impl=python mem: \t'+str(tref/ttot))
 
     def test_fbtime_c(self):
         for i in range(self.nexamples):
@@ -348,7 +353,8 @@ class TestHidden(unittest.TestCase):
             (C, t) = self.run_transition_counts(i, 'c', None)
             ttot += t
             tref = self.time_alpha[i] + self.time_beta[i] + self.time_gamma[i] + self.time_c[i] + self.time_C[i]
-            print ('TOTAL speedup forward-backward example '+str(i)+'\t impl=c: \t'+str(tref/ttot))
+            if (print_speedup):
+                print ('TOTAL speedup forward-backward example '+str(i)+'\t impl=c: \t'+str(tref/ttot))
 
     def test_fbtime_c_mem(self):
         for i in range(self.nexamples):
@@ -364,7 +370,8 @@ class TestHidden(unittest.TestCase):
             (C, t) = self.run_transition_counts(i, 'c', self.C_mem[i])
             ttot += t
             tref = self.time_alpha[i] + self.time_beta[i] + self.time_gamma[i] + self.time_c[i] + self.time_C[i]
-            print ('TOTAL speedup forward-backward example '+str(i)+'\t impl=c mem: \t'+str(tref/ttot))
+            if (print_speedup):
+                print ('TOTAL speedup forward-backward example '+str(i)+'\t impl=c mem: \t'+str(tref/ttot))
 
 
 
