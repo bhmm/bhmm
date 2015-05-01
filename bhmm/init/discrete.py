@@ -3,6 +3,7 @@ __author__ = 'noe'
 import numpy as np
 from bhmm.hmm_class import HMM
 from bhmm.output_models.discrete import DiscreteOutputModel
+from bhmm.util.logger import logger
 
 import warnings
 
@@ -73,13 +74,9 @@ def initial_model_discrete(observations, nstates, lag=1, reversible=True, verbos
     # turn into coarse-grained transition matrix
     A = X / X.sum(axis=1)[:, None]
 
-    if verbose:
-        print 'Initial model: '
-        print 'A = \n',A
-        print 'B.T = \n'
-        for i in range(B.shape[1]):
-            print B[0,i],B[1,i]
-        print
+    logger().info('Initial model: ')
+    logger().info('transition matrix = \n'+str(A))
+    logger().info('output matrix = \n'+str(B.T))
 
     # initialize HMM
     # --------------

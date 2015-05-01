@@ -3,6 +3,7 @@ __author__ = 'noe'
 import numpy as np
 
 from bhmm.hmm_class import HMM
+from bhmm.util.logger import logger
 
 def initial_model_gaussian1d(observations, nstates, reversible=True, verbose=False):
     """Generate an initial model with 1D-Gaussian output densities
@@ -40,16 +41,13 @@ def initial_model_gaussian1d(observations, nstates, reversible=True, verbose=Fal
     from bhmm import GaussianOutputModel
     output_model = GaussianOutputModel(nstates, means=gmm.means_[:,0], sigmas=np.sqrt(gmm.covars_[:,0]))
 
-    if verbose:
-        print "Gaussian output model:"
-        print output_model
+    logger().info("Gaussian output model:\n"+str(output_model))
 
     # Extract stationary distributions.
     Pi = np.zeros([nstates], np.float64)
     Pi[:] = gmm.weights_[:]
 
-    if verbose:
-        print "GMM weights: %s" % str(gmm.weights_)
+    logger().info("GMM weights: %s" % str(gmm.weights_))
 
     # Compute transition matrix that gives specified Pi.
     Tij = np.tile(Pi, [nstates, 1])
@@ -71,9 +69,7 @@ def initial_model_gaussian1d(observations, nstates, reversible=True, verbose=Fal
         for t in range(T-1):
             Nij[:,:] = Nij[:,:] + np.outer(pobs[t,:], pobs[t+1,:])
 
-        if verbose:
-            print "Nij"
-            print Nij
+        logger().info("Nij\n"+str(Nij))
 
     # Compute transition matrix maximum likelihood estimate.
     import pyemma.msm.estimation as msmest

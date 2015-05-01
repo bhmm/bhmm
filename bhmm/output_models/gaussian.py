@@ -4,6 +4,7 @@ import numpy as np
 
 import impl_c.gaussian as gc
 from bhmm.output_models import OutputModel
+from bhmm.util.logger import logger
 
 
 __author__ = "John D. Chodera, Frank Noe"
@@ -387,7 +388,7 @@ class GaussianOutputModel(OutputModel):
 
             # Skip update if no observations.
             if nsamples_in_state == 0:
-                print 'Warning: State %d has no obsevations.' % state_index
+                logger().warn('Warning: State %d has no obsevations.' % state_index)
                 continue
 
             # Sample new mu.

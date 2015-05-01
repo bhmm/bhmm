@@ -9,6 +9,7 @@ import time
 #from scipy.misc import logsumexp
 import bhmm.hidden as hidden
 from msm.tmatrix_disconnected import sample_P
+from util.logger import logger
 
 
 #from bhmm.msm.transition_matrix_sampling_rev import TransitionMatrixSamplerRev
@@ -44,8 +45,7 @@ class BHMM(object):
 
     """
     def __init__(self, observations, nstates, initial_model=None,
-                 reversible=True, verbose=False,
-                 transition_matrix_sampling_steps=1000,
+                 reversible=True, transition_matrix_sampling_steps=1000,
                  output_model_type='gaussian',
                  dtype = np.float64, kernel = 'c'):
         """Initialize a Bayesian hidden Markov model sampler.
@@ -62,8 +62,6 @@ class BHMM(object):
         reversible : bool, optional, default=True
             If True, a prior that enforces reversible transition matrices (detailed balance) is used;
             otherwise, a standard  non-reversible prior is used.
-        verbose : bool, optional, default=False
-            Verbosity flag.
         transition_matrix_sampling_steps : int, optional, default=1000
             number of transition matrix sampling steps per BHMM cycle
         output_model_type : str, optional, default='gaussian'
@@ -81,7 +79,6 @@ class BHMM(object):
             raise Exception("No observations were provided.")
 
         # Store options.
-        self.verbose = verbose
         self.reversible = reversible
 
         # Store the number of states.
@@ -149,13 +146,13 @@ class BHMM(object):
 
         # Run burn-in.
         for iteration in range(nburn):
-            if self.verbose: print "Burn-in   %8d / %8d" % (iteration, nburn)
+            logger().info("Burn-in   %8d / %8d" % (iteration, nburn))
             self._update()
 
         # Collect data.
         models = list()
         for iteration in range(nsamples):
-            if self.verbose: print "Iteration %8d / %8d" % (iteration, nsamples)
+            logger().info("Iteration %8d / %8d" % (iteration, nsamples))
             # Run a number of Gibbs sampling updates to generate each sample.
             for thin in range(nthin):
                 self._update()
@@ -180,8 +177,7 @@ class BHMM(object):
 
         final_time = time.time()
         elapsed_time = final_time - initial_time
-        if self.verbose:
-            print "BHMM update iteration took %.3f s" % elapsed_time
+        logger.info("BHMM update iteration took %.3f s" % elapsed_time)
 
     def _updateHiddenStateTrajectories(self):
         """Sample a new set of state trajectories from the conditional distribution P(S | T, E, O)
@@ -297,7 +293,7 @@ class BHMM(object):
         """Initialize using an MLHMM.
 
         """
-        if self.verbose: print "Generating initial model for BHMM using MLHMM..."
+        logger.info("Generating initial model for BHMM using MLHMM...")
         from bhmm import MLHMM
         mlhmm = MLHMM(self.observations, self.nstates, reversible=self.reversible, output_model_type=output_model_type)
         model = mlhmm.fit()

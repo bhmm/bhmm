@@ -13,6 +13,7 @@ import copy
 # BHMM imports
 import init
 import bhmm.hidden as hidden
+from util.logger import logger
 
 __author__ = "Frank Noe and John D. Chodera"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
@@ -42,7 +43,7 @@ class MLHMM(object):
         functions of a Markov process and to a model for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
 
     """
-    def __init__(self, observations, nstates, initial_model=None, reversible=True, verbose=False, output_model_type='gaussian',
+    def __init__(self, observations, nstates, initial_model=None, reversible=True, output_model_type='gaussian',
                  kernel = 'c', dtype = np.float64, accuracy=1e-3, maxit=1000):
         """Initialize a Bayesian hidden Markov model sampler.
 
@@ -58,8 +59,6 @@ class MLHMM(object):
         reversible : bool, optional, default=True
             If True, a prior that enforces reversible transition matrices (detailed balance) is used;
             otherwise, a standard  non-reversible prior is used.
-        verbose : bool, optional, default=False
-            Verbosity flag.
         output_model_type : str, optional, default='gaussian'
             Output model type.  ['gaussian', 'discrete']
         kernel: str, optional, default='python'
@@ -75,7 +74,6 @@ class MLHMM(object):
 
         """
         # Store options.
-        self.verbose = verbose
         self.reversible = reversible
 
         # Store the number of states.
@@ -95,7 +93,7 @@ class MLHMM(object):
             self.model = copy.deepcopy(initial_model)
         else:
             # Generate our own initial model.
-            self.model = init.generate_initial_model(observations, nstates, output_model_type, verbose=self.verbose)
+            self.model = init.generate_initial_model(observations, nstates, output_model_type)
 
         # Kernel for computing things
         self.kernel = kernel
@@ -179,8 +177,8 @@ class MLHMM(object):
             # print 'C['+str(k)+'] = ',count_matrices[k]
             C += count_matrices[k]
 
-        if self.verbose:
-            print "Count matrix = \n",C
+
+        logger().info("Count matrix = \n"+str(C))
 
         # compute new transition matrix
         from msm.tmatrix_disconnected import estimate_P,stationary_distribution
@@ -195,9 +193,8 @@ class MLHMM(object):
         self.model.Tij = copy.deepcopy(T)
         self.model.Pi  = copy.deepcopy(pi)
 
-        if self.verbose:
-            print "T: ",T
-            print "pi: ",pi
+        logger().info("T: \n"+str(T))
+        logger().info("pi: \n"+str(pi))
 
         # update output model
         # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
@@ -275,17 +272,15 @@ class MLHMM(object):
         >>> model = mlhmm.fit()
 
         """
-        if self.verbose:
-            print "================================================================================"
-            print "Running Baum-Welch::"
-            print "  input observations:"
-            print self.observations
-            print "  initial HMM guess:"
-            print self.model
+        logger().info("================================================================================")
+        logger().info("Running Baum-Welch:")
+        logger().info("  input observations:\n"+str(self.observations))
+        logger().info("  initial HMM guess:\n"+str(self.model))
 
         initial_time = time.time()
 
         it        = 0
+        loglik = 0.0
         converged = False
 
         while (not converged):
@@ -294,7 +289,7 @@ class MLHMM(object):
                 loglik += self._forward_backward(k)
 
             self._update_model(self.gammas, self.Cs)
-            if self.verbose: print it, "ll = ", loglik
+            logger().info(str(it)+" ll = "+str(loglik))
             #print self.model.output_model
             #print "---------------------"
 
@@ -315,12 +310,9 @@ class MLHMM(object):
         final_time = time.time()
         elapsed_time = final_time - initial_time
 
-        if self.verbose:
-            print "maximum likelihood HMM:"
-            print str(self.model)
-            print "Elapsed time for Baum-Welch solution: %.3f s" % elapsed_time
-            print ""
-            print "Computing Viterbi path:"
+        logger().info("maximum likelihood HMM:"+str(self.model))
+        logger().info("Elapsed time for Baum-Welch solution: %.3f s" % elapsed_time)
+        logger().info("\nComputing Viterbi path:")
 
         initial_time = time.time()
 
@@ -330,9 +322,8 @@ class MLHMM(object):
         final_time = time.time()
         elapsed_time = final_time - initial_time
 
-        if self.verbose:
-            print "Elapsed time for Viterbi path computation: %.3f s" % elapsed_time
-            print "================================================================================"
+        logger().info("Elapsed time for Viterbi path computation: %.3f s" % elapsed_time)
+        logger().info("================================================================================")
 
         return self.model
 
