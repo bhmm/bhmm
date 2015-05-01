@@ -4,7 +4,6 @@ Hidden Markov model representation.
 """
 
 import numpy as np
-#import msm.linalg as msmalg
 import output_models
 
 __author__ = "John D. Chodera, Frank Noe"
@@ -19,6 +18,24 @@ class HMM(object):
     Hidden Markov model (HMM).
 
     This class is used to represent an HMM. This could be a maximum-likelihood HMM or a sampled HMM from a Bayesian posterior.
+
+    Parameters
+    ----------
+    nstates : int
+        The number of hidden states.
+    Tij : np.array with shape (nstates, nstates), optional, default=None
+        Row-stochastic transition matrix among states.
+    output_model : bhmm.OutputModel
+        The output model for the states.
+    lag : int, optional, default=1
+        Lag time (optional). Used to compute relaxation timescales.
+    Pi : np.array with shape (nstates), optional, default=None
+        The initial state vector. Required when stationary=False
+    stationary : bool, optional, default=True
+        If true, the initial distribution is equal to the stationary distribution of the transition matrix
+        If false, the initial distribution must be given as Pi
+    reversible : bool, optional, default=True
+        If true, the transition matrix is reversible.
 
     Examples
     --------
@@ -38,62 +55,76 @@ class HMM(object):
     >>> model = HMM(nstates, Tij, output_model)
 
     """
-    def __init__(self, nstates, Tij, output_model,
-                 Pi = None, stationary = True, # initial / stationary probability
-                 reversible = True, # transition matrix reversible?
-                 dtype=np.float64):
-        """
-        Parameters
-        ----------
-        nstates : int
-            The number of discrete output states.
-        Tij : np.array with shape (nstates, nstates), optional, default=None
-            Row-stochastic transition matrix among states.
-            If `None`, the identity matrix will be used.
-        output_model : bhmm.OutputModel
-            The output model for the states.
-        reversible : bool, optional, default=True
-            If True, will note that the transition matrix is reversible.
-
-        """
+    def __init__(self, Tij, output_model, lag=1, Pi=None, stationary=True, reversible=True):
         # TODO: Perform sanity checks on data consistency.
-        # TODO: dtype seems not to be used
+        # EMMA imports
+        from pyemma.msm import analysis as msmana
 
-        self.nstates = nstates
-        self.Tij = Tij # TODO: Rename to 'transition matrix'?
-        self.reversible = reversible
-
-        # initial / stationary distribution
-        import pyemma.msm.analysis as msmana
-        self.stationary = stationary
-        if (stationary):
-            self.Pi = msmana.stationary_distribution(self.Tij) # TODO: Rename to 'stationary_probabilities'?
-        else:
-            if Pi is None: # no initial distribution given, so use stationary distribution anyway
-                self.Pi = msmana.stationary_distribution(self.Tij)
-            else:
-                self.Pi = Pi
-
+        # save a copy of the transition matrix
+        self._Tij = np.array(Tij)
+        assert msmana.is_transition_matrix(self._Tij), 'Given transition matrix is not a stochastic matrix'
+        # set number of states
+        self._nstates = self._Tij.shape[0]
+        # lag time
+        self._lag = lag
         # output model
         self.output_model = output_model
-
         # hidden state trajectories are optional
         self.hidden_state_trajectories = None
-        self.reversible = reversible
 
-        return
+        # initial / stationary distribution
+        if (Pi is not None):
+            assert np.all(Pi >= 0), 'Given initial distribution contains negative elements.'
+            Pi = np.array(Pi) / np.sum(Pi) # ensure normalization and make a copy
+
+        self._stationary = stationary
+        if (stationary):
+            pT = msmana.stationary_distribution(self._Tij)
+            if Pi is None: # stationary and no stationary distribution fixed, so computing it from trans. mat.
+                self._Pi = pT
+            else: # stationary but stationary distribution is fixed, so the transition matrix must be consistent
+                assert np.allclose(Pi, pT), 'Stationary HMM requested, but given distribution is not the ' \
+                                            'stationary distribution of the given transition matrix.'
+                self._Pi = Pi
+        else:
+            if Pi is None: # no initial distribution given, so use stationary distribution anyway
+                self._Pi = msmana.stationary_distribution(self._Tij)
+            else:
+                self._Pi = Pi
+
+        # reversible
+        self._reversible = reversible
+        if reversible:
+            assert msmana.is_reversible(Tij), 'Reversible HMM requested, but given transition matrix is not reversible.'
+
+        # do eigendecomposition by default, because it's very cheap for hidden transition matrices
+        if self._reversible:
+            self._R, self._D, self._L = msmana.rdl_decomposition(self._Tij, norm='reversible')
+            # everything must be real-valued
+            self._R = self._R.real
+            self._D = self._D.real
+            self._L = self._L.real
+        else:
+            self._R, self._D, self._L = msmana.rdl_decomposition(self._Tij, norm='standard')
+        self._eigenvalues = np.diag(self._D)
+
 
     def __repr__(self):
-        return "HMM(%d, %s, %s, Pi=%s, stationary=%s, reversible=%s, dtype=%s)" % (self.nstates, repr(self.Tij), repr(self.output_model), repr(self.Pi), repr(self.stationary), repr(self.reversible), repr(self.dtype))
+        return "HMM(%d, %s, %s, Pi=%s, stationary=%s, reversible=%s)" % (self._nstates,
+                                                                         repr(self._Tij),
+                                                                         repr(self.output_model),
+                                                                         repr(self._Pi),
+                                                                         repr(self._stationary),
+                                                                         repr(self._reversible))
 
     def __str__(self):
         output  = 'Hidden Markov model\n'
         output += '-------------------\n'
-        output += 'nstates: %d\n' % self.nstates
+        output += 'nstates: %d\n' % self._nstates
         output += 'Tij:\n'
-        output += str(self.Tij) + '\n'
+        output += str(self._Tij) + '\n'
         output += 'Pi:\n'
-        output += str(self.Pi) + '\n'
+        output += str(self._Pi) + '\n'
         output += 'output model:\n'
         output += str(self.output_model)
         output += '\n'
@@ -101,19 +132,106 @@ class HMM(object):
 
     @property
     def logPi(self):
-        return np.log(self.Pi)
+        return np.log(self._Pi)
 
     @property
     def logTij(self):
-        return np.log(self.Tij)
+        return np.log(self._Tij)
+
+    @property
+    def is_reversible(self):
+        return self._reversible
+
+    @property
+    def is_stationary(self):
+        return self._stationary
+
+    @property
+    def nstates(self):
+        return self._nstates
+
+    @property
+    def initial_distribution(self):
+        return self._Pi
+
+    @property
+    def stationary_distribution(self):
+        if self._stationary:
+            return self._Pi
+        else:
+            raise ValueError('HMM is not stationary')
+
+    @property
+    def transition_matrix(self):
+        return self._Tij
+
+    @property
+    def eigenvalues(self):
+        """Transition matrix eigenvalues
+
+        Returns
+        -------
+        ts : ndarray(m)
+            transition matrix eigenvalues :math:`\lambda_i, i = 1,...,k`., sorted by descending norm.
+
+        """
+        return self._eigenvalues
+
+    @property
+    def eigenvectors_left(self):
+        """Left transition matrix eigenvectors
+
+        Returns
+        -------
+        L : ndarray(nstates,nstates)
+            left eigenvectors in a row matrix. l_ij is the j'th component of the i'th left eigenvector
+
+        """
+        return self._L
+
+    def eigenvectors_right(self):
+        """Right transition matrix eigenvectors
+
+        Returns
+        -------
+        R : ndarray(nstates,nstates)
+            right eigenvectors in a column matrix. r_ij is the i'th component of the j'th right eigenvector
+
+        """
+        return self._R
+
+    def timescales(self):
+        """
+        The relaxation timescales corresponding to the eigenvalues
+
+        Parameters
+        ----------
+        k : int
+            number of timescales to be computed. As a result, k+1 eigenvalues will be computed
+        ncv : int (optional)
+            Relevant for eigenvalue decomposition of reversible transition matrices.
+            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
+            it is recommended that ncv > 2*k
+
+        Returns
+        -------
+        ts : ndarray(m)
+            relaxation timescales in units of the input trajectory time step,
+            defined by :math:`-tau / ln | \lambda_i |, i = 2,...,k+1`.
+
+        """
+        from pyemma.msm.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
+
+        ts = _timescales(self._eigenvalues, tau=self._lag)
+        return ts[1:]
 
     def count_matrix(self, dtype=np.float64):
         """Compute the transition count matrix from hidden state trajectory.
 
         Parameters
         ----------
-        dtype : numpy.dtype, optional, default=numpy.int32
-            The numpy dtype to use to store the synthetic trajectory.
+        dtype : numpy.dtype, optional, default=numpy.float64
+            The numpy dtype to use for the count matrix.
 
         Returns
         -------
@@ -133,7 +251,7 @@ class HMM(object):
         if self.hidden_state_trajectories is None:
             raise RuntimeError('HMM model does not have a hidden state trajectory.')
 
-        C = np.zeros((self.nstates,self.nstates), dtype=dtype)
+        C = np.zeros((self._nstates,self._nstates), dtype=dtype)
         for S in self.hidden_state_trajectories:
             for t in range(len(S)-1):
                 C[S[t],S[t+1]] += 1
@@ -266,13 +384,13 @@ class HMM(object):
 
         # Generate first state sample.
         if initial_Pi is not None:
-            states[0] = np.random.choice(range(self.nstates), size=1, p=initial_Pi)
+            states[0] = np.random.choice(range(self._nstates), size=1, p=initial_Pi)
         else:
-            states[0] = np.random.choice(range(self.nstates), size=1, p=self.Pi)
+            states[0] = np.random.choice(range(self._nstates), size=1, p=self._Pi)
 
         # Generate subsequent samples.
         for t in range(1,length):
-            states[t] = np.random.choice(range(self.nstates), size=1, p=self.Tij[states[t-1],:])
+            states[t] = np.random.choice(range(self._nstates), size=1, p=self._Tij[states[t-1],:])
 
         return states
 
