@@ -14,21 +14,19 @@ __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
 class HMM(object):
-    """
-    Hidden Markov model (HMM).
+    r""" Hidden Markov model (HMM).
 
-    This class is used to represent an HMM. This could be a maximum-likelihood HMM or a sampled HMM from a Bayesian posterior.
+    This class is used to represent an HMM. This could be a maximum-likelihood HMM or a sampled HMM from a
+    Bayesian posterior.
 
     Parameters
     ----------
-    nstates : int
-        The number of hidden states.
     Tij : np.array with shape (nstates, nstates), optional, default=None
         Row-stochastic transition matrix among states.
-    output_model : bhmm.OutputModel
+    output_model : :class:`bhmm.OutputModel`
         The output model for the states.
     lag : int, optional, default=1
-        Lag time (optional). Used to compute relaxation timescales.
+        Lag time (optional) used to estimate the HMM. Used to compute relaxation timescales.
     Pi : np.array with shape (nstates), optional, default=None
         The initial state vector. Required when stationary=False
     stationary : bool, optional, default=True
@@ -56,7 +54,6 @@ class HMM(object):
 
     """
     def __init__(self, Tij, output_model, lag=1, Pi=None, stationary=True, reversible=True):
-        # TODO: Perform sanity checks on data consistency.
         # EMMA imports
         from pyemma.msm import analysis as msmana
 
@@ -110,6 +107,7 @@ class HMM(object):
 
 
     def __repr__(self):
+        """ Returns a string representation of the HMM """
         return "HMM(%d, %s, %s, Pi=%s, stationary=%s, reversible=%s)" % (self._nstates,
                                                                          repr(self._Tij),
                                                                          repr(self.output_model),
@@ -118,6 +116,7 @@ class HMM(object):
                                                                          repr(self._reversible))
 
     def __str__(self):
+        """ Returns a human-readable string representation of the HMM """
         output  = 'Hidden Markov model\n'
         output += '-------------------\n'
         output += 'nstates: %d\n' % self._nstates
@@ -130,32 +129,36 @@ class HMM(object):
         output += '\n'
         return output
 
-    # @property
-    # def logPi(self):
-    #     return np.log(self._Pi)
-    #
-    # @property
-    # def logTij(self):
-    #     return np.log(self._Tij)
-
     @property
     def is_reversible(self):
+        r""" Whether the HMM is reversible """
         return self._reversible
 
     @property
     def is_stationary(self):
+        r""" Whether the MSM is stationary, i.e. whether the initial distribution is the stationary distribution
+         of the hidden transition matrix. """
         return self._stationary
 
     @property
     def nstates(self):
+        r""" The number of hidden states """
         return self._nstates
 
     @property
     def initial_distribution(self):
+        r""" The initial distribution of the hidden states """
         return self._Pi
 
     @property
     def stationary_distribution(self):
+        r""" The stationary distribution of hidden states.
+
+        Raises
+        ------
+        ValueError if the HMM is not stationary
+
+        """
         if self._stationary:
             return self._Pi
         else:
@@ -163,11 +166,12 @@ class HMM(object):
 
     @property
     def transition_matrix(self):
+        r""" The hidden transition matrix """
         return self._Tij
 
     @property
     def eigenvalues(self):
-        """Transition matrix eigenvalues
+        r""" Hidden transition matrix eigenvalues
 
         Returns
         -------
@@ -179,7 +183,7 @@ class HMM(object):
 
     @property
     def eigenvectors_left(self):
-        """Left transition matrix eigenvectors
+        r""" Left eigenvectors of the hidden transition matrix
 
         Returns
         -------
@@ -190,7 +194,7 @@ class HMM(object):
         return self._L
 
     def eigenvectors_right(self):
-        """Right transition matrix eigenvectors
+        r""" Right eigenvectors of the hidden transition matrix
 
         Returns
         -------
@@ -201,14 +205,14 @@ class HMM(object):
         return self._R
 
     def timescales(self):
-        """
-        The relaxation timescales corresponding to the eigenvalues
+        r""" Relaxation timescales of the hidden transition matrix
 
         Returns
         -------
         ts : ndarray(m)
             relaxation timescales in units of the input trajectory time step,
-            defined by :math:`-tau / ln | \lambda_i |, i = 2,...,nstates`.
+            defined by :math:`-tau / ln | \lambda_i |, i = 2,...,nstates`, where
+            :math:`\lambda_i` are the hidden transition matrix eigenvalues.
 
         """
         from pyemma.msm.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
@@ -217,6 +221,7 @@ class HMM(object):
         return ts[1:]
 
     def count_matrix(self, dtype=np.float64):
+        #TODO: does this belong here or to the BHMM sampler, or in a subclass containing HMM with data?
         """Compute the transition count matrix from hidden state trajectory.
 
         Parameters
@@ -311,6 +316,7 @@ class HMM(object):
     #     return self.output_model.log_p_o_i(observation, state)
 
     def collect_observations_in_state(self, observations, state_index):
+        # TODO: this would work well in a subclass with data
         """Collect a vector of all observations belonging to a specified hidden state.
 
         Parameters
@@ -344,15 +350,20 @@ class HMM(object):
 
         return collected_observations
 
-    def generate_synthetic_state_trajectory(self, length, initial_Pi=None, dtype=np.int32):
+    def generate_synthetic_state_trajectory(self, nsteps, initial_Pi=None, start=None, stop=None, dtype=np.int32):
         """Generate a synthetic state trajectory.
 
         Parameters
         ----------
-        length : int
-            Length of synthetic state trajectory to be generated.
+        nsteps : int
+            Number of steps in the synthetic state trajectory to be generated.
         initial_Pi : np.array of shape (nstates,), optional, default=None
-            The initial probability distribution, if samples are not to be taken from equilibrium.
+            The initial probability distribution, if samples are not to be taken from the intrinsic
+            initial distribution.
+        start : int
+            starting state. Exclusive with initial_Pi
+        stop : int
+            stopping state. Trajectory will terminate when reaching the stopping state before length number of steps.
         dtype : numpy.dtype, optional, default=numpy.int32
             The numpy dtype to use to store the synthetic trajectory.
 
@@ -368,22 +379,24 @@ class HMM(object):
 
         >>> from bhmm import testsystems
         >>> model = testsystems.dalton_model()
-        >>> states = model.generate_synthetic_state_trajectory(length=100)
+        >>> states = model.generate_synthetic_state_trajectory(nsteps=100)
 
         """
-        states = np.zeros([length], dtype=dtype)
+        # consistency check
+        if initial_Pi is not None and start is not None:
+            raise ValueError('Arguments initial_Pi and start are exclusive. Only set one of them.')
 
         # Generate first state sample.
-        if initial_Pi is not None:
-            states[0] = np.random.choice(range(self._nstates), size=1, p=initial_Pi)
-        else:
-            states[0] = np.random.choice(range(self._nstates), size=1, p=self._Pi)
+        if start is None:
+            if initial_Pi is not None:
+                start = np.random.choice(range(self._nstates), size=1, p=initial_Pi)
+            else:
+                start = np.random.choice(range(self._nstates), size=1, p=self._Pi)
 
-        # Generate subsequent samples.
-        for t in range(1,length):
-            states[t] = np.random.choice(range(self._nstates), size=1, p=self._Tij[states[t-1],:])
-
-        return states
+        # Generate and return trajectory
+        from pyemma.msm import generation as msmgen
+        traj = msmgen.generate_traj(self.transition_matrix, nsteps, start=start, stop=stop, dt=1)
+        return traj.astype(dtype)
 
     def generate_synthetic_observation(self, state):
         """Generate a synthetic observation from a given state.
