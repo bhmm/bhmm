@@ -92,6 +92,11 @@ class GaussianOutputModel(OutputModel):
         return output
 
     @property
+    def dimension(self):
+        r""" Dimension of the Gaussian output model (currently 1) """
+        return 1
+
+    @property
     def means(self):
         r""" Mean values of Gaussians output densities """
         return self._means
