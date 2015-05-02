@@ -27,7 +27,7 @@ def eigenvalues(A, n):
 
     Return all sorted eigenvalues.
 
-    >>> from bhmm import testsystems
+    >>> from bhmm.tests import testsystems
     >>> Tij = testsystems.generate_transition_matrix(nstates=3, reversible=True)
     >>> ew_sorted = eigenvalues(Tij, 3)
 
@@ -58,7 +58,7 @@ def stationary_distribution(P):
 
     Compute stationary probabilities for a given transition matrix.
 
-    >>> from bhmm import testsystems
+    >>> from bhmm.tests import testsystems
     >>> Tij = testsystems.generate_transition_matrix(nstates=3, reversible=True)
     >>> Pi = stationary_distribution(Tij)
 
