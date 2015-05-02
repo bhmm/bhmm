@@ -42,7 +42,7 @@ class TestOutputGaussian(unittest.TestCase):
         assert(np.allclose(p_c, p_p))
 
         # speed report
-        if print_speedup
+        if print_speedup:
             print('p_obs speedup c/python = '+str(t_p/t_c))
 
 
