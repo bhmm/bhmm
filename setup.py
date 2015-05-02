@@ -165,8 +165,6 @@ setup(
         'scipy',
         'pyemma>=1.2',
         'scikit-learn',
-        'matplotlib',
-        'seaborn',
         'nose',
         'docopt>=0.6.1',
         ],
