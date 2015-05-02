@@ -6,8 +6,8 @@ Test BHMM using simple analytical models.
 """
 
 from functools import partial
-from bhmm import testsystems
-from bhmm import BHMM
+from bhmm.util import testsystems
+#from bhmm import BHMM
 import unittest
 
 __author__ = "John D. Chodera, Frank Noe"

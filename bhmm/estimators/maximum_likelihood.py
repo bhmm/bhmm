@@ -32,8 +32,11 @@ class MaximumLikelihoodEstimator(object):
     Examples
     --------
 
+    >>> import bhmm
+    >>> bhmm.config.verbose = False
+    >>>
     >>> from bhmm import testsystems
-    >>> [model, O, S] = testsystems.generate_synthetic_observations()
+    >>> [model, O, S] = testsystems.generate_synthetic_observations(ntrajectories=5, length=1000)
     >>> mlhmm = MaximumLikelihoodEstimator(O, model.nstates)
     >>> model = mlhmm.fit()
 
@@ -88,20 +91,20 @@ class MaximumLikelihoodEstimator(object):
 
         if initial_model:
             # Use user-specified initial model, if provided.
-            self._model = copy.deepcopy(initial_model)
+            self._hmm = copy.deepcopy(initial_model)
             # consistency checks
-            if self._model.is_stationary != stationary:
+            if self._hmm.is_stationary != stationary:
                 logger().warn('Requested stationary='+str(stationary)+' but initial model is stationary='+
-                              str(self._model.is_stationary)+'. Using stationary='+str(self._model.is_stationary))
-            if self._model.is_reversible != reversible:
+                              str(self._hmm.is_stationary)+'. Using stationary='+str(self._hmm.is_stationary))
+            if self._hmm.is_reversible != reversible:
                 logger().warn('Requested reversible='+str(reversible)+' but initial model is reversible='+
-                              str(self._model.is_reversible)+'. Using reversible='+str(self._model.is_reversible))
+                              str(self._hmm.is_reversible)+'. Using reversible='+str(self._hmm.is_reversible))
             # setting parameters
-            self._reversible = self._model.reversible
-            self._stationary = self._model.stationary
+            self._reversible = self._hmm.reversible
+            self._stationary = self._hmm.stationary
         else:
             # Generate our own initial model.
-            self._model = hmminit.generate_initial_model(observations, nstates, output_model_type)
+            self._hmm = hmminit.generate_initial_model(observations, nstates, output_model_type)
             # setting parameters
             self._reversible = reversible
             self._stationary = stationary
@@ -129,7 +132,7 @@ class MaximumLikelihoodEstimator(object):
 
         # Kernel for computing things
         hidden.set_implementation(config.kernel)
-        self._model.output_model.set_implementation(config.kernel)
+        self._hmm.output_model.set_implementation(config.kernel)
 
     @property
     def observations(self):
@@ -184,28 +187,28 @@ class MaximumLikelihoodEstimator(object):
     @property
     def hmm(self):
         r""" The estimated HMM """
-        return self._model
+        return self._hmm
 
     @property
     def output_model(self):
         r""" The HMM output model """
-        return self._model.output_model
+        return self._hmm.output_model
 
     @property
     def transition_matrix(self):
         r""" Hidden transition matrix """
-        return self._model.Tij
+        return self._hmm.Tij
 
     @property
     def initial_probability(self):
         r""" Initial probability """
-        return self._model.Pi
+        return self._hmm.Pi
 
     @property
     def stationary_probability(self):
         r""" Stationary probability, if the model is stationary """
         assert self._stationary, 'Estimator is not stationary'
-        return self._model.Pi
+        return self._hmm.Pi
 
     def _forward_backward(self, itraj):
         """
@@ -227,12 +230,12 @@ class MaximumLikelihoodEstimator(object):
 
         """
         # get parameters
-        A = self._model.Tij
-        pi = self._model.Pi
+        A = self._hmm.transition_matrix
+        pi = self._hmm.stationary_distribution
         obs = self._observations[itraj]
         T = len(obs)
         # compute output probability matrix
-        self._model.output_model.p_obs(obs, out=self._pobs)
+        self._hmm.output_model.p_obs(obs, out=self._pobs)
         # forward variables
         logprob = hidden.forward(A, self._pobs, pi, T = T, alpha_out=self._alpha)[0]
         # backward variables
@@ -272,9 +275,9 @@ class MaximumLikelihoodEstimator(object):
 
         # compute new transition matrix
         from bhmm.msm.tmatrix_disconnected import estimate_P,stationary_distribution
-        T = estimate_P(C, reversible=self._model.reversible, fixed_statdist=self._fixed_stationary_distribution)
+        T = estimate_P(C, reversible=self._hmm.is_reversible, fixed_statdist=self._fixed_stationary_distribution)
         # stationary or init distribution
-        if self._model.stationary:
+        if self._hmm.is_stationary:
             if self._fixed_stationary_distribution is None:
                 pi = stationary_distribution(C,T)
             else:
@@ -286,15 +289,15 @@ class MaximumLikelihoodEstimator(object):
                 pi = self._fixed_initial_distribution
 
         # update model
-        self._model._Tij = copy.deepcopy(T)
-        self._model._Pi  = copy.deepcopy(pi)
+        self._hmm._Tij = copy.deepcopy(T)
+        self._hmm._Pi  = copy.deepcopy(pi)
 
         logger().info("T: \n"+str(T))
         logger().info("pi: \n"+str(pi))
 
         # update output model
         # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
-        self._model.output_model._estimate_output_model(self._observations, gammas)
+        self._hmm.output_model._estimate_output_model(self._observations, gammas)
 
     def compute_viterbi_paths(self):
         """
@@ -303,15 +306,15 @@ class MaximumLikelihoodEstimator(object):
         """
         # get parameters
         K = len(self._observations)
-        A = self._model.Tij
-        pi = self._model.Pi
+        A = self._hmm.transition_matrix
+        pi = self._hmm.stationary_distribution
 
         # compute viterbi path for each trajectory
         paths = np.empty((K), dtype=object)
         for itraj in range(K):
             obs = self._observations[itraj]
             # compute output probability matrix
-            pobs = self._model.output_model.p_obs(obs)
+            pobs = self._hmm.output_model.p_obs(obs)
             # hidden path
             paths[itraj] = hidden.viterbi(A, pobs, pi)
 
@@ -327,19 +330,11 @@ class MaximumLikelihoodEstimator(object):
         model : HMM
             The maximum likelihood HMM model.
 
-        Examples
-        --------
-
-        >>> from bhmm import testsystems
-        >>> [model, O, S] = testsystems.generate_synthetic_observations()
-        >>> mlhmm = MaximumLikelihoodEstimator(O, model.nstates)
-        >>> model = mlhmm.fit()
-
         """
-        logger().info("================================================================================")
+        logger().info("=================================================================")
         logger().info("Running Baum-Welch:")
-        logger().info("  input observations:\n"+str(self._observations))
-        logger().info("  initial HMM guess:\n"+str(self._model))
+        logger().info("  input observations:"+str(self._observations))
+        logger().info("  initial HMM guess:"+str(self._hmm))
 
         initial_time = time.time()
 
@@ -348,7 +343,7 @@ class MaximumLikelihoodEstimator(object):
         loglik = 0.0
         converged = False
 
-        while (not converged):
+        while (not converged and it < self.maxit):
             loglik = 0.0
             for k in range(self._nobs):
                 loglik += self._forward_backward(k)
@@ -370,27 +365,27 @@ class MaximumLikelihoodEstimator(object):
         # truncate likelihood history
         self._likelihoods = self._likelihoods[:it]
         # set final likelihood
-        self._model.likelihood = loglik
+        self._hmm.likelihood = loglik
 
         final_time = time.time()
         elapsed_time = final_time - initial_time
 
-        logger().info("maximum likelihood HMM:"+str(self._model))
+        logger().info("maximum likelihood HMM:"+str(self._hmm))
         logger().info("Elapsed time for Baum-Welch solution: %.3f s" % elapsed_time)
-        logger().info("\nComputing Viterbi path:")
+        logger().info("Computing Viterbi path:")
 
         initial_time = time.time()
 
         # Compute hidden state trajectories using the Viterbi algorithm.
-        self.hidden_state_trajectories = self.compute_viterbi_paths()
+        self._hmm.hidden_state_trajectories = self.compute_viterbi_paths()
 
         final_time = time.time()
         elapsed_time = final_time - initial_time
 
         logger().info("Elapsed time for Viterbi path computation: %.3f s" % elapsed_time)
-        logger().info("================================================================================")
+        logger().info("=================================================================")
 
-        return self._model
+        return self._hmm
 
 
     # TODO: reactive multiprocessing

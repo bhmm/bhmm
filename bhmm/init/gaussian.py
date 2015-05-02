@@ -4,6 +4,7 @@ import numpy as np
 
 from bhmm.hmm.generic_hmm import HMM
 from bhmm.util.logger import logger
+from bhmm.util import config
 
 def initial_model_gaussian1d(observations, nstates, reversible=True):
     """Generate an initial model with 1D-Gaussian output densities
@@ -28,14 +29,14 @@ def initial_model_gaussian1d(observations, nstates, reversible=True):
     ntrajectories = len(observations)
 
     # Concatenate all observations.
-    collected_observations = np.array([], dtype=np.float64)
+    collected_observations = np.array([], dtype=config.dtype)
     for o_t in observations:
         collected_observations = np.append(collected_observations, o_t)
 
     # Fit a Gaussian mixture model to obtain emission distributions and state stationary probabilities.
     from sklearn import mixture
     gmm = mixture.GMM(n_components=nstates)
-    gmm.fit(collected_observations)
+    gmm.fit(collected_observations[:,None])
     from bhmm import GaussianOutputModel
     output_model = GaussianOutputModel(nstates, means=gmm.means_[:,0], sigmas=np.sqrt(gmm.covars_[:,0]))
 
@@ -51,7 +52,7 @@ def initial_model_gaussian1d(observations, nstates, reversible=True):
     Tij = np.tile(Pi, [nstates, 1])
 
     # Construct simple model.
-    model = HMM(nstates, Tij, output_model)
+    model = HMM(Tij, output_model)
 
     # Compute fractional state memberships.
     Nij = np.zeros([nstates, nstates], np.float64)
@@ -70,9 +71,9 @@ def initial_model_gaussian1d(observations, nstates, reversible=True):
 
     # Compute transition matrix maximum likelihood estimate.
     import pyemma.msm.estimation as msmest
-    msmest.transition_matrix(Tij, reversible=reversible)
+    msmest.transition_matrix(Nij, reversible=reversible)
 
     # Update model.
-    model = HMM(nstates, Tij, output_model, reversible=reversible)
+    model = HMM(Tij, output_model, reversible=reversible)
 
     return model

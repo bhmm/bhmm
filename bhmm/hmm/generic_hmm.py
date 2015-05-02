@@ -40,16 +40,16 @@ class HMM(object):
     >>> # Gaussian HMM
     >>> nstates = 2
     >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
-    >>> from output_models import GaussianOutputModel
+    >>> from bhmm import GaussianOutputModel
     >>> output_model = GaussianOutputModel(nstates, means=[-1, +1], sigmas=[1, 1])
-    >>> model = HMM(nstates, Tij, output_model)
+    >>> model = HMM(Tij, output_model)
 
     >>> # Discrete HMM
     >>> nstates = 2
     >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
-    >>> from output_models import DiscreteOutputModel
+    >>> from bhmm import DiscreteOutputModel
     >>> output_model = DiscreteOutputModel([[0.5, 0.1, 0.4], [0.2, 0.3, 0.5]])
-    >>> model = HMM(nstates, Tij, output_model)
+    >>> model = HMM(Tij, output_model)
 
     """
     def __init__(self, Tij, output_model, lag=1, Pi=None, stationary=True, reversible=True):
@@ -427,7 +427,7 @@ class HMM(object):
         """
         return self.output_model.generate_observation_from_state(state)
 
-    def generate_synthetic_observation_trajectory(self, length, initial_Pi=None, dtype=None):
+    def generate_synthetic_observation_trajectory(self, length, initial_Pi=None):
         """Generate a synthetic realization of observables.
 
         Parameters
@@ -436,8 +436,6 @@ class HMM(object):
             Length of synthetic state trajectory to be generated.
         initial_Pi : np.array of shape (nstates,), optional, default=None
             The initial probability distribution, if samples are not to be taken from equilibrium.
-        dtype : numpy.dtype, optional, default=None
-            The numpy dtype to use to store the synthetic trajectory.  If None, will use default dtype.
 
         Returns
         -------
@@ -466,11 +464,11 @@ class HMM(object):
         s_t = self.generate_synthetic_state_trajectory(length, initial_Pi=initial_Pi)
 
         # Next, generate observations from these states.
-        o_t = self.output_model.generate_observation_trajectory(s_t, dtype=dtype)
+        o_t = self.output_model.generate_observation_trajectory(s_t)
 
         return [o_t, s_t]
 
-    def generate_synthetic_observation_trajectories(self, ntrajectories, length, initial_Pi=None, dtype=None):
+    def generate_synthetic_observation_trajectories(self, ntrajectories, length, initial_Pi=None):
         """Generate a number of synthetic realization of observables from this model.
 
         Parameters
@@ -481,8 +479,6 @@ class HMM(object):
             Length of synthetic state trajectory to be generated.
         initial_Pi : np.array of shape (nstates,), optional, default=None
             The initial probability distribution, if samples are not to be taken from equilibrium.
-        dtype : numpy.dtype, optional, default=None
-            The numpy dtype to use to store the synthetic trajectory.  If None, will use default.
 
         Returns
         -------
@@ -510,7 +506,7 @@ class HMM(object):
         O = list() # observations
         S = list() # state trajectories
         for trajectory_index in range(ntrajectories):
-            [o_t, s_t] = self.generate_synthetic_observation_trajectory(length=length, initial_Pi=initial_Pi, dtype=dtype)
+            [o_t, s_t] = self.generate_synthetic_observation_trajectory(length=length, initial_Pi=initial_Pi)
             O.append(o_t)
             S.append(s_t)
 

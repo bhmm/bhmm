@@ -26,4 +26,5 @@ def logger(name='BHMM', pattern='%(asctime)s %(levelname)s %(name)s: %(message)s
         handler.setFormatter(formatter)
         handler.setLevel(config.log_level())
         _logger.addHandler(handler)
+        _logger.propagate = False
     return _logger

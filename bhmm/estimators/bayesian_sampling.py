@@ -29,10 +29,11 @@ class BHMM(object):
 
     First, create some synthetic test data.
 
-    >>> from bhmm import testsystems
+    >>> import bhmm
+    >>> bhmm.config.verbose = False
     >>> nstates = 3
-    >>> model = testsystems.dalton_model(nstates)
-    >>> [observations, hidden_states] = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=10000)
+    >>> model = bhmm.testsystems.dalton_model(nstates)
+    >>> [observations, hidden_states] = model.generate_synthetic_observation_trajectories(ntrajectories=5, length=1000)
 
     Initialize a new BHMM model.
 
@@ -131,11 +132,11 @@ class BHMM(object):
         --------
 
         >>> from bhmm import testsystems
-        >>> [model, observations, states, bhmm] = testsystems.generate_random_bhmm()
+        >>> [model, observations, states, sampled_model] = testsystems.generate_random_bhmm(ntrajectories=5, length=1000)
         >>> nburn = 5 # run the sampler a bit before recording samples
         >>> nsamples = 10 # generate 10 samples
         >>> nthin = 2 # discard one sample in between each recorded sample
-        >>> samples = bhmm._sample_output_mode(nsamples, nburn=nburn, nthin=nthin)
+        >>> samples = sampled_model.sample(nsamples, nburn=nburn, nthin=nthin)
 
         """
 
@@ -172,7 +173,7 @@ class BHMM(object):
 
         final_time = time.time()
         elapsed_time = final_time - initial_time
-        logger.info("BHMM update iteration took %.3f s" % elapsed_time)
+        logger().info("BHMM update iteration took %.3f s" % elapsed_time)
 
     def _updateHiddenStateTrajectories(self):
         """Sample a new set of state trajectories from the conditional distribution P(S | T, E, O)
@@ -201,10 +202,10 @@ class BHMM(object):
 
         Examples
         --------
-        >>> from bhmm import testsystems
-        >>> [model, observations, states, bhmm] = testsystems.generate_random_bhmm()
+        >>> import bhmm
+        >>> [model, observations, states, sampled_model] = bhmm.testsystems.generate_random_bhmm(ntrajectories=5, length=1000)
         >>> o_t = observations[0]
-        >>> s_t = bhmm._sampleHiddenStateTrajectory(o_t)
+        >>> s_t = sampled_model._sampleHiddenStateTrajectory(o_t)
 
         """
 
@@ -212,8 +213,8 @@ class BHMM(object):
         T = obs.shape[0]
 
         # Convenience access.
-        A = self.model.Tij
-        pi = self.model.Pi
+        A = self.model.transition_matrix
+        pi = self.model.initial_distribution
 
         # compute output probability matrix
         self.model.output_model.p_obs(obs, out=self.pobs)
@@ -223,50 +224,6 @@ class BHMM(object):
         S = hidden.sample_path(self.alpha, A, self.pobs, T = T)
 
         return S
-
-        # TODO: remove this when new impl. successfully tested.
-        # model = self.model # current HMM model
-        # nstates = model.nstates
-        # logPi = model.logPi
-        # logTij = model.logTij
-        # #logPi = np.log(model.Pi)
-        # #logTij = np.log(model.Tij)
-        #
-        # #
-        # # Forward part.
-        # #
-        #
-        # log_alpha_it = np.zeros([nstates, T], np.float64)
-        #
-        # for i in range(nstates):
-        #     log_alpha_it[i,0] = logPi[i] + model.log_emission_probability(i, o_t[0])
-        #
-        # for t in range(1,T):
-        #     for j in range(nstates):
-        #         log_alpha_it[j,t] = logsumexp(log_alpha_it[:,t-1] + logTij[:,j]) + model.log_emission_probability(j, o_t[t])
-        #
-        # #
-        # # Sample state trajectory in backwards part.
-        # #
-        #
-        # s_t = np.zeros([T], dtype=dtype)
-        #
-        # # Sample final state.
-        # log_p_i = log_alpha_it[:,T-1]
-        # p_i = np.exp(log_p_i - logsumexp(log_alpha_it[:,T-1]))
-        # s_t[T-1] = np.random.choice(range(nstates), size=1, p=p_i)
-        #
-        # # Work backwards from T-2 to 0.
-        # for t in range(T-2, -1, -1):
-        #     # Compute P(s_t = i | s_{t+1}..s_T).
-        #     log_p_i = log_alpha_it[:,t] + logTij[:,s_t[t+1]]
-        #     p_i = np.exp(log_p_i - logsumexp(log_p_i))
-        #
-        #     # Draw from this distribution.
-        #     s_t[t] = np.random.choice(range(nstates), size=1, p=p_i)
-        #
-        # # Return trajectory
-        # return s_t
 
     def _updateEmissionProbabilities(self):
         """Sample a new set of emission probabilites from the conditional distribution P(E | S, O)

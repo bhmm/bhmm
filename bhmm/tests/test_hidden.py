@@ -63,7 +63,7 @@ class TestHidden(unittest.TestCase):
         sigmas = np.array([0.5,  0.5, 0.5])
         gom = GaussianOutputModel(3, means=means, sigmas=sigmas)
         obs = np.random.randint(3, size=T)
-        pobs = gom.p_obs(obs, dtype=np.float64)
+        pobs = gom.p_obs(obs)
         self.append_example(A, pi, pobs)
 
 
@@ -104,18 +104,18 @@ class TestHidden(unittest.TestCase):
 
     def run_all(self, A, pobs, pi):
         # forward
-        logprob, alpha = hidden.forward(A, pobs, pi, dtype=np.float64)
+        logprob, alpha = hidden.forward(A, pobs, pi)
         # backward
-        beta = hidden.backward(A, pobs, dtype=np.float64)
+        beta = hidden.backward(A, pobs)
         # gamma
         gamma = hidden.state_probabilities(alpha, beta)
         # state counts
         T = pobs.shape[0]
         statecount = hidden.state_counts(gamma, T)
         # transition counts
-        C = hidden.transition_counts(alpha, beta, A, pobs, dtype=np.float64)
+        C = hidden.transition_counts(alpha, beta, A, pobs)
         # viterbi path
-        vpath = hidden.viterbi(A, pobs, pi, dtype=np.float64)
+        vpath = hidden.viterbi(A, pobs, pi)
         # return
         return (logprob, alpha, beta, gamma, statecount, C, vpath)
 
@@ -127,17 +127,17 @@ class TestHidden(unittest.TestCase):
         beta  = np.zeros( (T,N) )
         gamma = np.zeros( (T,N) )
         C     = np.zeros( (N,N) )
-        logprob, alpha = hidden.forward(A, pobs, pi, alpha_out = alpha, dtype=np.float64)
+        logprob, alpha = hidden.forward(A, pobs, pi, alpha_out = alpha)
         # backward
-        hidden.backward(A, pobs, beta_out = beta, dtype=np.float64)
+        hidden.backward(A, pobs, beta_out = beta)
         # gamma
         hidden.state_probabilities(alpha, beta, gamma_out = gamma)
         # state counts
         statecount = hidden.state_counts(gamma, T)
         # transition counts
-        hidden.transition_counts(alpha, beta, A, pobs, out=self.C, dtype=np.float64)
+        hidden.transition_counts(alpha, beta, A, pobs, out=self.C)
         # viterbi path
-        vpath = hidden.viterbi(A, pobs, pi, dtype=np.float64)
+        vpath = hidden.viterbi(A, pobs, pi)
         # return
         return (logprob, alpha, beta, gamma, statecount, C, vpath)
 
@@ -153,7 +153,7 @@ class TestHidden(unittest.TestCase):
         hidden.set_implementation(kernel)
         time1 = time.time()
         for k in range(nrep):
-            logprob, alpha = hidden.forward(self.A[i], self.pobs[i], self.pi[i], alpha_out=out, dtype=np.float64)
+            logprob, alpha = hidden.forward(self.A[i], self.pobs[i], self.pi[i], alpha_out=out)
         # compare
         time2 = time.time()
         d = (time2-time1)/(1.0*nrep)
@@ -165,7 +165,7 @@ class TestHidden(unittest.TestCase):
         hidden.set_implementation(kernel)
         time1 = time.time()
         for k in range(nrep):
-            beta = hidden.backward(self.A[i], self.pobs[i], beta_out=out, dtype=np.float64)
+            beta = hidden.backward(self.A[i], self.pobs[i], beta_out=out)
         # compare
         time2 = time.time()
         d = (time2-time1)/(1.0*nrep)
@@ -201,7 +201,7 @@ class TestHidden(unittest.TestCase):
         hidden.set_implementation(kernel)
         time1 = time.time()
         for k in range(nrep):
-            C = hidden.transition_counts(self.alpha[i], self.beta[i], self.A[i], self.pobs[i], out=out, dtype=np.float64)
+            C = hidden.transition_counts(self.alpha[i], self.beta[i], self.A[i], self.pobs[i], out=out)
         # compare
         time2 = time.time()
         d = (time2-time1)/(1.0*nrep)
@@ -213,7 +213,7 @@ class TestHidden(unittest.TestCase):
         hidden.set_implementation(kernel)
         time1 = time.time()
         for k in range(nrep):
-            vpath = hidden.viterbi(self.A[i], self.pobs[i], self.pi[i], dtype=np.float64)
+            vpath = hidden.viterbi(self.A[i], self.pobs[i], self.pi[i])
         # compare
         time2 = time.time()
         d = (time2-time1)/(1.0*nrep)

@@ -81,7 +81,7 @@ def initial_model_discrete(observations, nstates, lag=1, reversible=True):
     # initialize HMM
     # --------------
     output_model = DiscreteOutputModel(B)
-    model = HMM(nstates, A, output_model)
+    model = HMM(A, output_model)
     return model
 
 

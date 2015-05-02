@@ -78,17 +78,18 @@ def force_spectroscopy_model():
 
     # Define a reversible transition matrix.
     Tij = np.array([
-            [0.980, 0.019, 0.001],
-            [0.050, 0.900, 0.050],
-            [0.001, 0.009, 0.990]], np.float64)
+            [0.989, 0.010, 0.001],
+            [0.010, 0.940, 0.050],
+            [0.001, 0.050, 0.949]], np.float64)
 
     # Construct HMM with these parameters.
     from bhmm import HMM
-    model = HMM(nstates, Tij, output_model)
+    model = HMM(Tij, output_model)
 
     return model
 
-def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0, lifetime_max = 100, lifetime_min = 10, reversible = True, output_model_type = 'gaussian'):
+def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0,
+                 lifetime_max = 100, lifetime_min = 10, reversible = True, output_model_type = 'gaussian'):
     """
     Construct a test multistate model with regular spaced emission means (linearly interpolated between omin and omax)
     and variable emission widths (linearly interpolated between sigma_min and sigma_max).
@@ -162,7 +163,7 @@ def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 
 
     # Construct HMM with these parameters.
     from bhmm import HMM
-    model = HMM(nstates, Tij, output_model)
+    model = HMM(Tij, output_model)
 
     return model
 
@@ -291,9 +292,9 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000,
     [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
     # Initialize a new BHMM model.
     from bhmm import BHMM
-    bhmm = BHMM(O, nstates)
+    sampled_model = BHMM(O, nstates)
 
-    return [model, O, S, bhmm]
+    return [model, O, S, sampled_model]
 
 def total_state_visits(nstates, S):
     """

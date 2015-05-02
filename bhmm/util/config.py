@@ -20,6 +20,6 @@ verbose = True
 
 def log_level():
     if verbose:
-        return logging.INFO
-    else:
         return logging.DEBUG
+    else:
+        return logging.INFO+1
