@@ -10,6 +10,7 @@ import numpy as np
 import impl_c.gaussian as gc
 from bhmm.output_models import OutputModel
 from bhmm.util.logger import logger
+from bhmm.util import config
 
 class GaussianOutputModel(OutputModel):
     """
@@ -41,7 +42,7 @@ class GaussianOutputModel(OutputModel):
         """
         OutputModel.__init__(self, nstates)
 
-        dtype = np.float64 # type for internal storage
+        dtype = config.dtype # type for internal storage
 
         if means is not None:
             self._means = np.array(means, dtype=dtype)
@@ -256,7 +257,7 @@ class GaussianOutputModel(OutputModel):
         else:
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
 
-    def p_obs(self, obs, out=None, dtype=np.float32):
+    def p_obs(self, obs, out=None):
         """
         Returns the output probabilities for an entire trajectory and all hidden states
 
@@ -264,8 +265,6 @@ class GaussianOutputModel(OutputModel):
         ----------
         oobs : ndarray((T), dtype=int)
             a discrete trajectory of length T
-        dtype : numpy.dtype, optional, default=numpy.float32
-            The datatype to return the resulting observations in.
 
         Return
         ------
@@ -288,11 +287,11 @@ class GaussianOutputModel(OutputModel):
 
         """
         if self.__impl__ == self.__IMPL_C__:
-            return gc.p_obs(obs, self.means, self.sigmas, out=out, dtype=dtype)
+            return gc.p_obs(obs, self.means, self.sigmas, out=out, dtype=config.dtype)
         elif self.__impl__ == self.__IMPL_PYTHON__:
             T = len(obs)
             if out is None:
-                res = np.zeros((T, self.nstates), dtype=dtype)
+                res = np.zeros((T, self.nstates), dtype=config.dtype)
             else:
                 res = out
             for t in range(T):
@@ -335,7 +334,7 @@ class GaussianOutputModel(OutputModel):
         K = len(observations)
 
         # fit means
-        self.means = np.zeros((N))
+        self._means = np.zeros((N))
         w_sum = np.zeros((N))
         for k in range(K):
             # update nominator
@@ -344,10 +343,10 @@ class GaussianOutputModel(OutputModel):
             # update denominator
             w_sum += np.sum(weights[k], axis=0)
         # normalize
-        self.means /= w_sum
+        self._means /= w_sum
 
         # fit variances
-        self.sigmas  = np.zeros((N))
+        self._sigmas  = np.zeros((N))
         w_sum = np.zeros((N))
         for k in range(K):
             # update nominator
@@ -357,8 +356,8 @@ class GaussianOutputModel(OutputModel):
             # update denominator
             w_sum += np.sum(weights[k], axis=0)
         # normalize
-        self.sigmas /= w_sum
-        self.sigmas = np.sqrt(self.sigmas)
+        self._sigmas /= w_sum
+        self._sigmas = np.sqrt(self.sigmas)
 
 
     def _sample_output_mode(self, observations):
@@ -442,7 +441,7 @@ class GaussianOutputModel(OutputModel):
         return observation
 
 
-    def generate_observations_from_state(self, state_index, nobs, dtype=np.float32):
+    def generate_observations_from_state(self, state_index, nobs):
         """
         Generate synthetic observation data from a given state.
 
@@ -452,12 +451,10 @@ class GaussianOutputModel(OutputModel):
             Index of the state from which observations are to be generated.
         nobs : int
             The number of observations to generate.
-        dtype : numpy.dtype, optional, default=numpy.float32
-            The datatype to return the resulting observations in.
 
         Returns
         -------
-        observations : numpy.array of shape(nobs,) with type dtype
+        observations : numpy.array of shape(nobs,)
             A sample of `nobs` observations from the specified state.
 
         Examples
@@ -476,7 +473,7 @@ class GaussianOutputModel(OutputModel):
         return observations
 
 
-    def generate_observation_trajectory(self, s_t, dtype=None):
+    def generate_observation_trajectory(self, s_t):
         """
         Generate synthetic observation data from a given state sequence.
 
@@ -484,8 +481,6 @@ class GaussianOutputModel(OutputModel):
         ----------
         s_t : numpy.array with shape (T,) of int type
             s_t[t] is the hidden state sampled at time t
-        dtype : numpy.dtype, optional, default=None
-            The datatype to return the resulting observations in. If None, will use float32.
 
         Returns
         -------
@@ -507,13 +502,10 @@ class GaussianOutputModel(OutputModel):
 
         """
 
-        if dtype == None:
-            dtype = np.float32
-
         # Determine number of samples to generate.
         T = s_t.shape[0]
 
-        o_t = np.zeros([T], dtype=dtype)
+        o_t = np.zeros([T], dtype=config.dtype)
         for t in range(T):
             s = s_t[t]
             o_t[t] = self.sigmas[s] * np.random.randn() + self.means[s]

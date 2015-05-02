@@ -8,9 +8,9 @@ import copy
 import time
 #from scipy.misc import logsumexp
 import bhmm.hidden as hidden
-from msm.tmatrix_disconnected import sample_P
-from util.logger import logger
-
+from bhmm.msm.tmatrix_disconnected import sample_P
+from bhmm.util.logger import logger
+from bhmm.util import config
 
 #from bhmm.msm.transition_matrix_sampling_rev import TransitionMatrixSamplerRev
 
@@ -46,8 +46,7 @@ class BHMM(object):
     """
     def __init__(self, observations, nstates, initial_model=None,
                  reversible=True, transition_matrix_sampling_steps=1000,
-                 output_model_type='gaussian',
-                 dtype = np.float64, kernel = 'c'):
+                 output_model_type='gaussian'):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -66,8 +65,6 @@ class BHMM(object):
             number of transition matrix sampling steps per BHMM cycle
         output_model_type : str, optional, default='gaussian'
             Output model type.  ['gaussian', 'discrete']
-        kernel: str, optional, default='python'
-            Implementation kernel
 
         TODO
         ----
@@ -102,14 +99,12 @@ class BHMM(object):
         self.transition_matrix_sampling_steps = transition_matrix_sampling_steps
 
         # implementation options
-        self.dtype = dtype
-        self.kernel = kernel
-        hidden.set_implementation(kernel)
-        self.model.output_model.set_implementation(kernel)
+        hidden.set_implementation(config.kernel)
+        self.model.output_model.set_implementation(config.kernel)
 
         # pre-construct hidden variables
-        self.alpha = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
-        self.pobs = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
+        self.alpha = np.zeros((self.maxT,self.nstates), config.dtype, order='C')
+        self.pobs = np.zeros((self.maxT,self.nstates), config.dtype, order='C')
 
         return
 
@@ -221,11 +216,11 @@ class BHMM(object):
         pi = self.model.Pi
 
         # compute output probability matrix
-        self.model.output_model.p_obs(obs, out=self.pobs, dtype=self.dtype)
+        self.model.output_model.p_obs(obs, out=self.pobs)
         # forward variables
-        logprob = hidden.forward(A, self.pobs, pi, T = T, alpha_out=self.alpha, dtype=self.dtype)[0]
+        logprob = hidden.forward(A, self.pobs, pi, T = T, alpha_out=self.alpha)[0]
         # sample path
-        S = hidden.sample_path(self.alpha, A, self.pobs, T = T, dtype=self.dtype)
+        S = hidden.sample_path(self.alpha, A, self.pobs, T = T)
 
         return S
 
@@ -293,9 +288,9 @@ class BHMM(object):
         """Initialize using an MLHMM.
 
         """
-        logger.info("Generating initial model for BHMM using MLHMM...")
-        from bhmm import MLHMM
-        mlhmm = MLHMM(self.observations, self.nstates, reversible=self.reversible, output_model_type=output_model_type)
+        logger().info("Generating initial model for BHMM using MLHMM...")
+        from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator
+        mlhmm = MaximumLikelihoodEstimator(self.observations, self.nstates, reversible=self.reversible, output_model_type=output_model_type)
         model = mlhmm.fit()
         return model
 

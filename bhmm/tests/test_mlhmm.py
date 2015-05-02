@@ -8,7 +8,7 @@ Test MLHMM.
 import unittest
 from functools import partial
 from bhmm import testsystems
-from bhmm import MLHMM
+from bhmm import MaximumLikelihoodEstimator
 
 __author__ = "John D. Chodera, Frank Noe"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"

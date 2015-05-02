@@ -3,6 +3,13 @@ Hidden Markov model
 
 """
 
+__author__ = "Frank Noe and John D. Chodera"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["Frank Noe", "John D. Chodera"]
+__license__ = "LGPL"
+__maintainer__ = "Frank Noe"
+__email__="frank DOT noe AT fu-berlin DOT de"
+
 import time
 import numpy as np
 import copy
@@ -11,19 +18,12 @@ import copy
 # from multiprocessing import Queue, Process, cpu_count
 
 # BHMM imports
-import init
+import bhmm.init as hmminit
 import bhmm.hidden as hidden
-from util.logger import logger
+from bhmm.util.logger import logger
+from bhmm.util import config
 
-__author__ = "Frank Noe and John D. Chodera"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["Frank Noe", "John D. Chodera"]
-__license__ = "LGPL"
-__maintainer__ = "Frank Noe"
-__email__="frank DOT noe AT fu-berlin DOT de"
-
-
-class MLHMM(object):
+class MaximumLikelihoodEstimator(object):
     """
     Maximum likelihood Hidden Markov model (HMM).
 
@@ -34,7 +34,7 @@ class MLHMM(object):
 
     >>> from bhmm import testsystems
     >>> [model, O, S] = testsystems.generate_synthetic_observations()
-    >>> mlhmm = MLHMM(O, model.nstates)
+    >>> mlhmm = MaximumLikelihoodEstimator(O, model.nstates)
     >>> model = mlhmm.fit()
 
     References
@@ -44,7 +44,7 @@ class MLHMM(object):
 
     """
     def __init__(self, observations, nstates, initial_model=None, reversible=True, output_model_type='gaussian',
-                 kernel = 'c', dtype = np.float64, accuracy=1e-3, maxit=1000):
+                 accuracy=1e-3, maxit=1000):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -61,8 +61,6 @@ class MLHMM(object):
             otherwise, a standard  non-reversible prior is used.
         output_model_type : str, optional, default='gaussian'
             Output model type.  ['gaussian', 'discrete']
-        kernel: str, optional, default='python'
-            Implementation kernel
         dtype : type
             data type used for hidden state probabilities, transition probabilities and initial probilities
         accuracy : float
@@ -93,22 +91,18 @@ class MLHMM(object):
             self.model = copy.deepcopy(initial_model)
         else:
             # Generate our own initial model.
-            self.model = init.generate_initial_model(observations, nstates, output_model_type)
+            self.model = hmminit.generate_initial_model(observations, nstates, output_model_type)
 
         # Kernel for computing things
-        self.kernel = kernel
-        hidden.set_implementation(kernel)
-        self.model.output_model.set_implementation(kernel)
-
-        # dtype
-        self.dtype = dtype
+        hidden.set_implementation(config.kernel)
+        self.model.output_model.set_implementation(config.kernel)
 
         # pre-construct hidden variables
-        self.alpha = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
-        self.beta = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
-        self.pobs = np.zeros((self.maxT,self.nstates), dtype=dtype, order='C')
-        self.gammas = [np.zeros((len(self.observations[i]),self.nstates), dtype=dtype, order='C') for i in range(self.nobs)]
-        self.Cs = [np.zeros((self.nstates,self.nstates), dtype=dtype, order='C') for i in range(self.nobs)]
+        self.alpha = np.zeros((self.maxT,self.nstates), config.dtype, order='C')
+        self.beta = np.zeros((self.maxT,self.nstates), config.dtype, order='C')
+        self.pobs = np.zeros((self.maxT,self.nstates), config.dtype, order='C')
+        self.gammas = [np.zeros((len(self.observations[i]),self.nstates), config.dtype, order='C') for i in range(self.nobs)]
+        self.Cs = [np.zeros((self.nstates,self.nstates), config.dtype, order='C') for i in range(self.nobs)]
 
         # convergence options
         self.accuracy = accuracy
@@ -140,15 +134,15 @@ class MLHMM(object):
         obs = self.observations[itraj]
         T = len(obs)
         # compute output probability matrix
-        self.model.output_model.p_obs(obs, out=self.pobs, dtype=self.dtype)
+        self.model.output_model.p_obs(obs, out=self.pobs)
         # forward variables
-        logprob = hidden.forward(A, self.pobs, pi, T = T, alpha_out=self.alpha, dtype=self.dtype)[0]
+        logprob = hidden.forward(A, self.pobs, pi, T = T, alpha_out=self.alpha)[0]
         # backward variables
-        hidden.backward(A, self.pobs, T = T, beta_out=self.beta, dtype=self.dtype)
+        hidden.backward(A, self.pobs, T = T, beta_out=self.beta)
         # gamma
         hidden.state_probabilities(self.alpha, self.beta, gamma_out = self.gammas[itraj])
         # count matrix
-        hidden.transition_counts(self.alpha, self.beta, A, self.pobs, out = self.Cs[itraj], dtype=self.dtype)
+        hidden.transition_counts(self.alpha, self.beta, A, self.pobs, out = self.Cs[itraj])
         # return results
         return logprob
 
@@ -180,7 +174,7 @@ class MLHMM(object):
         logger().info("Count matrix = \n"+str(C))
 
         # compute new transition matrix
-        from msm.tmatrix_disconnected import estimate_P,stationary_distribution
+        from bhmm.msm.tmatrix_disconnected import estimate_P,stationary_distribution
         T = estimate_P(C, reversible=self.model.reversible)
         # stationary or init distribution
         if self.model.stationary:
@@ -242,9 +236,9 @@ class MLHMM(object):
         for itraj in range(K):
             obs = self.observations[itraj]
             # compute output probability matrix
-            pobs = self.model.output_model.p_obs(obs, dtype = self.dtype)
+            pobs = self.model.output_model.p_obs(obs)
             # hidden path
-            paths[itraj] = hidden.viterbi(A, pobs, pi, dtype = self.dtype)
+            paths[itraj] = hidden.viterbi(A, pobs, pi)
 
         # done
         return paths
@@ -263,7 +257,7 @@ class MLHMM(object):
 
         >>> from bhmm import testsystems
         >>> [model, O, S] = testsystems.generate_synthetic_observations()
-        >>> mlhmm = MLHMM(O, model.nstates)
+        >>> mlhmm = MaximumLikelihoodEstimator(O, model.nstates)
         >>> model = mlhmm.fit()
 
         """

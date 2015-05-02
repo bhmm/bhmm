@@ -11,6 +11,7 @@ from math import log
 
 import bhmm.output_models
 from bhmm.output_models import OutputModel
+from bhmm.util import config
 
 class DiscreteOutputModel(OutputModel):
     """
@@ -39,7 +40,7 @@ class DiscreteOutputModel(OutputModel):
         >>> output_model = DiscreteOutputModel(B)
 
         """
-        self._output_probabilities = np.array(B, dtype=np.float64)
+        self._output_probabilities = np.array(B, dtype=config.dtype)
         nstates,self._nsymbols = self._output_probabilities.shape[0],self._output_probabilities.shape[1]
         # superclass constructor
         OutputModel.__init__(self, nstates)
@@ -169,7 +170,7 @@ class DiscreteOutputModel(OutputModel):
     #     """
     #     return np.log(self.B[:,o])
 
-    def p_obs(self, obs, out=None, dtype=np.float32):
+    def p_obs(self, obs, out=None):
         """
         Returns the output probabilities for an entire trajectory and all hidden states
 
