@@ -10,8 +10,8 @@ import version
 __version__ = version.version
 
 from bhmm.hmm.generic_hmm import HMM
-from bhmm.estimators.bhmm_class import BHMM
-from bhmm.estimators.mlhmm import MLHMM
+from bhmm.estimators.bayesian_sampling import BHMM
+from bhmm.estimators.maximum_likelihood import MLHMM
 
 from output_models import OutputModel, GaussianOutputModel, DiscreteOutputModel
 
