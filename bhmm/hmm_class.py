@@ -4,7 +4,6 @@ Hidden Markov model representation.
 """
 
 import numpy as np
-import output_models
 
 __author__ = "John D. Chodera, Frank Noe"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
