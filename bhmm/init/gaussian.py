@@ -2,7 +2,7 @@ __author__ = 'noe'
 
 import numpy as np
 
-from bhmm.hmm_class import HMM
+from bhmm.hmm.generic_hmm import HMM
 from bhmm.util.logger import logger
 
 def initial_model_gaussian1d(observations, nstates, reversible=True):
@@ -54,7 +54,6 @@ def initial_model_gaussian1d(observations, nstates, reversible=True):
     model = HMM(nstates, Tij, output_model)
 
     # Compute fractional state memberships.
-    from scipy.misc import logsumexp
     Nij = np.zeros([nstates, nstates], np.float64)
     for o_t in observations:
         # length of trajectory

@@ -129,6 +129,11 @@ class HMM(object):
         return output
 
     @property
+    def lag(self):
+        r""" Lag time of the model, i.e. the number of observated trajectory steps made by the transition matrix """
+        return self._lag
+
+    @property
     def is_reversible(self):
         r""" Whether the HMM is reversible """
         return self._reversible

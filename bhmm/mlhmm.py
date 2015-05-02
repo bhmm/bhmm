@@ -197,7 +197,7 @@ class MLHMM(object):
 
         # update output model
         # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
-        self.model.output_model.fit(self.observations, gammas)
+        self.model.output_model._estimate_output_model(self.observations, gammas)
 
     @property
     def hidden_state_probabilities(self):

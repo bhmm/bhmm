@@ -1,11 +1,13 @@
 __author__ = 'noe'
 
+import warnings
+
 import numpy as np
-from bhmm.hmm_class import HMM
+
+from bhmm.hmm.generic_hmm import HMM
 from bhmm.output_models.discrete import DiscreteOutputModel
 from bhmm.util.logger import logger
 
-import warnings
 
 def initial_model_discrete(observations, nstates, lag=1, reversible=True):
     """Generate an initial model with discrete output densities

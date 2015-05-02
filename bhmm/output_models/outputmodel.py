@@ -45,10 +45,14 @@ class OutputModel(object):
             The number of output states.
 
         """
-        self.nstates = nstates
+        self._nstates = nstates
 
         return
 
+    @property
+    def nstates(self):
+        r""" Number of hidden states """
+        return self._nstates
 
     def set_implementation(self, impl):
         """

@@ -140,7 +140,7 @@ class BHMM(object):
         >>> nburn = 5 # run the sampler a bit before recording samples
         >>> nsamples = 10 # generate 10 samples
         >>> nthin = 2 # discard one sample in between each recorded sample
-        >>> samples = bhmm.sample(nsamples, nburn=nburn, nthin=nthin)
+        >>> samples = bhmm._sample_output_mode(nsamples, nburn=nburn, nthin=nthin)
 
         """
 
@@ -278,7 +278,7 @@ class BHMM(object):
 
         """
         observations_by_state = [ self.model.collect_observations_in_state(self.observations, state) for state in range(self.model.nstates) ]
-        self.model.output_model.sample(observations_by_state)
+        self.model.output_model._sample_output_mode(observations_by_state)
         return
 
     def _updateTransitionMatrix(self):

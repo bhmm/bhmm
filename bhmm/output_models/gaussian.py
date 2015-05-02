@@ -44,27 +44,29 @@ class GaussianOutputModel(OutputModel):
         >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
 
         """
-        self.nstates = nstates
+        OutputModel.__init__(self, nstates)
 
         dtype = np.float64 # type for internal storage
 
         if means is not None:
-            self.means = np.array(means, dtype=dtype)
-            if self.means.shape != (nstates,): raise Exception('means must have shape (%d,); instead got %s' % (nstates, str(self.means.shape)))
+            self._means = np.array(means, dtype=dtype)
+            if self._means.shape != (nstates,):
+                raise Exception('means must have shape (%d,); instead got %s' % (nstates, str(self._means.shape)))
         else:
-            self.means = np.zeros([nstates], dtype=dtype)
+            self._means = np.zeros([nstates], dtype=dtype)
 
         if sigmas is not None:
-            self.sigmas = np.array(sigmas, dtype=dtype)
-            if self.sigmas.shape != (nstates,): raise Exception('sigmas must have shape (%d,); instead got %s' % (nstates, str(self.sigmas.shape)))
+            self._sigmas = np.array(sigmas, dtype=dtype)
+            if self._sigmas.shape != (nstates,):
+                raise Exception('sigmas must have shape (%d,); instead got %s' % (nstates, str(self._sigmas.shape)))
         else:
-            self.sigmas = np.zeros([nstates], dtype=dtype)
+            self._sigmas = np.zeros([nstates], dtype=dtype)
 
         return
 
 
     def __repr__(self):
-        """
+        r""" String representation of this output model
         >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
         >>> print repr(output_model)
         GaussianOutputModel(3, means=array([-1.,  0.,  1.]), sigmas=array([ 0.5,  1. ,  2. ]))
@@ -74,7 +76,7 @@ class GaussianOutputModel(OutputModel):
         return "GaussianOutputModel(%d, means=%s, sigmas=%s)" % (self.nstates, repr(self.means), repr(self.sigmas))
 
     def __str__(self):
-        """
+        r""" Human-readable string representation of this output model
         >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
         >>> print str(output_model)
         --------------------------------------------------------------------------------
@@ -92,6 +94,18 @@ class GaussianOutputModel(OutputModel):
         output += "sigmas: %s\n" % str(self.sigmas)
         output += "--------------------------------------------------------------------------------"
         return output
+
+    @property
+    def means(self):
+        r""" Mean values of Gaussians output densities """
+        return self._means
+
+    @property
+    def sigmas(self):
+        # TODO: Should we not rather give the variances? In the multidimensional case on usually uses the covariance
+        # TODO:   matrix instead of its square root.
+        r""" Standard deviations of Gaussian output densities """
+        return self._sigmas
 
     # TODO: remove code when we're sure we don't need it
     # TODO: when cleaning up, save the functionality of the last function (log_p_o) and integrate into and overwrite of log_pobs.
@@ -293,7 +307,7 @@ class GaussianOutputModel(OutputModel):
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
 
 
-    def fit(self, observations, weights):
+    def _estimate_output_model(self, observations, weights):
         """
         Fits the output model given the observations and weights
 
@@ -318,7 +332,7 @@ class GaussianOutputModel(OutputModel):
 
         Update the observation model parameters my a maximum-likelihood fit.
 
-        >>> output_model.fit(observations, weights)
+        >>> output_model._estimate_output_model(observations, weights)
 
         """
         # sizes
@@ -352,7 +366,7 @@ class GaussianOutputModel(OutputModel):
         self.sigmas = np.sqrt(self.sigmas)
 
 
-    def sample(self, observations):
+    def _sample_output_mode(self, observations):
         """
         Sample a new set of distribution parameters given a sample of observations from the given state.
 
@@ -376,7 +390,7 @@ class GaussianOutputModel(OutputModel):
 
         Update output parameters by sampling.
 
-        >>> output_model.sample(observations)
+        >>> output_model._sample_output_mode(observations)
 
         """
         for state_index in range(self.nstates):

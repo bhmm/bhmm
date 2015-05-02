@@ -57,7 +57,7 @@ def plot_state_assignments(model, s_t, o_t, tau=1.0, time_units=None, obs_label=
 
     Label the axes.
 
-    >>> models = bhmm_sampler.sample(nsamples=1, save_hidden_state_trajectory=True)
+    >>> models = bhmm_sampler._sample_output_mode(nsamples=1, save_hidden_state_trajectory=True)
     >>> plot_state_assignments(models[0], models[0].hidden_state_trajectories[0], O[0], tau=0.001, time_units='ms', obs_label='force / pN', pdf_filename=filename)
 
     """
@@ -169,7 +169,7 @@ if __name__ == '__main__':
     # Create plots.
     from bhmm import testsystems
     [model, O, S, bhmm] = testsystems.generate_random_bhmm(nstates=3, ntrajectories=1, length=10000)
-    models = bhmm.sample(nsamples=1, save_hidden_state_trajectory=True)
+    models = bhmm._sample_output_mode(nsamples=1, save_hidden_state_trajectory=True)
     # Extract hidden state trajectories and observations.
     s_t = S[0]
     o_t = O[0]
