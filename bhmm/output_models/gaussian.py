@@ -1,20 +1,15 @@
-__author__ = 'noe'
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "LGPL"
+__maintainer__ = "John D. Chodera, Frank Noe"
+__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
 
 import numpy as np
 
 import impl_c.gaussian as gc
 from bhmm.output_models import OutputModel
 from bhmm.util.logger import logger
-
-
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "LGPL"
-__maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
-
-
 
 class GaussianOutputModel(OutputModel):
     """

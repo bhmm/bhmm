@@ -1,4 +1,9 @@
-__author__ = 'noe'
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "LGPL"
+__maintainer__ = "John D. Chodera, Frank Noe"
+__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
 
 import copy
 import numpy as np
@@ -6,13 +11,6 @@ from math import log
 
 import bhmm.output_models
 from bhmm.output_models import OutputModel
-
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "LGPL"
-__maintainer__ = "Frank Noe"
-__email__="frank DOT noe AT fu-berlin DOT de"
 
 class DiscreteOutputModel(OutputModel):
     """
