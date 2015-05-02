@@ -39,6 +39,10 @@ class SampledHMM(HMM):
         # save confindence interval
         self._conf = conf
 
+    def set_confidence(self, conf):
+        r""" Set confidence interval """
+        self._conf = conf
+
     @property
     def nsamples(self):
         r""" Number of samples """
@@ -201,16 +205,39 @@ class SampledHMM(HMM):
         return res
 
     @property
-    def eigenvalues_mean(self):
+    def timescales_mean(self):
         r""" The mean of the timescales of the hidden states """
         return np.mean(self.timescales_samples, axis=0)
 
     @property
-    def eigenvalues_std(self):
+    def timescales_std(self):
         r""" The standard deviation of the timescales of the hidden states """
         return np.std(self.timescales_samples, axis=0)
 
     @property
-    def eigenvalues_conf(self):
+    def timescales_conf(self):
         r""" The standard deviation of the timescales of the hidden states """
         return confidence_interval_arr(self.timescales_samples, conf=self._conf)
+
+    @property
+    def lifetimes_samples(self):
+        r""" Samples of the timescales """
+        res = np.empty((self.nsamples, self.nstates), dtype=config.dtype)
+        for i in range(self.nsamples):
+            res[i,:] = self._sampled_hmms[i].lifetimes
+        return res
+
+    @property
+    def lifetimes_mean(self):
+        r""" The mean of the lifetimes of the hidden states """
+        return np.mean(self.lifetimes_samples, axis=0)
+
+    @property
+    def lifetimes_std(self):
+        r""" The standard deviation of the lifetimes of the hidden states """
+        return np.std(self.lifetimes_samples, axis=0)
+
+    @property
+    def lifetimes_conf(self):
+        r""" The standard deviation of the lifetimes of the hidden states """
+        return confidence_interval_arr(self.lifetimes_samples, conf=self._conf)
