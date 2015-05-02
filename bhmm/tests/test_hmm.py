@@ -29,7 +29,6 @@ class TestHMM(unittest.TestCase):
         # Test model parameter access.
         assert_equal(model.Tij.shape, (3,3))
         assert_equal(model.Pi.shape, (3,))
-        assert_equal(model.logPi.shape, (3,))
 
         return
 

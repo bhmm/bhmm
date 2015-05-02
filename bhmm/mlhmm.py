@@ -18,7 +18,7 @@ from util.logger import logger
 __author__ = "Frank Noe and John D. Chodera"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["Frank Noe", "John D. Chodera"]
-__license__ = "FreeBSD"
+__license__ = "LGPL"
 __maintainer__ = "Frank Noe"
 __email__="frank DOT noe AT fu-berlin DOT de"
 

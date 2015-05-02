@@ -16,7 +16,7 @@ import impl_c as ic
 __author__ = "Maikel Nadolski, Christoph Froehner, Frank Noe"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["Maikel Nadolski", "Christoph Froehner", "Frank Noe"]
-__license__ = "FreeBSD"
+__license__ = "LGPL"
 __maintainer__ = "Frank Noe"
 __email__="frank.noe AT fu-berlin DOT de"
 

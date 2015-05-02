@@ -9,7 +9,7 @@ import output_models
 __author__ = "John D. Chodera, Frank Noe"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "FreeBSD"
+__license__ = "LGPL"
 __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
@@ -130,13 +130,13 @@ class HMM(object):
         output += '\n'
         return output
 
-    @property
-    def logPi(self):
-        return np.log(self._Pi)
-
-    @property
-    def logTij(self):
-        return np.log(self._Tij)
+    # @property
+    # def logPi(self):
+    #     return np.log(self._Pi)
+    #
+    # @property
+    # def logTij(self):
+    #     return np.log(self._Tij)
 
     @property
     def is_reversible(self):
@@ -204,20 +204,11 @@ class HMM(object):
         """
         The relaxation timescales corresponding to the eigenvalues
 
-        Parameters
-        ----------
-        k : int
-            number of timescales to be computed. As a result, k+1 eigenvalues will be computed
-        ncv : int (optional)
-            Relevant for eigenvalue decomposition of reversible transition matrices.
-            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
-            it is recommended that ncv > 2*k
-
         Returns
         -------
         ts : ndarray(m)
             relaxation timescales in units of the input trajectory time step,
-            defined by :math:`-tau / ln | \lambda_i |, i = 2,...,k+1`.
+            defined by :math:`-tau / ln | \lambda_i |, i = 2,...,nstates`.
 
         """
         from pyemma.msm.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
