@@ -21,7 +21,7 @@ __license__ = "LGPL"
 __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
-class BHMM(object):
+class BayesianHMMSampler(object):
     """Bayesian hidden Markov model sampler.
 
     Examples
@@ -37,8 +37,8 @@ class BHMM(object):
 
     Initialize a new BHMM model.
 
-    >>> from bhmm import BHMM
-    >>> bhmm_sampler = BHMM(observations, nstates)
+    >>> from bhmm import BayesianHMMSampler
+    >>> bhmm_sampler = BayesianHMMSampler(observations, nstates)
 
     Sample from the posterior.
 

@@ -5,7 +5,7 @@ import numpy as _np
 from util import types as _types
 from hmm.generic_hmm import HMM as _HMM
 from estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
-from estimators.bayesian_sampling import BHMM as _BHMM
+from estimators.bayesian_sampling import BayesianHMMSampler as _BHMM
 
 def _guess_model_type(observations):
     o1 = _np.array(observations[0])

@@ -291,8 +291,8 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000,
     # Generate synthetic data.
     [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
     # Initialize a new BHMM model.
-    from bhmm import BHMM
-    sampled_model = BHMM(O, nstates)
+    from bhmm import BayesianHMMSampler
+    sampled_model = BayesianHMMSampler(O, nstates)
 
     return [model, O, S, sampled_model]
 
