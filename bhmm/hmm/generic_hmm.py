@@ -4,6 +4,7 @@ Hidden Markov model representation.
 """
 
 import numpy as np
+from bhmm.util.logger import logger
 
 __author__ = "John D. Chodera, Frank Noe"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
@@ -114,6 +115,8 @@ class HMM(object):
             self._eigenvalues = np.diag(self._D)
             self._spectral_decomp_available = True
         except LinAlgError:
+            logger().warn('Eigendecomposition failed for transition matrix\n'+str(self._Tij)+
+                          '\nspectral properties will not be available')
             self._spectral_decomp_available = False
 
     def __repr__(self):
