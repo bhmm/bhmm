@@ -84,6 +84,11 @@ class DiscreteOutputModel(OutputModel):
         return output
 
     @property
+    def model_type(self):
+        r""" Model type. Returns 'discrete' """
+        return 'discrete'
+
+    @property
     def output_probabilities(self):
         r""" Row-stochastic (n,m) output probability matrix from n hidden states to m symbols. """
         return self._output_probabilities

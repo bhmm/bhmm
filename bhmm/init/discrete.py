@@ -54,8 +54,8 @@ def initial_model_discrete(observations, nstates, lag=1, reversible=True):
 
     #print 'B_conn = \n',B_conn
     # full state space output matrix
-    eps = 0.01 * (1.0/MSM.nstates) # default output probability, in order to avoid zero columns
-    B = eps * np.ones((nstates,MSM.nstates), dtype=np.float64)
+    eps = 0.01 * (1.0/MSM.nstates_full) # default output probability, in order to avoid zero columns
+    B = eps * np.ones((nstates,MSM.nstates_full), dtype=np.float64)
     # expand B_conn to full state space
     B[:,MSM.active_set] = B_conn[:,:]
     # renormalize B to make it row-stochastic

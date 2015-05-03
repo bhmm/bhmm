@@ -18,7 +18,6 @@ class GaussianOutputModel(OutputModel):
 
     """
 
-
     def __init__(self, nstates, means=None, sigmas=None):
         """
         Create a 1D Gaussian output model.
@@ -60,7 +59,6 @@ class GaussianOutputModel(OutputModel):
 
         return
 
-
     def __repr__(self):
         r""" String representation of this output model
         >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
@@ -90,6 +88,11 @@ class GaussianOutputModel(OutputModel):
         output += "sigmas: %s\n" % str(self.sigmas)
         output += "--------------------------------------------------------------------------------"
         return output
+
+    @property
+    def model_type(self):
+        r""" Model type. Returns 'gaussian' """
+        return 'gaussian'
 
     @property
     def dimension(self):

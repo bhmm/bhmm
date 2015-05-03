@@ -1,6 +1,7 @@
 __author__ = 'noe'
 
 from estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
+from estimators.bayesian_sampling import BHMM as _BHMM
 
 def estimate_hmm(observations, nstates, initial_model=None, output_model_type='gaussian',
                  reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000):
@@ -42,9 +43,42 @@ def estimate_hmm(observations, nstates, initial_model=None, output_model_type='g
 
     """
     # construct estimator
-    est = _MaximumLikelihoodEstimator(observations, nstates, initial_model=None, output_model_type='gaussian',
+    est = _MaximumLikelihoodEstimator(observations, nstates, initial_model=None, output_model_type=output_model_type,
                                       reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000)
     # run
     est.fit()
     # return model
     return est.hmm
+
+
+def bayesian_hmm(observations, estimated_hmm, nsample=100, store_hidden=False):
+    r""" Bayesian HMM based on sampling the posterior
+
+    Generic maximum-likelihood estimation of HMMs
+
+    Parameters
+    ----------
+    observations : list of numpy arrays representing temporal data
+        `observations[i]` is a 1d numpy array corresponding to the observed trajectory index `i`
+    estimated_hmm : HMM
+        HMM estimated from estimate_hmm or initialize_hmm
+    nsample : int, optional, default=100
+        number of Gibbs sampling steps
+    store_hidden : bool, optional, default=False
+        store hidden trajectories in sampled HMMs
+
+    Return
+    ------
+    hmm : :class:`SampledHMM <bhmm.hmm.generic_sampled_hmm.SampledHMM>`
+
+    """
+    # construct estimator
+    sampler = _BHMM(observations, estimated_hmm.nstates, initial_model=estimated_hmm,
+                    reversible=estimated_hmm.is_reversible, transition_matrix_sampling_steps=1000,
+                    output_model_type=estimated_hmm.output_model.model_type)
+
+    # Sample models.
+    sampled_hmms = sampler.sample(nsamples=nsample, save_hidden_state_trajectory=store_hidden)
+    # return model
+    from bhmm.hmm.generic_sampled_hmm import SampledHMM
+    return SampledHMM(estimated_hmm, sampled_hmms)
