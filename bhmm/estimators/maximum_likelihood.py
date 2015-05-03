@@ -289,8 +289,7 @@ class MaximumLikelihoodEstimator(object):
                 pi = self._fixed_initial_distribution
 
         # update model
-        self._hmm._Tij = copy.deepcopy(T)
-        self._hmm._Pi  = copy.deepcopy(pi)
+        self._hmm.update(T, pi)
 
         logger().info("T: \n"+str(T))
         logger().info("pi: \n"+str(pi))
@@ -333,7 +332,7 @@ class MaximumLikelihoodEstimator(object):
         """
         logger().info("=================================================================")
         logger().info("Running Baum-Welch:")
-        logger().info("  input observations:"+str(self._observations))
+        logger().info("  input observations: "+str(self.nobservations)+" of lengths "+str(self.observation_lengths))
         logger().info("  initial HMM guess:"+str(self._hmm))
 
         initial_time = time.time()

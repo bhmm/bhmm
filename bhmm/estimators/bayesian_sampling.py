@@ -154,7 +154,7 @@ class BHMM(object):
                 self._update()
             # Save a copy of the current model.
             model_copy = copy.deepcopy(self.model)
-            # print "Sampled: \n",repr(model_copy)
+            #print "Sampled: \n",repr(model_copy)
             if not save_hidden_state_trajectory:
                 model_copy.hidden_state_trajectory = None
             models.append(model_copy)
@@ -240,9 +240,8 @@ class BHMM(object):
 
         """
         C = self.model.count_matrix()
-        self.model._Tij = sample_P(C, self.transition_matrix_sampling_steps, reversible=self.reversible)
-        from pyemma.msm.analysis import stationary_distribution
-        self.model._Pi = stationary_distribution(self.model._Tij)
+        Tij = sample_P(C, self.transition_matrix_sampling_steps, reversible=self.reversible)
+        self.model.update(Tij)
 
     def _generateInitialModel(self, output_model_type):
         """Initialize using an MLHMM.

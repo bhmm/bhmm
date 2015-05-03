@@ -53,28 +53,36 @@ class HMM(object):
 
     """
     def __init__(self, Tij, output_model, lag=1, Pi=None, stationary=True, reversible=True):
-        # EMMA imports
-        from pyemma.msm import analysis as msmana
-
-        # save a copy of the transition matrix
-        self._Tij = np.array(Tij)
-        assert msmana.is_transition_matrix(self._Tij), 'Given transition matrix is not a stochastic matrix'
         # set number of states
-        self._nstates = self._Tij.shape[0]
+        self._nstates = np.array(Tij).shape[0]
         # lag time
         self._lag = lag
         # output model
         self.output_model = output_model
         # hidden state trajectories are optional
         self.hidden_state_trajectories = None
+        # parameters
+        self._stationary = stationary
+        self._reversible = reversible
+        # update numbers
+        self.update(Tij, Pi)
+
+    def update(self, Tij, Pi=None):
+        r""" Updates the transition matrix and recomputes all derived quantities """
+        # EMMA imports
+        from pyemma.msm import analysis as msmana
+
+        # save a copy of the transition matrix
+        self._Tij = np.array(Tij)
+        assert msmana.is_transition_matrix(self._Tij), 'Given transition matrix is not a stochastic matrix'
+        assert self._Tij.shape[0] == self._nstates, 'Given transition matrix has unexpected number of states '
 
         # initial / stationary distribution
         if (Pi is not None):
             assert np.all(Pi >= 0), 'Given initial distribution contains negative elements.'
             Pi = np.array(Pi) / np.sum(Pi) # ensure normalization and make a copy
 
-        self._stationary = stationary
-        if (stationary):
+        if (self._stationary):
             pT = msmana.stationary_distribution(self._Tij)
             if Pi is None: # stationary and no stationary distribution fixed, so computing it from trans. mat.
                 self._Pi = pT
@@ -89,8 +97,7 @@ class HMM(object):
                 self._Pi = Pi
 
         # reversible
-        self._reversible = reversible
-        if reversible:
+        if self._reversible:
             assert msmana.is_reversible(Tij), 'Reversible HMM requested, but given transition matrix is not reversible.'
 
         # do eigendecomposition by default, because it's very cheap for hidden transition matrices
