@@ -46,7 +46,7 @@ class MaximumLikelihoodEstimator(object):
         functions of a Markov process and to a model for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
 
     """
-    def __init__(self, observations, nstates, initial_model=None, output_model_type='gaussian',
+    def __init__(self, observations, nstates, initial_model=None, type='gaussian',
                  reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000):
         """Initialize a Bayesian hidden Markov model sampler.
 
@@ -59,8 +59,8 @@ class MaximumLikelihoodEstimator(object):
         initial_model : HMM, optional, default=None
             If specified, the given initial model will be used to initialize the BHMM.
             Otherwise, a heuristic scheme is used to generate an initial guess.
-        output_model_type : str, optional, default='gaussian'
-            Output model type.  ['gaussian', 'discrete']
+        type : str, optional, default=None
+            Output model type from [None, 'gaussian', 'discrete'].
         reversible : bool, optional, default=True
             If True, a prior that enforces reversible transition matrices (detailed balance) is used;
             otherwise, a standard  non-reversible prior is used.
