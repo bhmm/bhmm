@@ -15,7 +15,7 @@ kernel = 'c'
 dtype = np.float64
 
 # print a lot of info?
-verbose = True
+verbose = False
 
 
 def log_level():

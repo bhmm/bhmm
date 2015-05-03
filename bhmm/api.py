@@ -59,14 +59,14 @@ def init_hmm(observations, nstates, lag=1, type=None):
 
     Generate initial model for a gaussian output model.
 
-    >>> from bhmm import testsystems
-    >>> [model, observations, states] = testsystems.generate_synthetic_observations(output_model_type='gaussian')
+    >>> import bhmm
+    >>> [model, observations, states] = bhmm.testsystems.generate_synthetic_observations(output_model_type='gaussian')
     >>> initial_model = init_hmm(observations, model.nstates, 'gaussian')
 
     Generate initial model for a discrete output model.
 
-    >>> from bhmm import testsystems
-    >>> [model, observations, states] = testsystems.generate_synthetic_observations(output_model_type='discrete')
+    >>> import bhmm
+    >>> [model, observations, states] = bhmm.testsystems.generate_synthetic_observations(output_model_type='discrete')
     >>> initial_model = init_hmm(observations, model.nstates, 'discrete')
 
     """

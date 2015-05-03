@@ -104,7 +104,7 @@ class MaximumLikelihoodEstimator(object):
             self._stationary = self._hmm.stationary
         else:
             # Generate our own initial model.
-            self._hmm = hmminit.generate_initial_model(observations, nstates, output_model_type)
+            self._hmm = hmminit.generate_initial_model(observations, nstates, type)
             # setting parameters
             self._reversible = reversible
             self._stationary = stationary
