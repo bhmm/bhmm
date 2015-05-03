@@ -89,7 +89,7 @@ class MaximumLikelihoodEstimator(object):
         self._nstates = nstates
 
 
-        if initial_model:
+        if initial_model is not None:
             # Use user-specified initial model, if provided.
             self._hmm = copy.deepcopy(initial_model)
             # consistency checks

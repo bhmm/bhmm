@@ -48,12 +48,6 @@ def initial_model_gaussian1d(observations, nstates, reversible=True):
 
     logger().info("GMM weights: %s" % str(gmm.weights_))
 
-    # Compute transition matrix that gives specified Pi.
-    Tij = np.tile(Pi, [nstates, 1])
-
-    # Construct simple model.
-    model = HMM(Tij, output_model)
-
     # Compute fractional state memberships.
     Nij = np.zeros([nstates, nstates], np.float64)
     for o_t in observations:
