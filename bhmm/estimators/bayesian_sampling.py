@@ -239,7 +239,9 @@ class BHMM(object):
 
         """
         C = self.model.count_matrix()
-        self.model.Tij = sample_P(C, self.transition_matrix_sampling_steps, reversible=self.reversible)
+        self.model._Tij = sample_P(C, self.transition_matrix_sampling_steps, reversible=self.reversible)
+        from pyemma.msm.analysis import stationary_distribution
+        self.model._Pi = stationary_distribution(self.model._Tij)
 
     def _generateInitialModel(self, output_model_type):
         """Initialize using an MLHMM.

@@ -116,18 +116,20 @@ def generate_latex_table(sampled_hmm, sampling_time='1 ms', obs_name='force', ob
     nstates = sampled_hmm.nstates
 
     table = """
-            \\begin{tabular*}{\columnwidth}{@{\extracolsep{\\fill}}lcc}
-            \\hline
-            \\multicolumn{2}{l}{\\bf Property} & \\bf Value\\\\ \\hline
+\\begin{table}
+    \\begin{tabular*}{\columnwidth}{@{\extracolsep{\\fill}}lcc}
+        \hline
+        {\\bf Property} & {\\bf Symbol} & {\\bf Value} \\\\
+        \hline
             """
     # Stationary probability.
     p = sampled_hmm.stationary_distribution_mean
     p_lo, p_hi = sampled_hmm.stationary_distribution_conf
     for i in range(nstates):
         if (i == 0):
-            table += 'Equilibrium probability '
-        table += '& $\pi_{%d}$ & $%0.3f_{\:%0.3f}^{\:%0.3f}$ \\' % (i, p[i], p_lo[i], p_hi[i]) + '\n'
-        table += '\\hline' + '\n'
+            table += '\t\tEquilibrium probability '
+        table += '\t\t& $\pi_{%d}$ & $%0.3f_{\:%0.3f}^{\:%0.3f}$ \\\\' % (i, p[i], p_lo[i], p_hi[i]) + '\n'
+    table += '\t\t\hline' + '\n'
 
     # Transition probabilities.
     P = sampled_hmm.transition_matrix_mean
@@ -135,63 +137,60 @@ def generate_latex_table(sampled_hmm, sampling_time='1 ms', obs_name='force', ob
     for i in range(nstates):
         for j in range(nstates):
             if (i == 0) and (j==0):
-                table += 'Transition probability ($\Delta t = $%s) ' % (sampling_time)
-            table += '& $T_{%d%d}$ & $%f_{\:%f}^{\:%f}$ \\' % (i, j, P[i,j], P_lo[i,j], P_hi[i,j]) + '\n'
-            table += '\\hline' + '\n'
+                table += '\t\tTransition probability ($\Delta t = $%s) ' % (sampling_time)
+            table += '\t\t& $T_{%d%d}$ & $%0.4f_{\:%0.4f}^{\:%0.4f}$ \\\\' % (i, j, P[i,j], P_lo[i,j], P_hi[i,j]) + '\n'
+    table += '\t\t\hline' + '\n'
 
     # State mean forces.
     m = sampled_hmm.means_mean
-    m_lo, m_hi = sampled_hmm.transition_matrix_conf
+    m_lo, m_hi = sampled_hmm.means_conf
     for i in range(nstates):
         if (i == 0):
-            table += 'State %s mean (%s) ' % (obs_name, obs_units)
-        table += '& $\mu_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\' % (i, m[i], m_lo[i], m_hi[i]) + '\n'
-        table += '\\hline' + '\n'
+            table += '\t\tState %s mean (%s) ' % (obs_name, obs_units)
+        table += '\t\t& $\mu_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\\\' % (i, m[i], m_lo[i], m_hi[i]) + '\n'
+    table += '\t\t\hline' + '\n'
 
     # State force standard deviations.
-    s = sampled_hmm.means_mean
-    s_lo, s_hi = sampled_hmm.transition_matrix_conf
+    s = sampled_hmm.sigmas_mean
+    s_lo, s_hi = sampled_hmm.sigmas_conf
     for i in range(nstates):
         if (i == 0):
-            table += 'State %s std dev (%s) ' % (obs_name, obs_units)
-        table += '& $\mu_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\' % (i, s[i], s_lo[i], s_hi[i]) + '\n'
-        table += '\\hline' + '\n'
+            table += '\t\tState %s std dev (%s) ' % (obs_name, obs_units)
+        table += '\t\t& $\mu_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\\\' % (i, s[i], s_lo[i], s_hi[i]) + '\n'
+    table += '\t\t\hline' + '\n'
 
     # Transition rates via pseudogenerator.
-    K = np.array(P)
-    K_lo = np.array(P_lo)
-    K_hi = np.array(P_hi)
-    for i in range(sampled_hmm.nsamples):
-        K[i] -= np.eye(sampled_hmm.nstates)
-        K_lo[i] -= np.eye(sampled_hmm.nstates)
-        K_hi[i] -= np.eye(sampled_hmm.nstates)
+    K = 100.0 * (P - np.eye(sampled_hmm.nstates))
+    K_lo = 100.0 * (P_lo - np.eye(sampled_hmm.nstates))
+    K_hi = 100.0 * (P_hi - np.eye(sampled_hmm.nstates))
     for i in range(nstates):
         for j in range(nstates):
             if (i == 0) and (j==0):
-                table += 'Transition rate (s$^{-1}$) '
-            table += '& $k_{%d%d}$ & $%.1f_{\:%.1f}^{\:%.1f}$ \\' % (i, j, K[i,j], K_lo[i,j], K_hi[i,j]) + '\n'
-            table += '\hline' + '\n'
+                table += '\t\tTransition rate (ms$^{-1}$) '
+            if (i != j):
+                table += '\t\t& $k_{%d%d}$ & $%3.2f_{\:%3.2f}^{\:%3.2f}$ \\\\' % (i, j, K[i,j], K_lo[i,j], K_hi[i,j]) + '\n'
+    table += '\t\t\hline' + '\n'
 
     # State mean lifetimes.
     l = sampled_hmm.lifetimes_mean
     l_lo, l_hi = sampled_hmm.lifetimes_conf
     for i in range(nstates):
         if (i == 0):
-            table += 'State mean lifetime (%s) ' % sampling_time
-        table += '& $\mu_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\' % (i, l[i], l_lo[i], l_hi[i]) + '\n'
-        table += '\\hline' + '\n'
+            table += '\t\tState mean lifetime (%s) ' % sampling_time
+        table += '\t\t& $\mu_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\\\' % (i, l[i], l_lo[i], l_hi[i]) + '\n'
+    table += '\t\t\hline' + '\n'
 
     # State relaxation timescales.
     for i in range(nstates-1):
         if (i == 0):
-            table += 'Relaxation time (%s) ' % sampling_time
-        table += '& $\mu_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\' % (i, l[i], l_lo[i], l_hi[i]) + '\n'
-        table += '\\hline' + '\n'
+            table += '\t\tRelaxation time (%s) ' % sampling_time
+        table += '\t\t& $\mu_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\\\' % (i, l[i], l_lo[i], l_hi[i]) + '\n'
+    table += '\t\t\hline' + '\n'
 
     table +="""
-            \\hline
-            \\end{tabular*}
-            \\end{table}
+        \\hline
+    \\end{tabular*}
+\\end{table}
             """
     return table
 

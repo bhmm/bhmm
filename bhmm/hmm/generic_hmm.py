@@ -197,6 +197,7 @@ class HMM(object):
         """
         return self._L
 
+    @property
     def eigenvectors_right(self):
         r""" Right eigenvectors of the hidden transition matrix
 
@@ -208,6 +209,7 @@ class HMM(object):
         """
         return self._R
 
+    @property
     def timescales(self):
         r""" Relaxation timescales of the hidden transition matrix
 
@@ -224,6 +226,7 @@ class HMM(object):
         ts = _timescales(self._eigenvalues, tau=self._lag)
         return ts[1:]
 
+    @property
     def lifetimes(self):
         r""" Lifetimes of states of the hidden transition matrix
 

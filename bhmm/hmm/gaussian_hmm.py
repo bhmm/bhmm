@@ -46,6 +46,10 @@ class SampledGaussianHMM(GaussianHMM, SampledHMM):
 
     """
     def __init__(self, estimated_hmm, sampled_hmms, conf=0.95):
+        # enforce right type
+        estimated_hmm = GaussianHMM(estimated_hmm)
+        for i in range(len(sampled_hmms)):
+            sampled_hmms[i] = GaussianHMM(sampled_hmms[i])
         # call GaussianHMM superclass constructer with estimated_hmm
         GaussianHMM.__init__(self, estimated_hmm)
         # call SampledHMM superclass constructor
@@ -56,7 +60,8 @@ class SampledGaussianHMM(GaussianHMM, SampledHMM):
         r""" Samples of the Gaussian distribution means """
         res = np.empty((self.nsamples, self.nstates, self.dimension), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:,:] = self._sampled_hmms[i].means
+            for j in range(self.nstates):
+                res[i,j,:] = self._sampled_hmms[i].means[j]
         return res
 
     @property
@@ -79,7 +84,8 @@ class SampledGaussianHMM(GaussianHMM, SampledHMM):
         r""" Samples of the Gaussian distribution standard deviations """
         res = np.empty((self.nsamples, self.nstates, self.dimension), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:,:] = self._sampled_hmms[i].sigmas
+            for j in range(self.nstates):
+                res[i,j,:] = self._sampled_hmms[i].sigmas[j]
         return res
 
     @property
