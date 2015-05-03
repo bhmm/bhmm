@@ -3,7 +3,7 @@ __author__ = 'noe'
 from estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
 from estimators.bayesian_sampling import BHMM as _BHMM
 
-def estimate_hmm(observations, nstates, initial_model=None, output_model_type='gaussian',
+def estimate_hmm(observations, nstates, lag=1, initial_model=None, output_model_type='gaussian',
                  reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000):
     r""" Estimate maximum-likelihood HMM
 
@@ -15,6 +15,8 @@ def estimate_hmm(observations, nstates, initial_model=None, output_model_type='g
         `observations[i]` is a 1d numpy array corresponding to the observed trajectory index `i`
     nstates : int
         The number of states in the model.
+    lag : int
+        the lag time at which observations should be read
     initial_model : HMM, optional, default=None
         If specified, the given initial model will be used to initialize the BHMM.
         Otherwise, a heuristic scheme is used to generate an initial guess.
@@ -42,11 +44,21 @@ def estimate_hmm(observations, nstates, initial_model=None, output_model_type='g
     hmm : :class:`HMM <bhmm.hmm.generic_hmm.HMM>`
 
     """
+    if lag > 1:
+        # create new trajectories that are subsampled at lag but shifted
+        obsnew = []
+        for obs in observations:
+            for shift in range(0, lag):
+                obsnew.append(obs[shift:][::lag])
+        observations = obsnew
+
     # construct estimator
     est = _MaximumLikelihoodEstimator(observations, nstates, initial_model=None, output_model_type=output_model_type,
                                       reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000)
     # run
     est.fit()
+    # set lag time
+    est.hmm._lag = lag
     # return model
     return est.hmm
 
