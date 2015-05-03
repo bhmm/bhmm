@@ -18,7 +18,7 @@ import copy
 # from multiprocessing import Queue, Process, cpu_count
 
 # BHMM imports
-import bhmm.init as hmminit
+import bhmm
 import bhmm.hidden as hidden
 from bhmm.util.logger import logger
 from bhmm.util import config
@@ -104,7 +104,7 @@ class MaximumLikelihoodEstimator(object):
             self._stationary = self._hmm.stationary
         else:
             # Generate our own initial model.
-            self._hmm = hmminit.generate_initial_model(observations, nstates, type)
+            self._hmm = bhmm.init_hmm(observations, nstates, type=type)
             # setting parameters
             self._reversible = reversible
             self._stationary = stationary

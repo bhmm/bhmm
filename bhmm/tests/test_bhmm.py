@@ -22,10 +22,6 @@ class TestBHMM(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        import numpy as np
-        import pyemma.msm.io as msmio
-        import pyemma.msm.analysis as msmana
-
         # load observations
         testfile = abspath(join(abspath(__file__), pardir))
         testfile = join(testfile, 'data')
@@ -41,7 +37,7 @@ class TestBHMM(unittest.TestCase):
 
         # EM with lag 10
         lag = 10
-        cls.hmm_lag10 = bhmm.estimate_hmm([obs], cls.nstates, lag=lag, output_model_type='discrete')
+        cls.hmm_lag10 = bhmm.estimate_hmm([obs], cls.nstates, lag=lag, type='discrete')
         # BHMM
         cls.sampled_hmm_lag10 = bhmm.bayesian_hmm([obs[::lag]], cls.hmm_lag10, nsample=cls.nsamples)
 

@@ -23,10 +23,6 @@ class TestMLHMM(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        import numpy as np
-        import pyemma.msm.io as msmio
-        import pyemma.msm.analysis as msmana
-
         # load observations
         testfile = abspath(join(abspath(__file__), pardir))
         testfile = join(testfile, 'data')
@@ -40,8 +36,8 @@ class TestMLHMM(unittest.TestCase):
         nstates = 2
 
         # run with lag 1 and 10
-        cls.hmm_lag1 = bhmm.estimate_hmm([obs], nstates, lag=1, output_model_type='discrete')
-        cls.hmm_lag10 = bhmm.estimate_hmm([obs], nstates, lag=10, output_model_type='discrete')
+        cls.hmm_lag1 = bhmm.estimate_hmm([obs], nstates, lag=1, type='discrete')
+        cls.hmm_lag10 = bhmm.estimate_hmm([obs], nstates, lag=10, type='discrete')
 
     # =============================================================================
     # Test

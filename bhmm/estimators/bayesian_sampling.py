@@ -47,7 +47,7 @@ class BHMM(object):
     """
     def __init__(self, observations, nstates, initial_model=None,
                  reversible=True, transition_matrix_sampling_steps=1000,
-                 output_model_type='gaussian'):
+                 type='gaussian'):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -94,7 +94,7 @@ class BHMM(object):
             self.model = copy.deepcopy(initial_model)
         else:
             # Generate our own initial model.
-            self.model = self._generateInitialModel(output_model_type)
+            self.model = self._generateInitialModel(type)
 
         # sampling options
         self.transition_matrix_sampling_steps = transition_matrix_sampling_steps
@@ -249,7 +249,7 @@ class BHMM(object):
         """
         logger().info("Generating initial model for BHMM using MLHMM...")
         from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator
-        mlhmm = MaximumLikelihoodEstimator(self.observations, self.nstates, reversible=self.reversible, output_model_type=output_model_type)
+        mlhmm = MaximumLikelihoodEstimator(self.observations, self.nstates, reversible=self.reversible, type=output_model_type)
         model = mlhmm.fit()
         return model
 

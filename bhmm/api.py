@@ -61,13 +61,13 @@ def init_hmm(observations, nstates, lag=1, type=None):
 
     >>> import bhmm
     >>> [model, observations, states] = bhmm.testsystems.generate_synthetic_observations(output_model_type='gaussian')
-    >>> initial_model = init_hmm(observations, model.nstates, 'gaussian')
+    >>> initial_model = init_hmm(observations, model.nstates, type='gaussian')
 
     Generate initial model for a discrete output model.
 
     >>> import bhmm
     >>> [model, observations, states] = bhmm.testsystems.generate_synthetic_observations(output_model_type='discrete')
-    >>> initial_model = init_hmm(observations, model.nstates, 'discrete')
+    >>> initial_model = init_hmm(observations, model.nstates, type='discrete')
 
     """
     # select output model type
@@ -224,7 +224,7 @@ def bayesian_hmm(observations, estimated_hmm, nsample=100, store_hidden=False):
     # construct estimator
     sampler = _BHMM(observations, estimated_hmm.nstates, initial_model=estimated_hmm,
                     reversible=estimated_hmm.is_reversible, transition_matrix_sampling_steps=1000,
-                    output_model_type=estimated_hmm.output_model.model_type)
+                    type=estimated_hmm.output_model.model_type)
 
     # Sample models.
     sampled_hmms = sampler.sample(nsamples=nsample, save_hidden_state_trajectory=store_hidden)
