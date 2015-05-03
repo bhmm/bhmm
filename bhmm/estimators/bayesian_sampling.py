@@ -37,8 +37,8 @@ class BayesianHMMSampler(object):
 
     Initialize a new BHMM model.
 
-    >>> from bhmm import BayesianHMMSampler
-    >>> bhmm_sampler = BayesianHMMSampler(observations, nstates)
+    >>> from bhmm import BHMM
+    >>> bhmm_sampler = BHMM(observations, nstates)
 
     Sample from the posterior.
 
