@@ -82,13 +82,13 @@ class TestMLHMM(unittest.TestCase):
 
     def test_eigenvectors_left(self):
         for evec in [self.hmm_lag1.eigenvectors_left, self.hmm_lag10.eigenvectors_left]:
-            assert np.allclose(evec.shape, (2,2))
+            assert np.array_equal(evec.shape, (2,2))
             assert np.sign(evec[0,0]) == np.sign(evec[0,1])
             assert np.sign(evec[1,0]) != np.sign(evec[1,1])
 
     def test_eigenvectors_right(self):
         for evec in [self.hmm_lag1.eigenvectors_right, self.hmm_lag10.eigenvectors_right]:
-            assert np.allclose(evec.shape, (2,2))
+            assert np.array_equal(evec.shape, (2,2))
             assert np.isclose(evec[0,0], evec[1,0])
             assert np.sign(evec[0,1]) != np.sign(evec[1,1])
 
@@ -123,41 +123,6 @@ class TestMLHMM(unittest.TestCase):
             assert np.all(l > 0.0)
         # this data: lifetimes about 680
         assert np.abs(self.hmm_lag10.timescales[0] - 340) < 20.0
-
-    # def run_mlhmm(nstates):
-    #     """
-    #     Run the MLHMM on synthetic data with the given number of states.
-    #
-    #     Parameters
-    #     ----------
-    #     nstates : int
-    #         The number of states to test the BHMM with.
-    #
-    #     """
-    #     # Generate synthetic observations.
-    #     [model, S, O] = model.generate_synthetic_observation_trajectories(nstates=nstates)
-    #     # Fit an MLHMM.
-    #     mlhmm = mlhmm.MLHMM(O, nstates)
-    #     model = mlhmm.fit()
-    #
-    #     return
-    #
-    # def test_bhmm_synthetic(self):
-    #     """
-    #     Test the BHMM model on synthetic datasets.
-    #
-    #     """
-    #
-    #     nstates_min = 2 # minimum number of states to test
-    #     nstates_max = 8 # maximum number of states to test
-    #
-    #     for nstates in range(nstates_min, nstates_max):
-    #         f = partial(run_bhmm, nstates)
-    #         f.description = "Testing BHMM on synthetic data for %d states"
-    #         yield f
-    #
-    #     return
-
 
 if __name__=="__main__":
     unittest.main()
