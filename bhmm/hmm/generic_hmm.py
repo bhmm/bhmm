@@ -100,17 +100,21 @@ class HMM(object):
         if self._reversible:
             assert msmana.is_reversible(Tij), 'Reversible HMM requested, but given transition matrix is not reversible.'
 
-        # do eigendecomposition by default, because it's very cheap for hidden transition matrices
-        if self._reversible:
-            self._R, self._D, self._L = msmana.rdl_decomposition(self._Tij, norm='reversible')
-            # everything must be real-valued
-            self._R = self._R.real
-            self._D = self._D.real
-            self._L = self._L.real
-        else:
-            self._R, self._D, self._L = msmana.rdl_decomposition(self._Tij, norm='standard')
-        self._eigenvalues = np.diag(self._D)
-
+        # try to do eigendecomposition by default, because it's very cheap for hidden transition matrices
+        from scipy.linalg import LinAlgError
+        try:
+            if self._reversible:
+                self._R, self._D, self._L = msmana.rdl_decomposition(self._Tij, norm='reversible')
+                # everything must be real-valued
+                self._R = self._R.real
+                self._D = self._D.real
+                self._L = self._L.real
+            else:
+                self._R, self._D, self._L = msmana.rdl_decomposition(self._Tij, norm='standard')
+            self._eigenvalues = np.diag(self._D)
+            self._spectral_decomp_available = True
+        except LinAlgError:
+            self._spectral_decomp_available = False
 
     def __repr__(self):
         """ Returns a string representation of the HMM """
@@ -134,6 +138,11 @@ class HMM(object):
         output += str(self.output_model)
         output += '\n'
         return output
+
+    def _assert_spectral_decomposition(self):
+        if not self._spectral_decomp_available:
+            raise RuntimeError('Trying to access eigenvalues or eigenvectors, but spectral decomposition is not '
+                               'available.')
 
     @property
     def lag(self):
@@ -190,6 +199,7 @@ class HMM(object):
             transition matrix eigenvalues :math:`\lambda_i, i = 1,...,k`., sorted by descending norm.
 
         """
+        self._assert_spectral_decomposition()
         return self._eigenvalues
 
     @property
@@ -202,6 +212,7 @@ class HMM(object):
             left eigenvectors in a row matrix. l_ij is the j'th component of the i'th left eigenvector
 
         """
+        self._assert_spectral_decomposition()
         return self._L
 
     @property
@@ -214,6 +225,7 @@ class HMM(object):
             right eigenvectors in a column matrix. r_ij is the i'th component of the j'th right eigenvector
 
         """
+        self._assert_spectral_decomposition()
         return self._R
 
     @property
