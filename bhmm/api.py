@@ -2,10 +2,10 @@ __author__ = 'noe'
 
 import numpy as _np
 
-from util import types as _types
-from hmm.generic_hmm import HMM as _HMM
-from estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
-from estimators.bayesian_sampling import BayesianHMMSampler as _BHMM
+from bhmm.util import types as _types
+from bhmm.hmm.generic_hmm import HMM as _HMM
+from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
+from bhmm.estimators.bayesian_sampling import BayesianHMMSampler as _BHMM
 
 def _guess_model_type(observations):
     o1 = _np.array(observations[0])
@@ -102,8 +102,8 @@ def gaussian_hmm(P, means, sigmas, pi=None, stationary=True, reversible=True):
         If True: transition matrix will fulfill detailed balance constraints.
 
     """
-    from hmm.gaussian_hmm import GaussianHMM
-    from output_models.gaussian import GaussianOutputModel
+    from bhmm.hmm.gaussian_hmm import GaussianHMM
+    from bhmm.output_models.gaussian import GaussianOutputModel
     # count states
     nstates = _np.array(P).shape[0]
     # initialize output model
@@ -131,8 +131,8 @@ def discrete_hmm(P, pout, pi=None, stationary=True, reversible=True):
         If True: transition matrix will fulfill detailed balance constraints.
 
     """
-    from hmm.discrete_hmm import DiscreteHMM
-    from output_models.discrete import DiscreteOutputModel
+    from bhmm.hmm.discrete_hmm import DiscreteHMM
+    from bhmm.output_models.discrete import DiscreteOutputModel
     # initialize output model
     output_model = DiscreteOutputModel(pout)
     # initialize general HMM

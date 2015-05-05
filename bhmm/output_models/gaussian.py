@@ -7,7 +7,7 @@ __email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
 
 import numpy as np
 
-import impl_c.gaussian as gc
+from bhmm.output_models.impl_c import gaussian as gc
 from bhmm.output_models import OutputModel
 from bhmm.util.logger import logger
 from bhmm.util import config

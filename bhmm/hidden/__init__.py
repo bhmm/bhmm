@@ -1,3 +1,3 @@
 __author__ = 'noe'
 
-from api import *
+from bhmm.hidden.api import *

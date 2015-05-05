@@ -2,8 +2,8 @@ __author__ = 'noe'
 
 import numpy as np
 
-from generic_hmm import HMM
-from generic_sampled_hmm import SampledHMM
+from bhmm.hmm.generic_hmm import HMM
+from bhmm.hmm.generic_sampled_hmm import SampledHMM
 from bhmm.output_models.discrete import DiscreteOutputModel
 from bhmm.util import config
 from bhmm.util.statistics import confidence_interval_arr

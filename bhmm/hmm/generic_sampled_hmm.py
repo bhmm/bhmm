@@ -11,7 +11,8 @@ __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
 import numpy as np
-from generic_hmm import HMM
+
+from bhmm.hmm.generic_hmm import HMM
 from bhmm.util import config
 from bhmm.util.statistics import confidence_interval_arr
 

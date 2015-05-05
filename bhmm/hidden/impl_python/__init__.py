@@ -1,3 +1,3 @@
 __author__ = 'noe'
 
-from hidden import *
+from bhmm.hidden.impl_python.hidden import *

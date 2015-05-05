@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import time
 
-import bhmm.hidden as hidden
+from bhmm import hidden
 from bhmm.output_models.gaussian import GaussianOutputModel
 
 print_speedup = False
