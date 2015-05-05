@@ -159,8 +159,6 @@ setup(
         'scipy',
         'pyemma>=1.2',
         'scikit-learn',
-        'nose',
-        'docopt>=0.6.1',
         ],
     ext_modules = cythonize(extensions)
     )

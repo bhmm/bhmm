@@ -25,7 +25,6 @@ requirements:
     - scipy
     - pyemma >=1.2
     - scikit-learn
-    - nose
     # - matplotlib
     # - seaborn
 
