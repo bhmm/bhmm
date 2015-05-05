@@ -1,5 +1,3 @@
-__author__ = 'noe'
-
 """
 Abstract base class for HMM output model.
 
@@ -12,9 +10,9 @@ TODO
 __author__ = "John D. Chodera, Frank Noe"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "FreeBSD"
-__maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
+__license__ = "LGPL"
+__maintainer__ = "John D. Chodera, Frank Noe"
+__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
 
 import numpy as np
 from abc import ABCMeta, abstractmethod
@@ -45,10 +43,14 @@ class OutputModel(object):
             The number of output states.
 
         """
-        self.nstates = nstates
+        self._nstates = nstates
 
         return
 
+    @property
+    def nstates(self):
+        r""" Number of hidden states """
+        return self._nstates
 
     def set_implementation(self, impl):
         """

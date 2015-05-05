@@ -5,6 +5,8 @@ import unittest
 import time
 from bhmm.output_models.gaussian import GaussianOutputModel
 
+print_speedup = False
+
 class TestOutputGaussian(unittest.TestCase):
 
     def setUp(self):
@@ -26,21 +28,22 @@ class TestOutputGaussian(unittest.TestCase):
         self.G.set_implementation('c')
         time1 = time.time()
         for i in range(10):
-            p_c = self.G.p_obs(self.obs, dtype=np.float64)
+            p_c = self.G.p_obs(self.obs)
         time2 = time.time()
         t_c = time2-time1
 
         self.G.set_implementation('python')
         time1 = time.time()
         for i in range(10):
-            p_p = self.G.p_obs(self.obs, dtype=np.float64)
+            p_p = self.G.p_obs(self.obs)
         time2 = time.time()
         t_p = time2-time1
 
         assert(np.allclose(p_c, p_p))
 
         # speed report
-        print('p_obs speedup c/python = '+str(t_p/t_c))
+        if print_speedup:
+            print('p_obs speedup c/python = '+str(t_p/t_c))
 
 
 

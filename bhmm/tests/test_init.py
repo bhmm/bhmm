@@ -17,8 +17,8 @@ class TestHMM(unittest.TestCase):
         # estimate initial HMM with 2 states - should be identical to P
         hmm = initdisc.initial_model_discrete(dtrajs, 2)
         # A should be close to P
-        A = hmm.Tij
-        B = hmm.output_model.B
+        A = hmm.transition_matrix
+        B = hmm.output_model.output_probabilities
         if (B[0,0]<B[1,0]):
             B = B[np.array([1,0]),:]
         assert(np.max(A-P) < 0.01)
@@ -39,8 +39,8 @@ class TestHMM(unittest.TestCase):
         hmm = initdisc.initial_model_discrete(dtrajs, nstates)
         # Test if model fit is close to reference.
         # TODO: Set tolerance to ensure failures are statistically significant.
-        Tij = hmm.Tij
-        B = hmm.output_model.B
+        Tij = hmm.transition_matrix
+        B = hmm.output_model.output_probabilities
         #if (B[0,0]<B[1,0]):
         #    B = B[np.array([1,0]),:]
         Tij_ref = np.array([[0.99, 0.01],
@@ -48,7 +48,7 @@ class TestHMM(unittest.TestCase):
         Bref = np.array([[0.5, 0.5, 0.0, 0.0],
                          [0.0, 0.0, 0.5, 0.5]])
         assert(np.max(Tij-Tij_ref) < 0.01)
-        assert(np.max(B-Bref) < 0.05)
+        assert(np.max(B-Bref) < 0.05 or np.max(B[[1,0]]-Bref) < 0.05)
 
 if __name__=="__main__":
     unittest.main()

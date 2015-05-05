@@ -6,10 +6,10 @@ Test HMM functions.
 """
 
 import numpy as np
-import scipy.sparse.linalg
 import unittest
 
-from bhmm import testsystems
+import bhmm
+from bhmm.util import testsystems
 
 from nose.tools import assert_equal, assert_almost_equal
 from numpy.testing import assert_array_almost_equal
@@ -27,9 +27,8 @@ class TestHMM(unittest.TestCase):
         # Create a simple HMM model.
         model = testsystems.dalton_model(nstates=3)
         # Test model parameter access.
-        assert_equal(model.Tij.shape, (3,3))
-        assert_equal(model.Pi.shape, (3,))
-        assert_equal(model.logPi.shape, (3,))
+        assert_equal(model.transition_matrix.shape, (3,3))
+        assert_equal(model.stationary_distribution.shape, (3,))
 
         return
 
@@ -44,7 +43,7 @@ class TestHMM(unittest.TestCase):
         means=[-1,+1]
         sigmas=[1,1]
         output_model = GaussianOutputModel(nstates, means=means, sigmas=sigmas)
-        model = HMM(nstates, Tij, output_model)
+        model = bhmm.HMM(Tij, output_model)
         # Compute stationary probability using ARPACK.
         from scipy.sparse.linalg import eigs
         from numpy.linalg import norm
@@ -52,8 +51,8 @@ class TestHMM(unittest.TestCase):
         eigenvectors = np.real(eigenvectors)
         Pi = eigenvectors[:,0] / eigenvectors[:,0].sum()
         # Test model is correct.
-        assert_array_almost_equal(model.Tij, Tij)
-        assert_array_almost_equal(model.Pi, Pi)
+        assert_array_almost_equal(model._Tij, Tij)
+        assert_array_almost_equal(model._Pi, Pi)
         assert(np.allclose(model.output_model.means, np.array(means)))
         assert(np.allclose(model.output_model.sigmas, np.array(sigmas)))
 

@@ -2,7 +2,7 @@ __author__ = 'noe'
 
 import numpy as np
 
-def estimate_P(C, reversible = True):
+def estimate_P(C, reversible = True, fixed_statdist=None):
     # import emma
     import pyemma.msm.estimation as msmest
     # output matrix. Initially eye
@@ -14,7 +14,7 @@ def estimate_P(C, reversible = True):
         if len(s) > 1: # if there's only one state, there's nothing to estimate and we leave it with diagonal 1
             # compute transition sub-matrix on s
             Cs = C[s,:][:,s]
-            Ps = msmest.transition_matrix(Cs, reversible = reversible)
+            Ps = msmest.transition_matrix(Cs, reversible = reversible, mu=fixed_statdist)
             # write back to matrix
             for i,I in enumerate(s):
                 for j,J in enumerate(s):

@@ -114,31 +114,26 @@ def find_package_data(data_root, package_root):
 # SETUP
 ################################################################################
 
+#try:
+#    import pyemma
+#    print(pyemma.__version__)
+#    if not StrictVersion(pyemma.__version__) >= '1.1.2':
+#        raise ImportError
+#except:
+#    print('Bulding and running bhmm requires pyemma >= 1.1.2. Install first.')
+#    sys.exit(1)
 
-try:
-    import pyemma
-    if not StrictVersion(pyemma.__version__) >= '1.1.2':
-        raise ImportError
-except:
-    print('Bulding and running bhmm requires pyemma >= 1.1.2. Install first.')
-    sys.exit(1) 
-
-
-#cython_ext = cythonize(Extension('bhmm.msm.tmatrix_sampling',
-#                       		 sources = ['./bhmm/msm/tmatrix_sampling.pyx'],
-#                       		 include_dirs = [numpy.get_include()]))
 extensions = [Extension('bhmm.hidden.impl_c.hidden',
                         sources = ['./bhmm/hidden/impl_c/hidden.pyx',
                                    './bhmm/hidden/impl_c/_hidden.c'],
                         include_dirs = ['/bhmm/hidden/impl_c/',numpy.get_include()]),
-	      Extension('bhmm.output_models.impl_c.gaussian',
+              Extension('bhmm.output_models.impl_c.gaussian',
                         sources = ['./bhmm/output_models/impl_c/gaussian.pyx',
                                    './bhmm/output_models/impl_c/_gaussian.c'],
                         include_dirs = ['/bhmm/output_models/impl_c/',numpy.get_include()]),
-	      Extension('bhmm.msm.tmatrix_sampling',
-			sources = ['./bhmm/msm/tmatrix_sampling.pyx'],
-			include_dirs = [numpy.get_include()])]
-
+              Extension('bhmm.msm.tmatrix_sampling',
+                        sources = ['./bhmm/msm/tmatrix_sampling.pyx'],
+                        include_dirs = [numpy.get_include()])]
 
 write_version_py()
 setup(
@@ -149,7 +144,7 @@ setup(
     long_description="\n".join(DOCLINES[2:]),
     version=__version__,
     license='LGPL',
-    url='https://github.com/choderalab/bhmm',
+    url='https://github.com/bhmm/bhmm',
     platforms=['Linux', 'Mac OS-X', 'Unix', 'Windows'],
     classifiers=CLASSIFIERS.splitlines(),
     package_dir={'bhmm': 'bhmm'},
@@ -162,18 +157,11 @@ setup(
         'cython',
         'numpy',
         'scipy',
-        'pyemma>=1.1.2',
+        'pyemma>=1.2',
         'scikit-learn',
-        'matplotlib',
-        'seaborn',
         'nose',
         'docopt>=0.6.1',
         ],
-    ext_modules = cythonize(extensions),
-    #ext_modules=[cext2]#cext1,
-#		 Extension('bhmm.ml.lib.c',
-#			   sources=['./bhmm/ml/lib/c/extension.c', './bhmm/ml/lib/c/hmm.c'],
-#			   include_dirs = [numpy.get_include()]),
-#		] + cext
+    ext_modules = cythonize(extensions)
     )
 

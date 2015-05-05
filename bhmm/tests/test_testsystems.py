@@ -13,13 +13,13 @@ __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
 import unittest
+from bhmm.util import testsystems
 
 class TestTestSystems(unittest.TestCase):
 
     def test_transition_matrix(self):
         """Test example transition matrices.
         """
-        from bhmm import testsystems
         Tij = testsystems.generate_transition_matrix(nstates=3, reversible=False)
         Tij = testsystems.generate_transition_matrix(nstates=3, reversible=True)
         # TODO: Check Tij is proper row-stochastic matrix?
@@ -28,7 +28,6 @@ class TestTestSystems(unittest.TestCase):
     def test_three_state_model(self):
         """Test three-state model.
         """
-        from bhmm import testsystems
         model = testsystems.dalton_model()
         # TODO: Check stationary probiblities are correct?
         return

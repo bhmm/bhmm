@@ -1,26 +1,22 @@
-__author__ = 'noe'
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "LGPL"
+__maintainer__ = "John D. Chodera, Frank Noe"
+__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
 
 import numpy as np
 
 import impl_c.gaussian as gc
 from bhmm.output_models import OutputModel
-
-
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "FreeBSD"
-__maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
-
-
+from bhmm.util.logger import logger
+from bhmm.util import config
 
 class GaussianOutputModel(OutputModel):
     """
     HMM output probability model using 1D-Gaussians
 
     """
-
 
     def __init__(self, nstates, means=None, sigmas=None):
         """
@@ -43,27 +39,28 @@ class GaussianOutputModel(OutputModel):
         >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
 
         """
-        self.nstates = nstates
+        OutputModel.__init__(self, nstates)
 
-        dtype = np.float64 # type for internal storage
+        dtype = config.dtype # type for internal storage
 
         if means is not None:
-            self.means = np.array(means, dtype=dtype)
-            if self.means.shape != (nstates,): raise Exception('means must have shape (%d,); instead got %s' % (nstates, str(self.means.shape)))
+            self._means = np.array(means, dtype=dtype)
+            if self._means.shape != (nstates,):
+                raise Exception('means must have shape (%d,); instead got %s' % (nstates, str(self._means.shape)))
         else:
-            self.means = np.zeros([nstates], dtype=dtype)
+            self._means = np.zeros([nstates], dtype=dtype)
 
         if sigmas is not None:
-            self.sigmas = np.array(sigmas, dtype=dtype)
-            if self.sigmas.shape != (nstates,): raise Exception('sigmas must have shape (%d,); instead got %s' % (nstates, str(self.sigmas.shape)))
+            self._sigmas = np.array(sigmas, dtype=dtype)
+            if self._sigmas.shape != (nstates,):
+                raise Exception('sigmas must have shape (%d,); instead got %s' % (nstates, str(self._sigmas.shape)))
         else:
-            self.sigmas = np.zeros([nstates], dtype=dtype)
+            self._sigmas = np.zeros([nstates], dtype=dtype)
 
         return
 
-
     def __repr__(self):
-        """
+        r""" String representation of this output model
         >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
         >>> print repr(output_model)
         GaussianOutputModel(3, means=array([-1.,  0.,  1.]), sigmas=array([ 0.5,  1. ,  2. ]))
@@ -73,7 +70,7 @@ class GaussianOutputModel(OutputModel):
         return "GaussianOutputModel(%d, means=%s, sigmas=%s)" % (self.nstates, repr(self.means), repr(self.sigmas))
 
     def __str__(self):
-        """
+        r""" Human-readable string representation of this output model
         >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
         >>> print str(output_model)
         --------------------------------------------------------------------------------
@@ -91,6 +88,28 @@ class GaussianOutputModel(OutputModel):
         output += "sigmas: %s\n" % str(self.sigmas)
         output += "--------------------------------------------------------------------------------"
         return output
+
+    @property
+    def model_type(self):
+        r""" Model type. Returns 'gaussian' """
+        return 'gaussian'
+
+    @property
+    def dimension(self):
+        r""" Dimension of the Gaussian output model (currently 1) """
+        return 1
+
+    @property
+    def means(self):
+        r""" Mean values of Gaussians output densities """
+        return self._means
+
+    @property
+    def sigmas(self):
+        # TODO: Should we not rather give the variances? In the multidimensional case on usually uses the covariance
+        # TODO:   matrix instead of its square root.
+        r""" Standard deviations of Gaussian output densities """
+        return self._sigmas
 
     # TODO: remove code when we're sure we don't need it
     # TODO: when cleaning up, save the functionality of the last function (log_p_o) and integrate into and overwrite of log_pobs.
@@ -246,7 +265,7 @@ class GaussianOutputModel(OutputModel):
         else:
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
 
-    def p_obs(self, obs, out=None, dtype=np.float32):
+    def p_obs(self, obs, out=None):
         """
         Returns the output probabilities for an entire trajectory and all hidden states
 
@@ -254,8 +273,6 @@ class GaussianOutputModel(OutputModel):
         ----------
         oobs : ndarray((T), dtype=int)
             a discrete trajectory of length T
-        dtype : numpy.dtype, optional, default=numpy.float32
-            The datatype to return the resulting observations in.
 
         Return
         ------
@@ -278,11 +295,11 @@ class GaussianOutputModel(OutputModel):
 
         """
         if self.__impl__ == self.__IMPL_C__:
-            return gc.p_obs(obs, self.means, self.sigmas, out=out, dtype=dtype)
+            return gc.p_obs(obs, self.means, self.sigmas, out=out, dtype=config.dtype)
         elif self.__impl__ == self.__IMPL_PYTHON__:
             T = len(obs)
             if out is None:
-                res = np.zeros((T, self.nstates), dtype=dtype)
+                res = np.zeros((T, self.nstates), dtype=config.dtype)
             else:
                 res = out
             for t in range(T):
@@ -292,7 +309,7 @@ class GaussianOutputModel(OutputModel):
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
 
 
-    def fit(self, observations, weights):
+    def _estimate_output_model(self, observations, weights):
         """
         Fits the output model given the observations and weights
 
@@ -317,7 +334,7 @@ class GaussianOutputModel(OutputModel):
 
         Update the observation model parameters my a maximum-likelihood fit.
 
-        >>> output_model.fit(observations, weights)
+        >>> output_model._estimate_output_model(observations, weights)
 
         """
         # sizes
@@ -325,7 +342,7 @@ class GaussianOutputModel(OutputModel):
         K = len(observations)
 
         # fit means
-        self.means = np.zeros((N))
+        self._means = np.zeros((N))
         w_sum = np.zeros((N))
         for k in range(K):
             # update nominator
@@ -334,10 +351,10 @@ class GaussianOutputModel(OutputModel):
             # update denominator
             w_sum += np.sum(weights[k], axis=0)
         # normalize
-        self.means /= w_sum
+        self._means /= w_sum
 
         # fit variances
-        self.sigmas  = np.zeros((N))
+        self._sigmas  = np.zeros((N))
         w_sum = np.zeros((N))
         for k in range(K):
             # update nominator
@@ -347,11 +364,11 @@ class GaussianOutputModel(OutputModel):
             # update denominator
             w_sum += np.sum(weights[k], axis=0)
         # normalize
-        self.sigmas /= w_sum
-        self.sigmas = np.sqrt(self.sigmas)
+        self._sigmas /= w_sum
+        self._sigmas = np.sqrt(self.sigmas)
 
 
-    def sample(self, observations):
+    def _sample_output_mode(self, observations):
         """
         Sample a new set of distribution parameters given a sample of observations from the given state.
 
@@ -375,7 +392,7 @@ class GaussianOutputModel(OutputModel):
 
         Update output parameters by sampling.
 
-        >>> output_model.sample(observations)
+        >>> output_model._sample_output_mode(observations)
 
         """
         for state_index in range(self.nstates):
@@ -387,7 +404,7 @@ class GaussianOutputModel(OutputModel):
 
             # Skip update if no observations.
             if nsamples_in_state == 0:
-                print 'Warning: State %d has no obsevations.' % state_index
+                logger().warn('Warning: State %d has no obsevations.' % state_index)
                 continue
 
             # Sample new mu.
@@ -432,7 +449,7 @@ class GaussianOutputModel(OutputModel):
         return observation
 
 
-    def generate_observations_from_state(self, state_index, nobs, dtype=np.float32):
+    def generate_observations_from_state(self, state_index, nobs):
         """
         Generate synthetic observation data from a given state.
 
@@ -442,12 +459,10 @@ class GaussianOutputModel(OutputModel):
             Index of the state from which observations are to be generated.
         nobs : int
             The number of observations to generate.
-        dtype : numpy.dtype, optional, default=numpy.float32
-            The datatype to return the resulting observations in.
 
         Returns
         -------
-        observations : numpy.array of shape(nobs,) with type dtype
+        observations : numpy.array of shape(nobs,)
             A sample of `nobs` observations from the specified state.
 
         Examples
@@ -466,7 +481,7 @@ class GaussianOutputModel(OutputModel):
         return observations
 
 
-    def generate_observation_trajectory(self, s_t, dtype=None):
+    def generate_observation_trajectory(self, s_t):
         """
         Generate synthetic observation data from a given state sequence.
 
@@ -474,8 +489,6 @@ class GaussianOutputModel(OutputModel):
         ----------
         s_t : numpy.array with shape (T,) of int type
             s_t[t] is the hidden state sampled at time t
-        dtype : numpy.dtype, optional, default=None
-            The datatype to return the resulting observations in. If None, will use float32.
 
         Returns
         -------
@@ -497,13 +510,10 @@ class GaussianOutputModel(OutputModel):
 
         """
 
-        if dtype == None:
-            dtype = np.float32
-
         # Determine number of samples to generate.
         T = s_t.shape[0]
 
-        o_t = np.zeros([T], dtype=dtype)
+        o_t = np.zeros([T], dtype=config.dtype)
         for t in range(T):
             s = s_t[t]
             o_t[t] = self.sigmas[s] * np.random.randn() + self.means[s]

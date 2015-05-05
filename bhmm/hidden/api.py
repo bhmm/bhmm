@@ -11,12 +11,13 @@ import numpy as np
 
 import impl_python as ip
 import impl_c as ic
+from bhmm.util import config
 
 
 __author__ = "Maikel Nadolski, Christoph Froehner, Frank Noe"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["Maikel Nadolski", "Christoph Froehner", "Frank Noe"]
-__license__ = "FreeBSD"
+__license__ = "LGPL"
 __maintainer__ = "Frank Noe"
 __email__="frank.noe AT fu-berlin DOT de"
 
@@ -51,7 +52,7 @@ def set_implementation(impl):
 
 
 
-def forward(A, pobs, pi, T=None, alpha_out=None, dtype=np.float32):
+def forward(A, pobs, pi, T=None, alpha_out=None):
     """Compute P( obs | A, B, pi ) and all forward coefficients.
 
     Parameters
@@ -66,8 +67,6 @@ def forward(A, pobs, pi, T=None, alpha_out=None, dtype=np.float32):
         trajectory length. If not given, T = pobs.shape[0] will be used.
     alpha_out : ndarray((T,N), dtype = float), optional, default = None
         containter for the alpha result variables. If None, a new container will be created.
-    dtype : type, optional, default = np.float32
-        data type of the result.
 
     Returns
     -------
@@ -80,14 +79,14 @@ def forward(A, pobs, pi, T=None, alpha_out=None, dtype=np.float32):
 
     """
     if __impl__ == __IMPL_PYTHON__:
-        return ip.forward(A, pobs, pi, T=T, alpha_out=alpha_out, dtype=dtype)
+        return ip.forward(A, pobs, pi, T=T, alpha_out=alpha_out, dtype=config.dtype)
     elif __impl__ == __IMPL_C__:
-        return ic.forward(A, pobs, pi, T=T, alpha_out=alpha_out, dtype=dtype)
+        return ic.forward(A, pobs, pi, T=T, alpha_out=alpha_out, dtype=config.dtype)
     else:
         raise RuntimeError('Nonexisting implementation selected: '+str(__impl__))
 
 
-def backward(A, pobs, T=None, beta_out=None, dtype=np.float32):
+def backward(A, pobs, T=None, beta_out=None):
     """Compute all backward coefficients. With scaling!
 
     Parameters
@@ -100,8 +99,6 @@ def backward(A, pobs, T=None, beta_out=None, dtype=np.float32):
         trajectory length. If not given, T = pobs.shape[0] will be used.
     beta_out : ndarray((T,N), dtype = float), optional, default = None
         containter for the beta result variables. If None, a new container will be created.
-    dtype : type, optional, default = np.float32
-        data type of the result.
 
     Returns
     -------
@@ -111,9 +108,9 @@ def backward(A, pobs, T=None, beta_out=None, dtype=np.float32):
 
     """
     if __impl__ == __IMPL_PYTHON__:
-        return ip.backward(A, pobs, T=T, beta_out=beta_out, dtype=dtype)
+        return ip.backward(A, pobs, T=T, beta_out=beta_out, dtype=config.dtype)
     elif __impl__ == __IMPL_C__:
-        return ic.backward(A, pobs, T=T, beta_out=beta_out, dtype=dtype)
+        return ic.backward(A, pobs, T=T, beta_out=beta_out, dtype=config.dtype)
     else:
         raise RuntimeError('Nonexisting implementation selected: '+str(__impl__))
 
@@ -225,7 +222,7 @@ def state_counts(gamma, T, out = None):
 #     return counts
 
 
-def transition_counts(alpha, beta, A, pobs, T = None, out = None, dtype=np.float32):
+def transition_counts(alpha, beta, A, pobs, T = None, out = None):
     """ Sum for all t the probability to transition from state i to state j.
 
     Parameters
@@ -242,8 +239,6 @@ def transition_counts(alpha, beta, A, pobs, T = None, out = None, dtype=np.float
         number of time steps
     out : ndarray((N,N), dtype = float), optional, default = None
         containter for the resulting count matrix. If None, a new matrix will be created.
-    dtype : type, optional, default = np.float32
-        data type of the result.
 
     Returns
     -------
@@ -257,14 +252,14 @@ def transition_counts(alpha, beta, A, pobs, T = None, out = None, dtype=np.float
 
     """
     if __impl__ == __IMPL_PYTHON__:
-        return ip.transition_counts(alpha, beta, A, pobs, T=T, out=out, dtype=dtype)
+        return ip.transition_counts(alpha, beta, A, pobs, T=T, out=out, dtype=config.dtype)
     elif __impl__ == __IMPL_C__:
-        return ic.transition_counts(alpha, beta, A, pobs, T=T, out=out, dtype=dtype)
+        return ic.transition_counts(alpha, beta, A, pobs, T=T, out=out, dtype=config.dtype)
     else:
         raise RuntimeError('Nonexisting implementation selected: '+str(__impl__))
 
 
-def viterbi(A, pobs, pi, dtype=np.float32):
+def viterbi(A, pobs, pi):
     """ Estimate the hidden pathway of maximum likelihood using the Viterbi algorithm.
 
     Parameters
@@ -283,14 +278,14 @@ def viterbi(A, pobs, pi, dtype=np.float32):
 
     """
     if __impl__ == __IMPL_PYTHON__:
-        return ip.viterbi(A, pobs, pi, dtype=dtype)
+        return ip.viterbi(A, pobs, pi, dtype=config.dtype)
     elif __impl__ == __IMPL_C__:
-        return ic.viterbi(A, pobs, pi, dtype=dtype)
+        return ic.viterbi(A, pobs, pi, dtype=config.dtype)
     else:
         raise RuntimeError('Nonexisting implementation selected: '+str(__impl__))
 
 
-def sample_path(alpha, A, pobs, T = None, dtype=np.float32):
+def sample_path(alpha, A, pobs, T = None):
     """ Sample the hidden pathway S from the conditional distribution P ( S | Parameters, Observations )
 
     Parameters
@@ -303,8 +298,6 @@ def sample_path(alpha, A, pobs, T = None, dtype=np.float32):
         pobs[t,i] is the observation probability for observation at time t given hidden state i
     T : int
         number of time steps
-    dtype : type, optional, default = np.float32
-        data type of the arguments.
 
     Returns
     -------
@@ -313,9 +306,9 @@ def sample_path(alpha, A, pobs, T = None, dtype=np.float32):
 
     """
     if __impl__ == __IMPL_PYTHON__:
-        return ip.sample_path(alpha, A, pobs, T = T, dtype=dtype)
+        return ip.sample_path(alpha, A, pobs, T = T, dtype=config.dtype)
     elif __impl__ == __IMPL_C__:
-        return ic.sample_path(alpha, A, pobs, T = T, dtype=dtype)
+        return ic.sample_path(alpha, A, pobs, T = T, dtype=config.dtype)
     else:
         raise RuntimeError('Nonexisting implementation selected: '+str(__impl__))
 
