@@ -32,7 +32,7 @@ Created on Jul 25, 2014
 import numpy as np
 import math
 import itertools
-import types
+from bhmm.util import types
 
 def confidence_interval(data, alpha):
     """

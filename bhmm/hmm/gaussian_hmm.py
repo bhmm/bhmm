@@ -10,10 +10,11 @@ __license__ = "LGPL"
 __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
-from generic_hmm import HMM
-from generic_sampled_hmm import SampledHMM
-from bhmm.output_models.gaussian import GaussianOutputModel
 import numpy as np
+
+from bhmm.hmm.generic_hmm import HMM
+from bhmm.hmm.generic_sampled_hmm import SampledHMM
+from bhmm.output_models.gaussian import GaussianOutputModel
 from bhmm.util import config
 from bhmm.util.statistics import confidence_interval_arr
 

@@ -9,8 +9,8 @@ kernels. All implementations are based on paper Rabiners [1].
 """
 import numpy as np
 
-import impl_python as ip
-import impl_c as ic
+from bhmm.hidden import impl_python as ip
+from bhmm.hidden import impl_c as ic
 from bhmm.util import config
 
 

@@ -2,7 +2,8 @@ __author__ = 'noe'
 
 import numpy as np
 import math
-import linalg
+
+from bhmm.msm import linalg
 
 __author__ = "Hao Wu, Frank Noe"
 __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"

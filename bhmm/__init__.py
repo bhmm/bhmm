@@ -10,7 +10,7 @@ import version as _version
 __version__ = _version.version
 
 # import API
-from api import *
+from bhmm.api import *
 
 # hmms
 from bhmm.hmm.generic_hmm import HMM
@@ -26,8 +26,8 @@ from bhmm.estimators.bayesian_sampling import BayesianHMMSampler as BHMM
 from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator as MLHMM
 
 # output models
-from output_models import OutputModel, GaussianOutputModel, DiscreteOutputModel
+from bhmm.output_models import OutputModel, GaussianOutputModel, DiscreteOutputModel
 
 # other stuff
-from util import config
-from util import testsystems
+from bhmm.util import config
+from bhmm.util import testsystems
