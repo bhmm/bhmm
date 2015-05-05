@@ -14,8 +14,8 @@ from bhmm.api import *
 
 # hmms
 from bhmm.hmm.generic_hmm import HMM
-#from bhmm.hmm.gaussian_hmm import GaussianHMM
-#from bhmm.hmm.discrete_hmm import DiscreteHMM
+from bhmm.hmm.gaussian_hmm import GaussianHMM
+from bhmm.hmm.discrete_hmm import DiscreteHMM
 
 from bhmm.hmm.generic_sampled_hmm import SampledHMM
 #from bhmm.hmm.gaussian_hmm import SampledGaussianHMM
