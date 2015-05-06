@@ -136,6 +136,7 @@ extensions = [Extension('bhmm.hidden.impl_c.hidden',
                         include_dirs = [numpy.get_include()])]
 
 write_version_py()
+
 setup(
     name='bhmm',
     author='John Chodera and Frank Noe',
@@ -151,7 +152,7 @@ setup(
     #packages=['bhmm', "bhmm.tests"] + ['bhmm.%s' % package for package in find_packages('bhmm')],
     packages=['bhmm', 'bhmm.tests', 'bhmm.hmm', 'bhmm.estimators', 'bhmm.msm', 'bhmm.hidden', 'bhmm.init', 'bhmm.msm', 'bhmm.output_models', 'bhmm.output_models.impl_c', 'bhmm.util', 'bhmm.hidden.impl_python', 'bhmm.hidden.impl_c'],
     # + ['bhmm.%s' % package for package in find_packages('bhmm')],
-    package_data={'bhmm': find_package_data('examples', 'bhmm')},  # NOTE: examples installs to bhmm.egg/examples/, NOT bhmm.egg/bhmm/examples/.  You need to do utils.get_data_filename("../examples/*/setup/").
+    package_data={'bhmm': find_package_data('examples', 'bhmm') + find_package_data('bhmm/tests/data', 'bhmm')},  # NOTE: examples installs to bhmm.egg/examples/, NOT bhmm.egg/bhmm/examples/.  You need to do utils.get_data_filename("../examples/*/setup/").
     zip_safe=False,
     install_requires=[
         'cython',
