@@ -10,8 +10,7 @@ import version as _version
 __version__ = _version.version
 
 # import API
-#from bhmm.api import *
-from bhmm.api import init_hmm, gaussian_hmm, discrete_hmm, bayesian_hmm
+from bhmm.api import *
 
 # hmms
 from bhmm.hmm.generic_hmm import HMM
