@@ -9,29 +9,24 @@ build:
 requirements:
   build:
     - python
+    - setuptools
     - cython
     - numpy
     - scipy
-    - setuptools
-    - docopt
-    - jinja2
+    - pyemma >=1.2
     - scikit-learn
-    - matplotlib
-    - seaborn
-    - pyemma >=1.1.2
+    # - matplotlib
+    # - seaborn
 
   run:
     - python
+    - cython
     - numpy
     - scipy
-    - cython
-    - docopt
-    - pyyaml
-    - jinja2
+    - pyemma >=1.2
     - scikit-learn
-    - matplotlib
-    - seaborn
-    - pyemma >=1.1.2
+    # - matplotlib
+    # - seaborn
 
 test:
   requires:
@@ -44,7 +39,4 @@ test:
 about:
   home: https://github.com/choderalab/bhmm
   license: GNU Lesser General Public License v3 or later (LGPLv3+)
-
-
-
-
+  summary: Bayesian hidden Markov models for analysis of single-molecule trajectory data

@@ -2,12 +2,9 @@ __author__ = 'noe'
 
 import numpy as _np
 
-from bhmm.util import types as _types
-from bhmm.hmm.generic_hmm import HMM as _HMM
-from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
-from bhmm.estimators.bayesian_sampling import BayesianHMMSampler as _BHMM
-
 def _guess_model_type(observations):
+    from bhmm.util import types as _types
+
     o1 = _np.array(observations[0])
 
     # CASE: vector of int? Then we want a discrete HMM
@@ -109,6 +106,7 @@ def gaussian_hmm(P, means, sigmas, pi=None, stationary=True, reversible=True):
     # initialize output model
     output_model = GaussianOutputModel(nstates, means, sigmas)
     # initialize general HMM
+    from bhmm.hmm.generic_hmm import HMM as _HMM
     ghmm = _HMM(P, output_model, Pi=pi, stationary=stationary, reversible=reversible)
     # turn it into a Gaussian HMM
     ghmm = GaussianHMM(ghmm)
@@ -136,6 +134,7 @@ def discrete_hmm(P, pout, pi=None, stationary=True, reversible=True):
     # initialize output model
     output_model = DiscreteOutputModel(pout)
     # initialize general HMM
+    from bhmm.hmm.generic_hmm import HMM as _HMM
     dhmm = _HMM(P, output_model, Pi=pi, stationary=stationary, reversible=reversible)
     # turn it into a Gaussian HMM
     dhmm = DiscreteHMM(dhmm)
@@ -191,6 +190,7 @@ def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
         observations = _lag_observations(observations, lag)
 
     # construct estimator
+    from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
     est = _MaximumLikelihoodEstimator(observations, nstates, initial_model=initial_model, type=type,
                                       reversible=reversible, stationary=stationary, p=p, accuracy=accuracy, maxit=maxit)
     # run
@@ -222,6 +222,7 @@ def bayesian_hmm(observations, estimated_hmm, nsample=100, store_hidden=False):
 
     """
     # construct estimator
+    from bhmm.estimators.bayesian_sampling import BayesianHMMSampler as _BHMM
     sampler = _BHMM(observations, estimated_hmm.nstates, initial_model=estimated_hmm,
                     reversible=estimated_hmm.is_reversible, transition_matrix_sampling_steps=1000,
                     type=estimated_hmm.output_model.model_type)
