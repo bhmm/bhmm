@@ -100,8 +100,8 @@ class MaximumLikelihoodEstimator(object):
                 logger().warn('Requested reversible='+str(reversible)+' but initial model is reversible='+
                               str(self._hmm.is_reversible)+'. Using reversible='+str(self._hmm.is_reversible))
             # setting parameters
-            self._reversible = self._hmm.reversible
-            self._stationary = self._hmm.stationary
+            self._reversible = self._hmm.is_reversible
+            self._stationary = self._hmm.is_stationary
         else:
             # Generate our own initial model.
             self._hmm = bhmm.init_hmm(observations, nstates, type=type)
