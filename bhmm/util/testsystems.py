@@ -77,10 +77,9 @@ def force_spectroscopy_model():
     output_model = GaussianOutputModel(nstates, means=[3.0, 4.7, 5.6], sigmas=[1.0, 0.3, 0.2])
 
     # Define a reversible transition matrix.
-    Tij = np.array([
-            [0.989, 0.010, 0.001],
-            [0.010, 0.940, 0.050],
-            [0.001, 0.050, 0.949]], np.float64)
+    Tij = np.array([[ 0.98      ,  0.01540412,  0.00459588],
+                    [ 0.06331175,  0.9       ,  0.03668825],
+                    [ 0.00339873,  0.00660127,  0.99      ]])
 
     # Construct HMM with these parameters.
     from bhmm import HMM
