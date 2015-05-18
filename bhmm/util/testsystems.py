@@ -84,7 +84,7 @@ def force_spectroscopy_model():
 
     # Construct HMM with these parameters.
     from bhmm import HMM
-    model = HMM(Tij, output_model)
+    model = HMM(Tij, output_model, stationary=True, reversible=True)
 
     return model
 

@@ -138,7 +138,7 @@ def generate_latex_table(sampled_hmm, conf=0.95, dt=1, time_unit='ms', obs_name=
     for i in range(nstates):
         if (i == 0):
             table += '\t\tEquilibrium probability '
-        table += '\t\t& $\pi_{%d}$ & $%0.3f_{\:%0.3f}^{\:%0.3f}$ \\\\' % (i, p[i], p_lo[i], p_hi[i]) + '\n'
+        table += '\t\t& $\pi_{%d}$ & $%0.3f_{\:%0.3f}^{\:%0.3f}$ \\\\' % (i+1, p[i], p_lo[i], p_hi[i]) + '\n'
     table += '\t\t\hline' + '\n'
 
     # Transition probabilities.
@@ -148,7 +148,8 @@ def generate_latex_table(sampled_hmm, conf=0.95, dt=1, time_unit='ms', obs_name=
         for j in range(nstates):
             if (i == 0) and (j==0):
                 table += '\t\tTransition probability ($\Delta t = $%s) ' % (str(dt)+' '+time_unit)
-            table += '\t\t& $T_{%d%d}$ & $%0.4f_{\:%0.4f}^{\:%0.4f}$ \\\\' % (i, j, P[i,j], P_lo[i,j], P_hi[i,j]) + '\n'
+            table += '\t\t& $T_{%d%d}$ & $%0.4f_{\:%0.4f}^{\:%0.4f}$ \\\\' % (i+1, j+1, P[i,j], P_lo[i,j], P_hi[i,j]) + '\n'
+    table += '\t\t\hline' + '\n'
     table += '\t\t\hline' + '\n'
 
     # Transition rates via pseudogenerator.
@@ -163,7 +164,7 @@ def generate_latex_table(sampled_hmm, conf=0.95, dt=1, time_unit='ms', obs_name=
             if (i == 0) and (j==0):
                 table += '\t\tTransition rate (%s$^{-1}$) ' % time_unit
             if (i != j):
-                table += '\t\t& $k_{%d%d}$ & $%2.4f_{\:%2.4f}^{\:%2.4f}$ \\\\' % (i, j, K[i,j], K_lo[i,j], K_hi[i,j]) + '\n'
+                table += '\t\t& $k_{%d%d}$ & $%2.4f_{\:%2.4f}^{\:%2.4f}$ \\\\' % (i+1, j+1, K[i,j], K_lo[i,j], K_hi[i,j]) + '\n'
     table += '\t\t\hline' + '\n'
 
     # State mean lifetimes.
@@ -174,7 +175,7 @@ def generate_latex_table(sampled_hmm, conf=0.95, dt=1, time_unit='ms', obs_name=
     for i in range(nstates):
         if (i == 0):
             table += '\t\tState mean lifetime (%s) ' % time_unit
-        table += '\t\t& $t_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\\\' % (i, l[i], l_lo[i], l_hi[i]) + '\n'
+        table += '\t\t& $t_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\\\' % (i+1, l[i], l_lo[i], l_hi[i]) + '\n'
     table += '\t\t\hline' + '\n'
 
     # State relaxation timescales.
@@ -185,7 +186,7 @@ def generate_latex_table(sampled_hmm, conf=0.95, dt=1, time_unit='ms', obs_name=
     for i in range(nstates-1):
         if (i == 0):
             table += '\t\tRelaxation time (%s) ' % time_unit
-        table += '\t\t& $\\tau_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\\\' % (i, t[i], t_lo[i], t_hi[i]) + '\n'
+        table += '\t\t& $\\tau_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\\\' % (i+1, t[i], t_lo[i], t_hi[i]) + '\n'
     table += '\t\t\hline' + '\n'
 
     if issubclass(sampled_hmm.__class__, SampledGaussianHMM):
@@ -197,7 +198,7 @@ def generate_latex_table(sampled_hmm, conf=0.95, dt=1, time_unit='ms', obs_name=
         for i in range(nstates):
             if (i == 0):
                 table += '\t\tState %s mean (%s) ' % (obs_name, obs_units)
-            table += '\t\t& $\mu_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\\\' % (i, m[i], m_lo[i], m_hi[i]) + '\n'
+            table += '\t\t& $\mu_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\\\' % (i+1, m[i], m_lo[i], m_hi[i]) + '\n'
         table += '\t\t\hline' + '\n'
 
         # State force standard deviations.
@@ -206,13 +207,13 @@ def generate_latex_table(sampled_hmm, conf=0.95, dt=1, time_unit='ms', obs_name=
         for i in range(nstates):
             if (i == 0):
                 table += '\t\tState %s std dev (%s) ' % (obs_name, obs_units)
-            table += '\t\t& $s_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\\\' % (i, s[i], s_lo[i], s_hi[i]) + '\n'
+            table += '\t\t& $s_{%d}$ & $%.3f_{\:%.3f}^{\:%.3f}$ \\\\' % (i+1, s[i], s_lo[i], s_hi[i]) + '\n'
         table += '\t\t\hline' + '\n'
 
     table +="""
         \\hline
     \\end{tabular*}
-    \\caption{%s}
+    \\caption{{\\bf %s}}
 \\end{table}
             """ % caption
 
