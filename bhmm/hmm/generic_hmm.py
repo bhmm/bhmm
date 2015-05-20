@@ -120,10 +120,15 @@ class HMM(object):
             self._spectral_decomp_available = False
 
     def __repr__(self):
+        from bhmm.output_models import OutputModel
+        if issubclass(self.__class__, OutputModel):
+            outrepr = repr(OutputModel.__repr__(self))
+        else:
+            outrepr = repr(self.output_model)
         """ Returns a string representation of the HMM """
         return "HMM(%d, %s, %s, Pi=%s, stationary=%s, reversible=%s)" % (self._nstates,
                                                                          repr(self._Tij),
-                                                                         repr(self.output_model),
+                                                                         outrepr,
                                                                          repr(self._Pi),
                                                                          repr(self._stationary),
                                                                          repr(self._reversible))
@@ -138,7 +143,11 @@ class HMM(object):
         output += 'Pi:\n'
         output += str(self._Pi) + '\n'
         output += 'output model:\n'
-        output += str(self.output_model)
+        from bhmm.output_models import OutputModel
+        if issubclass(self.__class__, OutputModel):
+            output += str(OutputModel.__str__(self))
+        else:
+            output += str(self.output_model)
         output += '\n'
         return output
 

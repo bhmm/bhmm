@@ -58,7 +58,6 @@ class DiscreteOutputModel(OutputModel):
                [ 0.1,  0.9]]))
 
         """
-
         return "DiscreteOutputModel(%s)" % repr(self._output_probabilities)
 
     def __str__(self):
