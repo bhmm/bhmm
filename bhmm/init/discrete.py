@@ -70,6 +70,7 @@ def initial_model_discrete(observations, nstates, lag=1, reversible=True):
 
     # symmetrize and renormalize to eliminate numerical errors
     X = np.dot(np.diag(pcca.coarse_grained_stationary_probability), P_coarse)
+    X = 0.5 * (X + X.T)
     # if there are values < 0, set to eps
     X = np.maximum(X, eps)
     # turn into coarse-grained transition matrix
