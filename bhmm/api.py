@@ -215,9 +215,12 @@ def bayesian_hmm(observations, estimated_hmm, nsample=100, transition_matrix_pri
         number of Gibbs sampling steps
     transition_matrix_prior : str or ndarray(n,n)
         prior count matrix to be used for transition matrix sampling, or a keyword specifying the prior mode
-        None (default) : -1 prior is used that ensures consistency between mean and MLE
-        'init': prior count matrix with 1 count in total will be used, where
-            :math:`c^\mathrm{prior}_{ij} = \pi_i \p_ij` with :math:`P` the transition matrix of the initial model.
+        |  None (default),  -1 prior is used that ensures consistency between mean and MLE. Can lead to sampling
+            disconnected matrices in the low-data regime. If you have disconnectivity problems, consider
+            using 'init-connect'
+        |  'init-connect',  prior count matrix ensuring the same connectivity as in the initial model. 1 count
+            is added to all diagonals. All off-diagonals share one prior count distributed proportional to
+            the row of the initial transition matrix.
     store_hidden : bool, optional, default=False
         store hidden trajectories in sampled HMMs
 
