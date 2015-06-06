@@ -46,7 +46,7 @@ class BayesianHMMSampler(object):
 
     """
     def __init__(self, observations, nstates, initial_model=None,
-                 reversible=True, transition_matrix_sampling_steps=1000,
+                 reversible=True, transition_matrix_sampling_steps=1000, transition_matrix_prior=None,
                  type='gaussian'):
         """Initialize a Bayesian hidden Markov model sampler.
 
@@ -64,12 +64,13 @@ class BayesianHMMSampler(object):
             otherwise, a standard  non-reversible prior is used.
         transition_matrix_sampling_steps : int, optional, default=1000
             number of transition matrix sampling steps per BHMM cycle
+        transition_matrix_prior : str or ndarray(n,n)
+            prior count matrix to be used for transition matrix sampling, or a keyword specifying the prior mode
+            None (default) : -1 prior is used that ensures consistency between mean and MLE
+            'init': prior count matrix with 1 count in total will be used, where
+                :math:`c^\mathrm{prior}_{ij} = \pi_i \p_ij` with :math:`P` the transition matrix of the initial model.
         output_model_type : str, optional, default='gaussian'
             Output model type.  ['gaussian', 'discrete']
-
-        TODO
-        ----
-        Document choice of -1 prior for transition matrix samplng.
 
         """
         # Sanity checks.
@@ -95,6 +96,17 @@ class BayesianHMMSampler(object):
         else:
             # Generate our own initial model.
             self.model = self._generateInitialModel(type)
+
+        # prior counts
+        if transition_matrix_prior is None:
+            self.prior = np.zeros((self.nstates, self.nstates))
+        elif isinstance(transition_matrix_prior, np.ndarray):
+            if np.array_equal(transition_matrix_prior.shape, (self.nstates, self.nstates)):
+                self.prior = np.array(transition_matrix_prior)
+        elif transition_matrix_prior == 'init':
+            self.prior = np.dot(np.diag(self.model.initial_distribution), self.model.transition_matrix)
+        else:
+            raise ValueError('transition matrix prior mode undefined: '+str(transition_matrix_prior))
 
         # sampling options
         self.transition_matrix_sampling_steps = transition_matrix_sampling_steps
@@ -240,6 +252,8 @@ class BayesianHMMSampler(object):
 
         """
         C = self.model.count_matrix()
+        # apply prior
+        C += self.prior
         Tij = sample_P(C, self.transition_matrix_sampling_steps, reversible=self.reversible)
         self.model.update(Tij)
 

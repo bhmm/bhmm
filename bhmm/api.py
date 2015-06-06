@@ -200,7 +200,7 @@ def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
     # return model
     return est.hmm
 
-def bayesian_hmm(observations, estimated_hmm, nsample=100, store_hidden=False):
+def bayesian_hmm(observations, estimated_hmm, nsample=100, transition_matrix_prior=None, store_hidden=False):
     r""" Bayesian HMM based on sampling the posterior
 
     Generic maximum-likelihood estimation of HMMs
@@ -213,6 +213,11 @@ def bayesian_hmm(observations, estimated_hmm, nsample=100, store_hidden=False):
         HMM estimated from estimate_hmm or initialize_hmm
     nsample : int, optional, default=100
         number of Gibbs sampling steps
+    transition_matrix_prior : str or ndarray(n,n)
+        prior count matrix to be used for transition matrix sampling, or a keyword specifying the prior mode
+        None (default) : -1 prior is used that ensures consistency between mean and MLE
+        'init': prior count matrix with 1 count in total will be used, where
+            :math:`c^\mathrm{prior}_{ij} = \pi_i \p_ij` with :math:`P` the transition matrix of the initial model.
     store_hidden : bool, optional, default=False
         store hidden trajectories in sampled HMMs
 
@@ -225,7 +230,7 @@ def bayesian_hmm(observations, estimated_hmm, nsample=100, store_hidden=False):
     from bhmm.estimators.bayesian_sampling import BayesianHMMSampler as _BHMM
     sampler = _BHMM(observations, estimated_hmm.nstates, initial_model=estimated_hmm,
                     reversible=estimated_hmm.is_reversible, transition_matrix_sampling_steps=1000,
-                    type=estimated_hmm.output_model.model_type)
+                    transition_matrix_prior=transition_matrix_prior, type=estimated_hmm.output_model.model_type)
 
     # Sample models.
     sampled_hmms = sampler.sample(nsamples=nsample, save_hidden_state_trajectory=store_hidden)
