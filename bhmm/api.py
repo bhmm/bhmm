@@ -3,6 +3,25 @@ __author__ = 'noe'
 import numpy as _np
 
 def _guess_model_type(observations):
+    """ Suggests a HMM model type based on the observation data
+
+    Uses simple rules in order to decide which HMM model type makes sense based on observation data.
+    If observations consist of arrays/lists of integer numbers (irrespective of whether the python type is
+    int or float), our guess is 'discrete'.
+    If observations consist of arrays/lists of 1D-floats, our guess is 'discrete'.
+    In any other case, a TypeError is raised because we are not supporting that data type yet.
+
+    Parameters:
+    -----------
+    observations : list of lists or arrays
+        observation trajectories
+
+    Returns:
+    --------
+    model_type : str
+        One of {'discrete', 'gaussian'}
+
+    """
     from bhmm.util import types as _types
 
     o1 = _np.array(observations[0])
@@ -30,7 +49,14 @@ def _guess_model_type(observations):
                     'does not support your input.')
 
 def _lag_observations(observations, lag):
-    # create new trajectories that are subsampled at lag but shifted
+    """ Create new trajectories that are subsampled at lag but shifted
+
+    Given a trajectory (s0, s1, s2, s3, s4, ...) and lag 3, this function will generate 3 trajectories
+    (s0, s3, s6, ...), (s1, s4, s7, ...) and (s2, s5, s8, ...). Use this function in order to parametrize a MLE
+    at lag times larger than 1 without discarding data. Do not use this function for Bayesian estimators, where
+    data must be given such that subsequent transitions are uncorrelated.
+
+    """
     obsnew = []
     for obs in observations:
         for shift in range(0, lag):
@@ -38,7 +64,6 @@ def _lag_observations(observations, lag):
     return obsnew
 
 def init_hmm(observations, nstates, lag=1, type=None):
-#def generate_initial_model(observations, nstates, output_model_type):
     """Use a heuristic scheme to generate an initial model.
 
     Parameters
