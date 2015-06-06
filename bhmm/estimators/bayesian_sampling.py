@@ -66,9 +66,12 @@ class BayesianHMMSampler(object):
             number of transition matrix sampling steps per BHMM cycle
         transition_matrix_prior : str or ndarray(n,n)
             prior count matrix to be used for transition matrix sampling, or a keyword specifying the prior mode
-            None (default) : -1 prior is used that ensures consistency between mean and MLE
-            'init': prior count matrix with 1 count in total will be used, where
-                :math:`c^\mathrm{prior}_{ij} = \pi_i \p_ij` with :math:`P` the transition matrix of the initial model.
+            |  None (default),  -1 prior is used that ensures consistency between mean and MLE. Can lead to sampling
+                disconnected matrices in the low-data regime. If you have disconnectivity problems, consider
+                using 'init-connect'
+            |  'init-connect',  prior count matrix ensuring the same connectivity as in the initial model. 1 count
+                is added to all diagonals. All off-diagonals share one prior count distributed proportional to
+                the row of the initial transition matrix.
         output_model_type : str, optional, default='gaussian'
             Output model type.  ['gaussian', 'discrete']
 
@@ -103,8 +106,11 @@ class BayesianHMMSampler(object):
         elif isinstance(transition_matrix_prior, np.ndarray):
             if np.array_equal(transition_matrix_prior.shape, (self.nstates, self.nstates)):
                 self.prior = np.array(transition_matrix_prior)
-        elif transition_matrix_prior == 'init':
-            self.prior = np.dot(np.diag(self.model.initial_distribution), self.model.transition_matrix)
+        elif transition_matrix_prior == 'init-connect':
+            Pinit = self.model.transition_matrix
+            self.prior = Pinit - np.diag(Pinit)  # add off-diagonals from initial T-matrix
+            self.prior /= self.prior.sum(axis=1)[:, None]  # scale off-diagonals to row sum 1
+            self.prior += np.eye(nstates)  # add diagonal 1.
         else:
             raise ValueError('transition matrix prior mode undefined: '+str(transition_matrix_prior))
 
@@ -254,6 +260,7 @@ class BayesianHMMSampler(object):
         C = self.model.count_matrix()
         # apply prior
         C += self.prior
+        # sample T-matrix
         Tij = sample_P(C, self.transition_matrix_sampling_steps, reversible=self.reversible)
         self.model.update(Tij)
 
