@@ -126,9 +126,10 @@ class TransitionMatrixSamplerRev:
                         if i == j:
                             if self._is_positive(self.C[i,i]) and self._is_positive(self.sumC[i]-self.C[i,i]):
                                 tmp_t = np.random.beta(self.C[i,i], self.sumC[i]-self.C[i,i])
-                                tmp_x = tmp_t/(1-tmp_t)*(self.X[i,:].sum()-self.X[i,i])
-                                if self._is_positive(tmp_x):
-                                    self.X[i,i] = tmp_x
+                                if tmp_t < 1.0:
+                                    tmp_x = tmp_t/(1-tmp_t)*(self.X[i,:].sum()-self.X[i,i])
+                                    if self._is_positive(tmp_x):
+                                        self.X[i,i] = tmp_x
                         else:
                             tmpi = self.X[i,:].sum()-self.X[i,j]
                             tmpj = self.X[j,:].sum()-self.X[j,i]
