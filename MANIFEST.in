@@ -1,0 +1,1 @@
+recursive-include bhmm *.c *.h *.pyx

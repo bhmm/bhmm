@@ -1,7 +1,17 @@
-"""
-BHMM: A toolkit for Bayesian hidden Markov model analysis of single-molecule trajectories.
+""" BHMM: A toolkit for Bayesian hidden Markov model analysis of single-molecule trajectories.
 
+This project provides tools for estimating the number of metastable states, rate
+constants between the states, equilibrium populations, distributions
+characterizing the states, and distributions of these quantities from
+single-molecule data. This data could be FRET data, single-molecule pulling
+data, or any data where one or more observables are recorded as a function of
+time. A Hidden Markov Model (HMM) is used to interpret the observed dynamics,
+and a distribution of models that fit the data is sampled using Bayesian
+inference techniques and Markov chain Monte Carlo (MCMC), allowing for both the
+characterization of uncertainties in the model and modeling of the expected
+information gain by new experiments.
 """
+
 from __future__ import print_function
 import os
 import sys
@@ -24,9 +34,8 @@ CLASSIFIERS = """\
 Development Status :: 3 - Alpha
 Intended Audience :: Science/Research
 Intended Audience :: Developers
-License :: OSI Approved :: Lesser GNU Public License (LGPL)
+License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)
 Programming Language :: Python
-Programming Language :: Python :: 3
 Topic :: Scientific/Engineering :: Bio-Informatics
 Topic :: Scientific/Engineering :: Chemistry
 Operating System :: Microsoft :: Windows
