@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/bhmm/bhmm.png)](https://travis-ci.org/bhmm/bhmm)
+[![Build Status](https://travis-ci.org/bhmm/bhmm.png?branch=master)](https://travis-ci.org/bhmm/bhmm)
 
 # Bayesian hidden Markov models for analysis of single-molecule trajectory data
 
