@@ -44,8 +44,8 @@ def initial_model_discrete(observations, nstates, lag=1, reversible=True):
     # estimate Markov model
     C_full = msmtools.estimation.count_matrix(observations, lag)
     lcc = msmtools.estimation.largest_connected_set(C_full)
-    Clcc = C_full[lcc].toarray()
-    T = msmtools.estimation.transition_matrix(Clcc, reversible=True)
+    Clcc= msmtools.estimation.largest_connected_submatrix(C_full, lcc=lcc)
+    T = msmtools.estimation.transition_matrix(Clcc, reversible=True).toarray()
 
     # pcca
     pcca = msmtools.analysis.dense.pcca.PCCA(T, nstates)
