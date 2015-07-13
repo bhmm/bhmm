@@ -13,15 +13,15 @@ information gain by new experiments.
 """
 
 from __future__ import print_function
+
 import os
-import sys
-from distutils.version import StrictVersion
-from setuptools import setup, Extension, find_packages
-import numpy
-import glob
 from os.path import relpath, join
+
+import numpy
 import subprocess
+
 from Cython.Build import cythonize
+from setuptools import setup, Extension, find_packages
 
 DOCLINES = __doc__.split("\n")
 
@@ -123,15 +123,6 @@ def find_package_data(data_root, package_root):
 # SETUP
 ################################################################################
 
-#try:
-#    import pyemma
-#    print(pyemma.__version__)
-#    if not StrictVersion(pyemma.__version__) >= '1.1.2':
-#        raise ImportError
-#except:
-#    print('Bulding and running bhmm requires pyemma >= 1.1.2. Install first.')
-#    sys.exit(1)
-
 extensions = [Extension('bhmm.hidden.impl_c.hidden',
                         sources = ['./bhmm/hidden/impl_c/hidden.pyx',
                                    './bhmm/hidden/impl_c/_hidden.c'],
@@ -158,16 +149,14 @@ setup(
     platforms=['Linux', 'Mac OS-X', 'Unix', 'Windows'],
     classifiers=CLASSIFIERS.splitlines(),
     package_dir={'bhmm': 'bhmm'},
-    #packages=['bhmm', "bhmm.tests"] + ['bhmm.%s' % package for package in find_packages('bhmm')],
-    packages=['bhmm', 'bhmm.tests', 'bhmm.hmm', 'bhmm.estimators', 'bhmm.msm', 'bhmm.hidden', 'bhmm.init', 'bhmm.msm', 'bhmm.output_models', 'bhmm.output_models.impl_c', 'bhmm.util', 'bhmm.hidden.impl_python', 'bhmm.hidden.impl_c'],
-    # + ['bhmm.%s' % package for package in find_packages('bhmm')],
+    packages=find_packages(),
     package_data={'bhmm': find_package_data('examples', 'bhmm') + find_package_data('bhmm/tests/data', 'bhmm')},  # NOTE: examples installs to bhmm.egg/examples/, NOT bhmm.egg/bhmm/examples/.  You need to do utils.get_data_filename("../examples/*/setup/").
     zip_safe=False,
     install_requires=[
         'cython',
         'numpy',
         'scipy',
-        'pyemma>=1.2',
+        'msmtools',
         'scikit-learn',
         ],
     ext_modules = cythonize(extensions)

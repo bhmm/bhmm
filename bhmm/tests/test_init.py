@@ -11,7 +11,7 @@ class TestHMM(unittest.TestCase):
         # 2x2 transition matrix
         P = np.array([[0.99,0.01],[0.01,0.99]])
         # generate realization
-        import pyemma.msm.generation as msmgen
+        import msmtools.generation as msmgen
         T = 10000
         dtrajs = [msmgen.generate_traj(P, T)]
         # estimate initial HMM with 2 states - should be identical to P
@@ -20,7 +20,7 @@ class TestHMM(unittest.TestCase):
         A = hmm.transition_matrix
         B = hmm.output_model.output_probabilities
         # Test stochasticity
-        import pyemma.msm.analysis as msmana
+        import msmtools.analysis as msmana
         msmana.is_transition_matrix(A)
         np.allclose(B.sum(axis=1), np.ones(B.shape[0]))
         # A should be close to P
@@ -37,7 +37,7 @@ class TestHMM(unittest.TestCase):
                       [0.00, 0.01, 0.89, 0.10],
                       [0.00, 0.00, 0.10, 0.90]])
         # generate realization
-        import pyemma.msm.generation as msmgen
+        import msmtools.generation as msmgen
         T = 10000
         dtrajs = [msmgen.generate_traj(P, T)]
         # estimate initial HMM with 2 states - should be identical to P
@@ -47,7 +47,7 @@ class TestHMM(unittest.TestCase):
         Tij = hmm.transition_matrix
         B = hmm.output_model.output_probabilities
         # Test stochasticity
-        import pyemma.msm.analysis as msmana
+        import msmtools.analysis as msmana
         msmana.is_transition_matrix(Tij)
         np.allclose(B.sum(axis=1), np.ones(B.shape[0]))
         #if (B[0,0]<B[1,0]):
@@ -69,7 +69,7 @@ class TestHMM(unittest.TestCase):
                       [0.00, 0.00, 0.00, 0.02, 0.78, 0.20],
                       [0.00, 0.00, 0.00, 0.00, 0.10, 0.90]])
         # generate realization
-        import pyemma.msm.generation as msmgen
+        import msmtools.generation as msmgen
         T = 10000
         dtrajs = [msmgen.generate_traj(P, T)]
         # estimate initial HMM with 2 states - should be identical to P
@@ -77,7 +77,7 @@ class TestHMM(unittest.TestCase):
         # Test stochasticity and reversibility
         Tij = hmm.transition_matrix
         B = hmm.output_model.output_probabilities
-        import pyemma.msm.analysis as msmana
+        import msmtools.analysis as msmana
         msmana.is_transition_matrix(Tij)
         msmana.is_reversible(Tij)
         np.allclose(B.sum(axis=1), np.ones(B.shape[0]))

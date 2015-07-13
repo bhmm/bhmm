@@ -1,3 +1,4 @@
+import msmtools
 __author__ = 'noe'
 
 import warnings
@@ -40,32 +41,32 @@ def initial_model_discrete(observations, nstates, lag=1, reversible=True):
         warnings.warn("nonreversible initialization of discrete HMM currently not supported. Using a reversible matrix for initialization.")
         reversible = True
 
-    # import emma inside function in order to avoid dependency loops
-    from pyemma import msm
-
     # estimate Markov model
-    MSM = msm.estimate_markov_model(observations, lag, reversible=True, connectivity='largest')
+    C_full = msmtools.estimation.count_matrix(observations, lag)
+    lcc = msmtools.estimation.largest_connected_set(C_full)
+    Clcc= msmtools.estimation.largest_connected_submatrix(C_full, lcc=lcc)
+    T = msmtools.estimation.transition_matrix(Clcc, reversible=True).toarray()
 
-    # PCCA
-    pcca = MSM.pcca(nstates)
+    # pcca
+    pcca = msmtools.analysis.dense.pcca.PCCA(T, nstates)
 
-    # HMM output matrix
-    B_conn = MSM.metastable_distributions
+    # PCCA yields HMM output matrix
+    B_conn = pcca.output_probabilities
 
     #print 'B_conn = \n',B_conn
     # full state space output matrix
-    nstates_full = MSM.count_matrix_full.shape[0]
+    nstates_full = C_full.shape[0]
     eps = 0.01 * (1.0/nstates_full) # default output probability, in order to avoid zero columns
     B = eps * np.ones((nstates,nstates_full), dtype=np.float64)
     # expand B_conn to full state space
-    B[:,MSM.active_set] = B_conn[:,:]
+    B[:,lcc] = B_conn[:,:]
     # renormalize B to make it row-stochastic
     B /= B.sum(axis=1)[:,None]
 
     # coarse-grained transition matrix
     M = pcca.memberships
     W = np.linalg.inv(np.dot(M.T, M))
-    A = np.dot(np.dot(M.T, MSM.transition_matrix), M)
+    A = np.dot(np.dot(M.T, T), M)
     P_coarse = np.dot(W, A)
 
     # symmetrize and renormalize to eliminate numerical errors

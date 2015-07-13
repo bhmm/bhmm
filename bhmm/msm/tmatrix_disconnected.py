@@ -4,7 +4,7 @@ import numpy as np
 
 def estimate_P(C, reversible = True, fixed_statdist=None):
     # import emma
-    import pyemma.msm.estimation as msmest
+    import msmtools.estimation as msmest
     # output matrix. Initially eye
     n = np.shape(C)[0]
     P = np.eye((n), dtype=np.float64)
@@ -27,7 +27,7 @@ def sample_P(C, nsteps, reversible = True):
     if not reversible:
         raise Exception('Non-reversible transition matrix sampling not yet implemented.')
     # import emma
-    import pyemma.msm.estimation as msmest
+    import msmtools.estimation as msmest
     from bhmm.msm.transition_matrix_sampling_rev import TransitionMatrixSamplerRev
     # output matrix. Initially eye
     n = np.shape(C)[0]
@@ -49,8 +49,8 @@ def sample_P(C, nsteps, reversible = True):
 
 def stationary_distribution(C, P):
     # import emma
-    import pyemma.msm.estimation as msmest
-    import pyemma.msm.analysis as msmana
+    import msmtools.estimation as msmest
+    import msmtools.analysis as msmana
     # disconnected sets
     n = np.shape(C)[0]
     ctot = np.sum(C)

@@ -71,7 +71,7 @@ class HMM(object):
     def update(self, Tij, Pi=None):
         r""" Updates the transition matrix and recomputes all derived quantities """
         # EMMA imports
-        from pyemma.msm import analysis as msmana
+        from msmtools import analysis as msmana
 
         # save a copy of the transition matrix
         self._Tij = np.array(Tij)
@@ -252,7 +252,7 @@ class HMM(object):
             :math:`\lambda_i` are the hidden transition matrix eigenvalues.
 
         """
-        from pyemma.msm.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
+        from msmtools.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
 
         ts = _timescales(self._eigenvalues, tau=self._lag)
         return ts[1:]
@@ -445,7 +445,7 @@ class HMM(object):
                 start = np.random.choice(range(self._nstates), size=1, p=self._Pi)
 
         # Generate and return trajectory
-        from pyemma.msm import generation as msmgen
+        from msmtools import generation as msmgen
         traj = msmgen.generate_traj(self.transition_matrix, nsteps, start=start, stop=stop, dt=1)
         return traj.astype(dtype)
 
