@@ -64,7 +64,7 @@ def initial_model_gaussian1d(observations, nstates, reversible=True):
         logger().info("Nij\n"+str(Nij))
 
     # Compute transition matrix maximum likelihood estimate.
-    import pyemma.msm.estimation as msmest
+    import msmtools.estimation as msmest
     Tij = msmest.transition_matrix(Nij, reversible=reversible)
 
     # Update model.

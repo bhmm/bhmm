@@ -65,7 +65,7 @@ class TestMLHMM(unittest.TestCase):
         assert self.hmm_lag10.nstates == 2
 
     def test_transition_matrix(self):
-        import pyemma.msm.analysis as msmana
+        import msmtools.analysis as msmana
         for P in [self.hmm_lag1.transition_matrix, self.hmm_lag1.transition_matrix]:
             assert msmana.is_transition_matrix(P)
             assert msmana.is_reversible(P)
