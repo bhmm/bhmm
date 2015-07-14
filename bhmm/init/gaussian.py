@@ -34,7 +34,7 @@ def initial_model_gaussian1d(observations, nstates, reversible=True):
         collected_observations = np.append(collected_observations, o_t)
 
     # Fit a Gaussian mixture model to obtain emission distributions and state stationary probabilities.
-    from sklearn import mixture
+    from bhmm._external.sklearn import mixture
     gmm = mixture.GMM(n_components=nstates)
     gmm.fit(collected_observations[:,None])
     from bhmm import GaussianOutputModel

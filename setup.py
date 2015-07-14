@@ -133,7 +133,14 @@ extensions = [Extension('bhmm.hidden.impl_c.hidden',
                         include_dirs = ['/bhmm/output_models/impl_c/',numpy.get_include()]),
               Extension('bhmm.msm.tmatrix_sampling',
                         sources = ['./bhmm/msm/tmatrix_sampling.pyx'],
-                        include_dirs = [numpy.get_include()])]
+                        include_dirs = [numpy.get_include()]),
+              Extension('bhmm._external.clustering.kmeans_clustering',
+                        sources=['./bhmm/_external/clustering/src/clustering.c',
+                                 './bhmm/_external/clustering/src/kmeans.c'],
+                        include_dirs=['./bhmm/_external/clustering/include',
+                                      numpy.get_include()],
+                        extra_compile_args=['-std=c99']),
+              ]
 
 write_version_py()
 
@@ -157,7 +164,7 @@ setup(
         'numpy',
         'scipy',
         'msmtools',
-        'scikit-learn',
+        'six',
         ],
     ext_modules = cythonize(extensions)
     )

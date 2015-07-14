@@ -15,7 +15,7 @@ requirements:
     - numpy
     - scipy
     - msmtools
-    - scikit-learn
+    - six
 
   run:
     - python
@@ -23,7 +23,7 @@ requirements:
     - numpy
     - scipy
     - msmtools
-    - scikit-learn
+    - six
 
 test:
   requires:
