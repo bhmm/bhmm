@@ -5,10 +5,6 @@ BHMM: A toolkit for Bayesian hidden Markov model analysis of single-molecule tra
 
 """
 
-# Define global version.
-import version as _version
-__version__ = _version.version
-
 # import API
 from bhmm.api import *
 
@@ -31,3 +27,7 @@ from bhmm.output_models import OutputModel, GaussianOutputModel, DiscreteOutputM
 # other stuff
 from bhmm.util import config
 from bhmm.util import testsystems
+
+from .version import get_versions
+__version__ = get_versions()['version']
+del get_versions
