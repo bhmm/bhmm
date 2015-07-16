@@ -1,1 +1,3 @@
 recursive-include bhmm *.c *.h *.pyx
+include versioneer.py
+include bhmm/version.py
