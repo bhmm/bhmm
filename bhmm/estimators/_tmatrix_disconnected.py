@@ -23,30 +23,6 @@ def estimate_P(C, reversible = True, fixed_statdist=None):
     # done
     return P
 
-def sample_P(C, nsteps, reversible = True):
-    if not reversible:
-        raise Exception('Non-reversible transition matrix sampling not yet implemented.')
-    # import emma
-    import msmtools.estimation as msmest
-    from bhmm.msm.transition_matrix_sampling_rev import TransitionMatrixSamplerRev
-    # output matrix. Initially eye
-    n = np.shape(C)[0]
-    P = np.eye((n), dtype=np.float64)
-    # treat each connected set separately
-    S = msmest.connected_sets(C)
-    for s in S:
-        if len(s) > 1: # if there's only one state, there's nothing to sample and we leave it with diagonal 1
-            # compute transition sub-matrix on s
-            Cs = C[s,:][:,s]
-            sampler = TransitionMatrixSamplerRev(Cs)
-            Ps = sampler.sample(nsteps)
-            # write back to matrix
-            for i,I in enumerate(s):
-                for j,J in enumerate(s):
-                    P[I,J] = Ps[i,j]
-    # done
-    return P
-
 def stationary_distribution(C, P):
     # import emma
     import msmtools.estimation as msmest

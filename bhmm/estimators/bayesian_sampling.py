@@ -8,10 +8,10 @@ import copy
 import time
 #from scipy.misc import logsumexp
 import bhmm.hidden as hidden
-from bhmm.msm.tmatrix_disconnected import sample_P
 from bhmm.util.logger import logger
 from bhmm.util import config
 
+import msmtools.estimation as msmest
 #from bhmm.msm.transition_matrix_sampling_rev import TransitionMatrixSamplerRev
 
 __author__ = "John D. Chodera, Frank Noe"
@@ -261,7 +261,7 @@ class BayesianHMMSampler(object):
         # apply prior
         C += self.prior
         # sample T-matrix
-        Tij = sample_P(C, self.transition_matrix_sampling_steps, reversible=self.reversible)
+        Tij = msmest.sample_tmatrix(C, nsample=1, nsteps=self.transition_matrix_sampling_steps, reversible=self.reversible)
         self.model.update(Tij)
 
     def _generateInitialModel(self, output_model_type):
