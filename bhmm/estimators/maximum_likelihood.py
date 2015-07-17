@@ -11,8 +11,10 @@ __maintainer__ = "Frank Noe"
 __email__="frank DOT noe AT fu-berlin DOT de"
 
 import time
-import numpy as np
 import copy
+
+import numpy as np
+
 
 # TODO: reactivate multiprocessing
 # from multiprocessing import Queue, Process, cpu_count
@@ -274,7 +276,7 @@ class MaximumLikelihoodEstimator(object):
         logger().info("Count matrix = \n"+str(C))
 
         # compute new transition matrix
-        from bhmm.msm.tmatrix_disconnected import estimate_P,stationary_distribution
+        from bhmm.estimators._tmatrix_disconnected import estimate_P,stationary_distribution
         T = estimate_P(C, reversible=self._hmm.is_reversible, fixed_statdist=self._fixed_stationary_distribution)
         # stationary or init distribution
         if self._hmm.is_stationary:
