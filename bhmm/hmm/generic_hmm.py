@@ -13,6 +13,8 @@ __license__ = "LGPL"
 __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
+from msmtools.estimation import count_matrix
+
 class HMM(object):
     r""" Hidden Markov model (HMM).
 
@@ -272,7 +274,7 @@ class HMM(object):
         return -self._lag / np.log(np.diag(self.transition_matrix))
 
     def count_matrix(self, dtype=np.float64):
-        #TODO: does this belong here or to the BHMM sampler, or in a subclass containing HMM with data?
+        # TODO: does this belong here or to the BHMM sampler, or in a subclass containing HMM with data?
         """Compute the transition count matrix from hidden state trajectory.
 
         Parameters
@@ -298,11 +300,12 @@ class HMM(object):
         if self.hidden_state_trajectories is None:
             raise RuntimeError('HMM model does not have a hidden state trajectory.')
 
-        C = np.zeros((self._nstates,self._nstates), dtype=dtype)
-        for S in self.hidden_state_trajectories:
-            for t in range(len(S)-1):
-                C[S[t],S[t+1]] += 1
-        return C
+        C = count_matrix(self.hidden_state_trajectories, 1, nstates=self._nstates)
+        #C = np.zeros((self._nstates,self._nstates), dtype=dtype)
+        #for S in self.hidden_state_trajectories:
+        #    for t in range(len(S)-1):
+        #        C[S[t],S[t+1]] += 1
+        return C.toarray()
 
     # def emission_probability(self, state, observation):
     #     """Compute the emission probability of an observation from a given state.

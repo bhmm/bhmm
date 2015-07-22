@@ -329,8 +329,8 @@ class GaussianOutputModel(OutputModel):
         >>> ntrajectories = 3
         >>> nobs = 1000
         >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, +1], sigmas=[0.5, 1, 2])
-        >>> observations = [ np.random.randn(nobs) for trajectory_index in range(ntrajectories) ] # random observations
-        >>> weights = [ np.random.dirichlet([2, 3, 4], size=nobs) for trajectory_index in range(ntrajectories) ] # random weights
+        >>> observations = [ np.random.randn(nobs) for _ in range(ntrajectories) ] # random observations
+        >>> weights = [ np.random.dirichlet([2, 3, 4], size=nobs) for _ in range(ntrajectories) ] # random weights
 
         Update the observation model parameters my a maximum-likelihood fit.
 
@@ -368,7 +368,7 @@ class GaussianOutputModel(OutputModel):
         self._sigmas = np.sqrt(self.sigmas)
 
 
-    def _sample_output_mode(self, observations):
+    def _sample_output_model(self, observations):
         """
         Sample a new set of distribution parameters given a sample of observations from the given state.
 
@@ -388,11 +388,11 @@ class GaussianOutputModel(OutputModel):
         >>> nobs = 1000
         >>> output_model = GaussianOutputModel(nstates=nstates, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
         >>> observations = [ output_model.generate_observations_from_state(state_index, nobs) for state_index in range(nstates) ]
-        >>> weights = [ np.zeros([nobs,nstates], np.float32).T for state_index in range(nstates) ]
+        >>> weights = [ np.zeros([nobs,nstates], np.float32).T for _ in range(nstates) ]
 
         Update output parameters by sampling.
 
-        >>> output_model._sample_output_mode(observations)
+        >>> output_model._sample_output_model(observations)
 
         """
         for state_index in range(self.nstates):
@@ -404,7 +404,7 @@ class GaussianOutputModel(OutputModel):
 
             # Skip update if no observations.
             if nsamples_in_state == 0:
-                logger().warn('Warning: State %d has no obsevations.' % state_index)
+                logger().warn('Warning: State %d has no observations.' % state_index)
                 continue
 
             # Sample new mu.
