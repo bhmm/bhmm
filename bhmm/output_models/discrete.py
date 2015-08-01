@@ -9,7 +9,7 @@ import copy
 import numpy as np
 from math import log
 
-import bhmm.output_models
+from bhmm.output_models.impl_c import discrete as dc
 from bhmm.output_models import OutputModel
 from bhmm.util import config
 
@@ -189,21 +189,19 @@ class DiscreteOutputModel(OutputModel):
             the probability of generating the symbol at time point t from any of the N hidden states
 
         """
-        # much faster
-        if (out is None):
-            out = self._output_probabilities[:,obs].T
-            #out /= np.sum(out, axis=1)[:,None]
+        if out is None:
+            out = self._output_probabilities[:, obs].T
+            # out /= np.sum(out, axis=1)[:,None]
             return out
         else:
-            if (obs.shape[0] == out.shape[0]):
-                out[:,:] = self._output_probabilities[:,obs].T
-            elif (obs.shape[0] < out.shape[0]):
-                out[:obs.shape[0],:] = self._output_probabilities[:,obs].T
+            if obs.shape[0] == out.shape[0]:
+                np.copyto(out, self._output_probabilities[:, obs].T)
+            elif obs.shape[0] < out.shape[0]:
+                out[:obs.shape[0], :] = self._output_probabilities[:, obs].T
             else:
                 raise ValueError('output array out is too small: '+str(out.shape[0])+' < '+str(obs.shape[0]))
-            #out /= np.sum(out, axis=1)[:,None]
+            # out /= np.sum(out, axis=1)[:,None]
             return out
-
 
     def _estimate_output_model(self, observations, weights):
         """
@@ -245,22 +243,25 @@ class DiscreteOutputModel(OutputModel):
 
         """
         # sizes
-        N = self._output_probabilities.shape[0]
-        M = self._output_probabilities.shape[1]
+        N, M = self._output_probabilities.shape
         K = len(observations)
         # initialize output probability matrix
-        self._output_probabilities  = np.zeros((N,M))
-        for k in range(K):
-            # update nominator
-            obs = observations[k]
-            for o in range(M):
-                times = np.where(obs == o)[0]
-                self._output_probabilities[:,o] += np.sum(weights[k][times,:], axis=0)
-
+        self._output_probabilities = np.zeros((N, M))
+        # update output probability matrix (numerator)
+        if self.__impl__ == self.__IMPL_C__:
+            for k in xrange(K):
+                dc.update_pout(observations[k], weights[k], self._output_probabilities, dtype=config.dtype)
+        elif self.__impl__ == self.__IMPL_PYTHON__:
+            for k in xrange(K):
+                for o in xrange(M):
+                    times = np.where(observations[k] == o)[0]
+                    self._output_probabilities[:, o] += np.sum(weights[k][times, :], axis=0)
+        else:
+            raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
         # normalize
         self._output_probabilities /= np.sum(self._output_probabilities, axis=1)[:,None]
 
-    def _sample_output_mode(self, observations):
+    def _sample_output_model(self, observations):
         """
         Sample a new set of distribution parameters given a sample of observations from the given state.
 
@@ -282,7 +283,7 @@ class DiscreteOutputModel(OutputModel):
         sample given observation
 
         >>> obs = [[0,0,0,1,1,1],[1,1,1,1,1,1]]
-        >>> output_model._sample_output_mode(obs)
+        >>> output_model._sample_output_model(obs)
 
         """
         from numpy.random import dirichlet

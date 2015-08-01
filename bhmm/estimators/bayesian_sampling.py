@@ -249,7 +249,7 @@ class BayesianHMMSampler(object):
 
         """
         observations_by_state = [ self.model.collect_observations_in_state(self.observations, state) for state in range(self.model.nstates) ]
-        self.model.output_model._sample_output_mode(observations_by_state)
+        self.model.output_model._sample_output_model(observations_by_state)
         return
 
     def _updateTransitionMatrix(self):

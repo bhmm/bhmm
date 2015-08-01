@@ -50,13 +50,14 @@ def initial_model_discrete(observations, nstates, lag=1, reversible=True):
     # pcca
     pcca = msmtools.analysis.dense.pcca.PCCA(T, nstates)
 
-    # PCCA yields HMM output matrix
-    B_conn = pcca.output_probabilities
-
-    #print 'B_conn = \n',B_conn
-    # full state space output matrix
+    # default output probability, in order to avoid zero columns
     nstates_full = C_full.shape[0]
-    eps = 0.01 * (1.0/nstates_full) # default output probability, in order to avoid zero columns
+    eps = 0.01 * (1.0/nstates_full)
+
+    # Use PCCA distributions, but avoid 100% assignment to any state (prevents convergence)
+    B_conn = np.maximum(pcca.output_probabilities, eps)
+
+    # full state space output matrix
     B = eps * np.ones((nstates,nstates_full), dtype=np.float64)
     # expand B_conn to full state space
     B[:,lcc] = B_conn[:,:]

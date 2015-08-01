@@ -350,6 +350,9 @@ void _sample_path(
         path[t] = _random_choice(psel, N);
         //printf(" drawn: %i\n",path[t]);
     }
+
+    // free memory
+    free(psel);
 }
 
 /*

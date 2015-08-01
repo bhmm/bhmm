@@ -90,17 +90,16 @@ class MaximumLikelihoodEstimator(object):
         # Store the number of states.
         self._nstates = nstates
 
-
         if initial_model is not None:
             # Use user-specified initial model, if provided.
             self._hmm = copy.deepcopy(initial_model)
             # consistency checks
             if self._hmm.is_stationary != stationary:
-                logger().warn('Requested stationary='+str(stationary)+' but initial model is stationary='+
-                              str(self._hmm.is_stationary)+'. Using stationary='+str(self._hmm.is_stationary))
+                logger().warn('Requested stationary=' + str(stationary) + ' but initial model is stationary=' +
+                              str(self._hmm.is_stationary) + '. Using stationary='+str(self._hmm.is_stationary))
             if self._hmm.is_reversible != reversible:
-                logger().warn('Requested reversible='+str(reversible)+' but initial model is reversible='+
-                              str(self._hmm.is_reversible)+'. Using reversible='+str(self._hmm.is_reversible))
+                logger().warn('Requested reversible=' + str(reversible) + ' but initial model is reversible=' +
+                              str(self._hmm.is_reversible) + '. Using reversible='+str(self._hmm.is_reversible))
             # setting parameters
             self._reversible = self._hmm.is_reversible
             self._stationary = self._hmm.is_stationary
@@ -121,11 +120,12 @@ class MaximumLikelihoodEstimator(object):
                 self._fixed_initial_distribution = np.array(p)
 
         # pre-construct hidden variables
-        self._alpha = np.zeros((self._maxT,self._nstates), config.dtype, order='C')
-        self._beta = np.zeros((self._maxT,self._nstates), config.dtype, order='C')
-        self._pobs = np.zeros((self._maxT,self._nstates), config.dtype, order='C')
-        self._gammas = [np.zeros((len(self._observations[i]),self._nstates), config.dtype, order='C') for i in range(self._nobs)]
-        self._Cs = [np.zeros((self._nstates,self._nstates), config.dtype, order='C') for i in range(self._nobs)]
+        self._alpha = np.zeros((self._maxT, self._nstates), config.dtype, order='C')
+        self._beta = np.zeros((self._maxT, self._nstates), config.dtype, order='C')
+        self._pobs = np.zeros((self._maxT, self._nstates), config.dtype, order='C')
+        self._gammas = [np.zeros((len(self._observations[i]), self._nstates), config.dtype, order='C')
+                        for i in range(self._nobs)]
+        self._Cs = [np.zeros((self._nstates, self._nstates), config.dtype, order='C') for _ in range(self._nobs)]
 
         # convergence options
         self._accuracy = accuracy
@@ -224,11 +224,13 @@ class MaximumLikelihoodEstimator(object):
         Results
         -------
         logprob : float
-            The probability to observe the observation sequence given the HMM parameters
+            The probability to observe the observation sequence given the HMM
+            parameters
         gamma : ndarray(T,N, dtype=float)
             state probabilities for each t
         count_matrix : ndarray(N,N, dtype=float)
-            the Baum-Welch transition count matrix from the hidden state trajectory
+            the Baum-Welch transition count matrix from the hidden state
+            trajectory
 
         """
         # get parameters
@@ -239,13 +241,13 @@ class MaximumLikelihoodEstimator(object):
         # compute output probability matrix
         self._hmm.output_model.p_obs(obs, out=self._pobs)
         # forward variables
-        logprob = hidden.forward(A, self._pobs, pi, T = T, alpha_out=self._alpha)[0]
+        logprob = hidden.forward(A, self._pobs, pi, T=T, alpha_out=self._alpha)[0]
         # backward variables
-        hidden.backward(A, self._pobs, T = T, beta_out=self._beta)
+        hidden.backward(A, self._pobs, T=T, beta_out=self._beta)
         # gamma
-        hidden.state_probabilities(self._alpha, self._beta, gamma_out = self._gammas[itraj])
+        hidden.state_probabilities(self._alpha, self._beta, gamma_out=self._gammas[itraj])
         # count matrix
-        hidden.transition_counts(self._alpha, self._beta, A, self._pobs, out = self._Cs[itraj])
+        hidden.transition_counts(self._alpha, self._beta, A, self._pobs, out=self._Cs[itraj])
         # return results
         return logprob
 
@@ -264,7 +266,7 @@ class MaximumLikelihoodEstimator(object):
         K = len(self._observations)
         N = self._nstates
 
-        C = np.zeros((N,N))
+        C = np.zeros((N, N))
         gamma0_sum = np.zeros((N))
         for k in range(K):
             # update state counts
@@ -276,12 +278,12 @@ class MaximumLikelihoodEstimator(object):
         logger().info("Count matrix = \n"+str(C))
 
         # compute new transition matrix
-        from bhmm.estimators._tmatrix_disconnected import estimate_P,stationary_distribution
+        from bhmm.estimators._tmatrix_disconnected import estimate_P, stationary_distribution
         T = estimate_P(C, reversible=self._hmm.is_reversible, fixed_statdist=self._fixed_stationary_distribution)
         # stationary or init distribution
         if self._hmm.is_stationary:
             if self._fixed_stationary_distribution is None:
-                pi = stationary_distribution(C,T)
+                pi = stationary_distribution(C, T)
             else:
                 pi = self._fixed_stationary_distribution
         else:
