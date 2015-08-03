@@ -225,7 +225,8 @@ def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
     # return model
     return est.hmm
 
-def bayesian_hmm(observations, estimated_hmm, nsample=100, transition_matrix_prior=None, store_hidden=False):
+def bayesian_hmm(observations, estimated_hmm, nsample=100, transition_matrix_prior=None,
+                 store_hidden=False, call_back=None):
     r""" Bayesian HMM based on sampling the posterior
 
     Generic maximum-likelihood estimation of HMMs
@@ -248,6 +249,9 @@ def bayesian_hmm(observations, estimated_hmm, nsample=100, transition_matrix_pri
             the row of the initial transition matrix.
     store_hidden : bool, optional, default=False
         store hidden trajectories in sampled HMMs
+    call_back : function, optional, default=None
+        a call back function with no arguments, which if given is being called
+        after each computed sample. This is useful for implementing progress bars.
 
     Return
     ------
@@ -261,7 +265,8 @@ def bayesian_hmm(observations, estimated_hmm, nsample=100, transition_matrix_pri
                     transition_matrix_prior=transition_matrix_prior, type=estimated_hmm.output_model.model_type)
 
     # Sample models.
-    sampled_hmms = sampler.sample(nsamples=nsample, save_hidden_state_trajectory=store_hidden)
+    sampled_hmms = sampler.sample(nsamples=nsample, save_hidden_state_trajectory=store_hidden,
+                                  call_back=call_back)
     # return model
     from bhmm.hmm.generic_sampled_hmm import SampledHMM
     return SampledHMM(estimated_hmm, sampled_hmms)

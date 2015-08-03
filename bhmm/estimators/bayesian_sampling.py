@@ -127,7 +127,8 @@ class BayesianHMMSampler(object):
 
         return
 
-    def sample(self, nsamples, nburn=0, nthin=1, save_hidden_state_trajectory=False):
+    def sample(self, nsamples, nburn=0, nthin=1, save_hidden_state_trajectory=False,
+               call_back=None):
         """Sample from the BHMM posterior.
 
         Parameters
@@ -140,6 +141,9 @@ class BayesianHMMSampler(object):
             The number of Gibbs sampling updates used to generate each returned sample.
         save_hidden_state_trajectory : bool, optional, default=False
             If True, the hidden state trajectory for each sample will be saved as well.
+        call_back : function, optional, default=None
+            a call back function with no arguments, which if given is being called
+            after each computed sample. This is useful for implementing progress bars.
 
         Returns
         -------
@@ -176,6 +180,8 @@ class BayesianHMMSampler(object):
             if not save_hidden_state_trajectory:
                 model_copy.hidden_state_trajectory = None
             models.append(model_copy)
+            if call_back is not None:
+                call_back()
 
         # Return the list of models saved.
         return models
