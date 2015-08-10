@@ -560,7 +560,7 @@ static struct PyModuleDef moduledef = {
 PyObject *
 PyInit_kmeans_clustering(void)
 
-#else
+#else // py2
 #define INITERROR return
 
 void initkmeans_clustering(void)
@@ -571,10 +571,10 @@ void initkmeans_clustering(void)
 #else
     PyObject *module = Py_InitModule3("kmeans_clustering", kmeansMethods, MOD_USAGE);
 #endif
+    struct module_state *st = GETSTATE(module);
 
     if (module == NULL)
         INITERROR;
-    struct module_state *st = GETSTATE(module);
 
     st->error = PyErr_NewException("kmeans_clustering.Error", NULL, NULL);
     if (st->error == NULL) {
