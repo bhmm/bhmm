@@ -1,4 +1,5 @@
 from __future__ import print_function
+from six.moves import range
 import copy
 import numpy as np
 from math import log
@@ -251,11 +252,11 @@ class DiscreteOutputModel(OutputModel):
         self._output_probabilities = np.zeros((N, M))
         # update output probability matrix (numerator)
         if self.__impl__ == self.__IMPL_C__:
-            for k in xrange(K):
+            for k in range(K):
                 dc.update_pout(observations[k], weights[k], self._output_probabilities, dtype=config.dtype)
         elif self.__impl__ == self.__IMPL_PYTHON__:
-            for k in xrange(K):
-                for o in xrange(M):
+            for k in range(K):
+                for o in range(M):
                     times = np.where(observations[k] == o)[0]
                     self._output_probabilities[:, o] += np.sum(weights[k][times, :], axis=0)
         else:
