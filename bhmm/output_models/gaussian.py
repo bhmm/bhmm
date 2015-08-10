@@ -1,16 +1,18 @@
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "LGPL"
-__maintainer__ = "John D. Chodera, Frank Noe"
-__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
-
+from __future__ import print_function
+from six.moves import range
 import numpy as np
 
 from bhmm.output_models.impl_c import gaussian as gc
 from bhmm.output_models import OutputModel
 from bhmm.util.logger import logger
 from bhmm.util import config
+
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "LGPL"
+__maintainer__ = "John D. Chodera, Frank Noe"
+__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
 
 class GaussianOutputModel(OutputModel):
     """
@@ -62,7 +64,7 @@ class GaussianOutputModel(OutputModel):
     def __repr__(self):
         r""" String representation of this output model
         >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
-        >>> print repr(output_model)
+        >>> print(repr(output_model))
         GaussianOutputModel(3, means=array([-1.,  0.,  1.]), sigmas=array([ 0.5,  1. ,  2. ]))
 
         """
@@ -72,7 +74,7 @@ class GaussianOutputModel(OutputModel):
     def __str__(self):
         r""" Human-readable string representation of this output model
         >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
-        >>> print str(output_model)
+        >>> print(str(output_model))
         --------------------------------------------------------------------------------
         GaussianOutputModel
         nstates: 3

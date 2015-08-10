@@ -1,10 +1,5 @@
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "LGPL"
-__maintainer__ = "John D. Chodera, Frank Noe"
-__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
-
+from __future__ import print_function
+from six.moves import range
 import copy
 import numpy as np
 from math import log
@@ -12,6 +7,14 @@ from math import log
 from bhmm.output_models.impl_c import discrete as dc
 from bhmm.output_models import OutputModel
 from bhmm.util import config
+
+__author__ = "John D. Chodera, Frank Noe"
+__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
+__credits__ = ["John D. Chodera", "Frank Noe"]
+__license__ = "LGPL"
+__maintainer__ = "John D. Chodera, Frank Noe"
+__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
+
 
 class DiscreteOutputModel(OutputModel):
     """
@@ -53,7 +56,7 @@ class DiscreteOutputModel(OutputModel):
         r""" String representation of this output model
         >>> import numpy as np
         >>> output_model = DiscreteOutputModel(np.array([[0.5,0.5],[0.1,0.9]]))
-        >>> print repr(output_model)
+        >>> print(repr(output_model))
         DiscreteOutputModel(array([[ 0.5,  0.5],
                [ 0.1,  0.9]]))
 
@@ -63,7 +66,7 @@ class DiscreteOutputModel(OutputModel):
     def __str__(self):
         r""" Human-readable string representation of this output model
         >>> output_model = DiscreteOutputModel(np.array([[0.5,0.5],[0.1,0.9]]))
-        >>> print str(output_model)
+        >>> print(str(output_model))
         --------------------------------------------------------------------------------
         DiscreteOutputModel
         nstates: 2
@@ -249,11 +252,11 @@ class DiscreteOutputModel(OutputModel):
         self._output_probabilities = np.zeros((N, M))
         # update output probability matrix (numerator)
         if self.__impl__ == self.__IMPL_C__:
-            for k in xrange(K):
+            for k in range(K):
                 dc.update_pout(observations[k], weights[k], self._output_probabilities, dtype=config.dtype)
         elif self.__impl__ == self.__IMPL_PYTHON__:
-            for k in xrange(K):
-                for o in xrange(M):
+            for k in range(K):
+                for o in range(M):
                     times = np.where(observations[k] == o)[0]
                     self._output_probabilities[:, o] += np.sum(weights[k][times, :], axis=0)
         else:
