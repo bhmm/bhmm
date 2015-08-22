@@ -4,6 +4,7 @@
 BHMM: A toolkit for Bayesian hidden Markov model analysis of single-molecule trajectories.
 
 """
+from __future__ import absolute_import
 
 # import API
 from bhmm.api import *

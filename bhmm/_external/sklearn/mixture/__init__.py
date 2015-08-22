@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 
 
-from gmm import GMM
+from .gmm import GMM

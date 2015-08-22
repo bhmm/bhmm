@@ -3,8 +3,11 @@
 *.pyc
 eggs
 build
+dist
 .project
 .pydevproject
+*.orig
+.noseids
 
 # compiled extensions
 bhmm/output_models/impl_c/discrete.c
