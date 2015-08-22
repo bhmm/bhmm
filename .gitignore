@@ -1,6 +1,13 @@
+# compiled files
 *.so
 *.pyc
 eggs
 build
 .project
 .pydevproject
+
+# compiled extensions
+bhmm/output_models/impl_c/discrete.c
+bhmm/output_models/impl_c/gaussian.c
+bhmm/hidden/impl_c/hidden.c
+
