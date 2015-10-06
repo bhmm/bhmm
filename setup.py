@@ -13,15 +13,14 @@ information gain by new experiments.
 """
 
 from __future__ import print_function
-
+__requires__ = ['setuptools>=18',]
 import os
 from os.path import relpath, join
 
-import numpy
 import versioneer
 
-from Cython.Build import cythonize
 from setuptools import setup, Extension, find_packages
+from setuptools.command.build_ext import build_ext as _build_ext
 
 DOCLINES = __doc__.split("\n")
 
@@ -58,23 +57,33 @@ def find_package_data(data_root, package_root):
 extensions = [Extension('bhmm.hidden.impl_c.hidden',
                         sources = ['./bhmm/hidden/impl_c/hidden.pyx',
                                    './bhmm/hidden/impl_c/_hidden.c'],
-                        include_dirs = ['/bhmm/hidden/impl_c/',numpy.get_include()]),
+                        include_dirs = ['/bhmm/hidden/impl_c/']),
               Extension('bhmm.output_models.impl_c.discrete',
                         sources = ['./bhmm/output_models/impl_c/discrete.pyx',
                                    './bhmm/output_models/impl_c/_discrete.c'],
-                        include_dirs = ['/bhmm/output_models/impl_c/',numpy.get_include()]),
+                        include_dirs = ['/bhmm/output_models/impl_c/']),
               Extension('bhmm.output_models.impl_c.gaussian',
                         sources = ['./bhmm/output_models/impl_c/gaussian.pyx',
                                    './bhmm/output_models/impl_c/_gaussian.c'],
-                        include_dirs = ['/bhmm/output_models/impl_c/',numpy.get_include()]),
+                        include_dirs = ['/bhmm/output_models/impl_c/']),
               Extension('bhmm._external.clustering.kmeans_clustering',
                         sources=['./bhmm/_external/clustering/src/clustering.c',
                                  './bhmm/_external/clustering/src/kmeans.c'],
                         include_dirs=['./bhmm/_external/clustering/include',
-                                      numpy.get_include()],
+                                     ],
                         extra_compile_args=['-std=c99']),
               ]
 
+
+class build_ext(_build_ext):
+    def initialize_options(self):
+        _build_ext.initialize_options(self)
+        import pkg_resources
+        dir = pkg_resources.resource_filename('numpy', 'core/include')
+        self.include_dirs = [dir]
+
+cmdclass = versioneer.get_cmdclass()
+cmdclass['build_ext'] = build_ext
 
 setup(
     name='bhmm',
@@ -83,7 +92,7 @@ setup(
     description=DOCLINES[0],
     long_description="\n".join(DOCLINES[2:]),
     version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
+    cmdclass=cmdclass,
     license='LGPL',
     url='https://github.com/bhmm/bhmm',
     platforms=['Linux', 'Mac OS-X', 'Unix', 'Windows'],
@@ -93,12 +102,15 @@ setup(
     package_data={'bhmm': find_package_data('examples', 'bhmm') + find_package_data('bhmm/tests/data', 'bhmm')},  # NOTE: examples installs to bhmm.egg/examples/, NOT bhmm.egg/bhmm/examples/.  You need to do utils.get_data_filename("../examples/*/setup/").
     zip_safe=False,
     install_requires=[
-        'cython',
         'numpy',
         'scipy',
         'msmtools',
         'six',
         ],
-    ext_modules=cythonize(extensions)
+    setup_requires=[
+        'cython',
+        'numpy',
+        ],
+    ext_modules=extensions,
     )
 
