@@ -245,9 +245,9 @@ class MaximumLikelihoodEstimator(object):
         # backward variables
         hidden.backward(A, self._pobs, T=T, beta_out=self._beta)
         # gamma
-        hidden.state_probabilities(self._alpha, self._beta, gamma_out=self._gammas[itraj])
+        hidden.state_probabilities(self._alpha, self._beta, T=T, gamma_out=self._gammas[itraj])
         # count matrix
-        hidden.transition_counts(self._alpha, self._beta, A, self._pobs, out=self._Cs[itraj])
+        hidden.transition_counts(self._alpha, self._beta, A, self._pobs, T=T, out=self._Cs[itraj])
         # return results
         return logprob
 
@@ -272,7 +272,6 @@ class MaximumLikelihoodEstimator(object):
             # update state counts
             gamma0_sum += gammas[k][0]
             # update count matrix
-            # print 'C['+str(k)+'] = ',count_matrices[k]
             C += count_matrices[k]
 
         logger().info("Count matrix = \n"+str(C))
