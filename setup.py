@@ -18,7 +18,7 @@ import os
 from os.path import relpath, join
 
 import versioneer
-
+import pkg_resources
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext as _build_ext
 
