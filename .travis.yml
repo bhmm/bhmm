@@ -1,5 +1,15 @@
 language: c
 
+addons:
+  apt:
+    packages:
+    - g++ 
+    - gfortran
+    - csh
+    - g++-multilib
+    - gcc-multilib
+    - openbabel   
+
 branches:
   only:
     - master
@@ -19,6 +29,7 @@ env:
     - python=2.7  CONDA_PY=27
     - python=3.3  CONDA_PY=33
     - python=3.4  CONDA_PY=34
+    - python=3.5  CONDA_PY=35
 
   global:
   # Security tokens for binstar.
