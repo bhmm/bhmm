@@ -44,41 +44,50 @@ class MaximumLikelihoodEstimator(object):
 
     References
     ----------
-    [1] L. E. Baum and J. A. Egon, "An inequality with applications to statistical estimation for probabilistic
-        functions of a Markov process and to a model for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
+    [1] L. E. Baum and J. A. Egon, "An inequality with applications to statistical
+        estimation for probabilistic functions of a Markov process and to a model
+        for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
 
     """
     def __init__(self, observations, nstates, initial_model=None, type='gaussian',
-                 reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000):
+                 reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000, mincount_connectivity=1e-2):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
         ----------
         observations : list of numpy arrays representing temporal data
-            `observations[i]` is a 1d numpy array corresponding to the observed trajectory index `i`
+            `observations[i]` is a 1d numpy array corresponding to the observed
+            trajectory index `i`
         nstates : int
             The number of states in the model.
         initial_model : HMM, optional, default=None
-            If specified, the given initial model will be used to initialize the BHMM.
-            Otherwise, a heuristic scheme is used to generate an initial guess.
+            If specified, the given initial model will be used to initialize the
+            BHMM. Otherwise, a heuristic scheme is used to generate an initial guess.
         type : str, optional, default=None
             Output model type from [None, 'gaussian', 'discrete'].
         reversible : bool, optional, default=True
-            If True, a prior that enforces reversible transition matrices (detailed balance) is used;
-            otherwise, a standard  non-reversible prior is used.
+            If True, a prior that enforces reversible transition matrices (detailed
+            balance) is used; otherwise, a standard  non-reversible prior is used.
         stationary : bool, optional, default=True
-            If True, the initial distribution of hidden states is self-consistently computed as the stationary
-            distribution of the transition matrix. If False, it will be estimated from the starting states.
+            If True, the initial distribution of hidden states is self-consistently
+            computed as the stationary distribution of the transition matrix. If
+            False, it will be estimated from the starting states.
         p : ndarray (nstates), optional, default=None
-            Initial or fixed stationary distribution. If given and stationary=True, transition matrices will be
-            estimated with the constraint that they have p as their stationary distribution. If given and
-            stationary=False, p is the fixed initial distribution of hidden states.
+            Initial or fixed stationary distribution. If given and stationary=True,
+            transition matrices will be estimated with the constraint that they
+            have p as their stationary distribution. If given and stationary=False,
+            p is the fixed initial distribution of hidden states.
         accuracy : float
-            convergence threshold for EM iteration. When two the likelihood does not increase by more than accuracy, the
-            iteration is stopped successfully.
+            convergence threshold for EM iteration. When two the likelihood does
+            not increase by more than accuracy, the iteration is stopped successfully.
         maxit : int
-            stopping criterion for EM iteration. When so many iterations are performanced without reaching the requested
-            accuracy, the iteration is stopped without convergence (a warning is given)
+            stopping criterion for EM iteration. When so many iterations are
+            performed without reaching the requested accuracy, the iteration is
+            stopped without convergence (a warning is given)
+        mincount_connectivity
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix.
 
         """
         # Store a copy of the observations.
@@ -130,6 +139,7 @@ class MaximumLikelihoodEstimator(object):
         # convergence options
         self._accuracy = accuracy
         self._maxit = maxit
+        self._mincount_connectivity = mincount_connectivity
         self._likelihoods = None
 
         # Kernel for computing things
@@ -235,7 +245,7 @@ class MaximumLikelihoodEstimator(object):
         """
         # get parameters
         A = self._hmm.transition_matrix
-        pi = self._hmm.stationary_distribution
+        pi = self._hmm.initial_distribution
         obs = self._observations[itraj]
         T = len(obs)
         # compute output probability matrix
@@ -278,7 +288,8 @@ class MaximumLikelihoodEstimator(object):
 
         # compute new transition matrix
         from bhmm.estimators._tmatrix_disconnected import estimate_P, stationary_distribution
-        T = estimate_P(C, reversible=self._hmm.is_reversible, fixed_statdist=self._fixed_stationary_distribution)
+        T = estimate_P(C, reversible=self._hmm.is_reversible, fixed_statdist=self._fixed_stationary_distribution,
+                       mincount_connectivity=self._mincount_connectivity)
         # stationary or init distribution
         if self._hmm.is_stationary:
             if self._fixed_stationary_distribution is None:
@@ -309,7 +320,7 @@ class MaximumLikelihoodEstimator(object):
         # get parameters
         K = len(self._observations)
         A = self._hmm.transition_matrix
-        pi = self._hmm.stationary_distribution
+        pi = self._hmm.initial_distribution
 
         # compute viterbi path for each trajectory
         paths = np.empty((K), dtype=object)

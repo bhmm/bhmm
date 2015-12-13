@@ -166,7 +166,7 @@ def discrete_hmm(P, pout, pi=None, stationary=True, reversible=True):
     return dhmm
 
 def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
-                 reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000):
+                 reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000, mincount_connectivity=1e-2):
     r""" Estimate maximum-likelihood HMM
 
     Generic maximum-likelihood estimation of HMMs

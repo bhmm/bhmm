@@ -72,8 +72,8 @@ class HMM(object):
 
     def update(self, Tij, Pi=None):
         r""" Updates the transition matrix and recomputes all derived quantities """
-        # EMMA imports
         from msmtools import analysis as msmana
+        from bhmm.estimators import _tmatrix_disconnected
 
         # save a copy of the transition matrix
         self._Tij = np.array(Tij)
@@ -106,14 +106,7 @@ class HMM(object):
         # try to do eigendecomposition by default, because it's very cheap for hidden transition matrices
         from scipy.linalg import LinAlgError
         try:
-            if self._reversible:
-                self._R, self._D, self._L = msmana.rdl_decomposition(self._Tij, norm='reversible')
-                # everything must be real-valued
-                self._R = self._R.real
-                self._D = self._D.real
-                self._L = self._L.real
-            else:
-                self._R, self._D, self._L = msmana.rdl_decomposition(self._Tij, norm='standard')
+            self._R, self._D, self._L = _tmatrix_disconnected.rdl_decomposition(self._Tij, reversible=self._reversible)
             self._eigenvalues = np.diag(self._D)
             self._spectral_decomp_available = True
         except LinAlgError:
