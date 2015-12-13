@@ -72,7 +72,7 @@ def extensions():
                              './bhmm/_external/clustering/src/kmeans.c'],
                     include_dirs=['./bhmm/_external/clustering/include',
                                   np_inc],
-                    extra_compile_args=['-std=c99']),
+                    extra_compile_args=['-std=c99','-O3']),
           ]
 
     return cythonize(extensions)
