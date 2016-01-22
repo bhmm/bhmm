@@ -98,7 +98,7 @@ def init_hmm(observations, nstates, lag=1, type=None):
 
     if type == 'discrete':
         from bhmm.init import discrete
-        return discrete.initial_model_discrete(observations, nstates, lag=lag, reversible=True)
+        return discrete.estimate_initial_model(observations, nstates, lag=lag, reversible=True)
     elif type == 'gaussian':
         from bhmm.init import gaussian
         return gaussian.initial_model_gaussian1d(observations, nstates, reversible=True)

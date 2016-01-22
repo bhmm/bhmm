@@ -266,8 +266,16 @@ class BayesianHMMSampler(object):
         C = self.model.count_matrix()
         # apply prior
         C += self.prior
-        # sample T-matrix
+        # estimate T-matrix
+        P0 = msmest.transition_matrix(C, reversible=self.reversible, maxiter=10000, warn_not_converged=False)
+        # give up if disconnected
+        assert msmest.is_connected(P0, directed=True), 'Initial transition matrix for sampling is disconnected. Giving up.'
+        # ensure consistent sparsity pattern (P0 might have additional zeros because of underflows)
+        zeros = np.where(P0 + P0.T == 0)
+        C[zeros] = 0
+        # run sampler
         Tij = msmest.sample_tmatrix(C, nsample=1, nsteps=self.transition_matrix_sampling_steps, reversible=self.reversible)
+        # update HMM with new sample
         self.model.update(Tij)
 
     def _generateInitialModel(self, output_model_type):

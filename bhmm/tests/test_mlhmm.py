@@ -19,7 +19,8 @@ __license__ = "FreeBSD"
 __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
-class TestMLHMM(unittest.TestCase):
+
+class TestMLHMM_DoubleWell(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -71,6 +72,9 @@ class TestMLHMM(unittest.TestCase):
             assert msmana.is_reversible(P)
 
     def test_eigenvalues(self):
+        print 'LAG 1: ', self.hmm_lag1.transition_matrix
+        print 'LAG 1: ', self.hmm_lag1.stationary_distribution
+        # print 'LAG 10: ', self.hmm_lag10.eigenvalues
         for ev in [self.hmm_lag1.eigenvalues, self.hmm_lag10.eigenvalues]:
             assert len(ev) == 2
             assert np.isclose(ev[0], 1)
