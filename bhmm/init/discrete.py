@@ -10,9 +10,7 @@ from bhmm.output_models.discrete import DiscreteOutputModel
 from bhmm.util.logger import logger
 
 
-# TODO: check availability of lag_observations as in PyEMMA / MaximumLikelihoodHMSM
-
-def coarse_grain_transition_matrix(P, M, epsilon=0):
+def coarse_grain_transition_matrix(P, M, eps=0):
     """ Coarse grain transition matrix P using memberships M
 
     Computes
@@ -44,7 +42,7 @@ def coarse_grain_transition_matrix(P, M, epsilon=0):
     P_coarse = np.dot(W, A)
 
     # this coarse-graining can lead to negative elements. Setting them to epsilon here.
-    P_coarse = np.maximum(P_coarse, epsilon)
+    P_coarse = np.maximum(P_coarse, eps)
     # and renormalize
     P_coarse /= P_coarse.sum(axis=1)[:, None]
 
@@ -52,11 +50,13 @@ def coarse_grain_transition_matrix(P, M, epsilon=0):
 
 
 # TODO: does not implement fixed stationary distribution (on macrostates) yet.
-def msm_to_hmm(Prev, nstates, P=None, indexes=None, nfull=None, bmin=None):
+def msm_to_hmm(C, Prev, nstates, P=None, indexes=None, nfull=None, eps_A=None, eps_B=None):
     """ Initial HMM based from MSM
 
     Parameters
     ----------
+    C : ndarray(n, n)
+        Count matrix used to obtain Prev
     Prev : ndarray(n, n)
         Reversible transition matrix. Used to computed metastable sets with PCCA.
     nstates : int
@@ -71,10 +71,14 @@ def msm_to_hmm(Prev, nstates, P=None, indexes=None, nfull=None, bmin=None):
         state space.
     nfull : int or None
         Number of states in full state space. If None, nfull = Pref.shape[0].
-    bmin : float or None
+    eps_A : float or None
+        Minimum transition probability. Default: 0.01 / nstates
+    eps_B : float or None
         Minimum output probability. Default: 0.01 / nfull
 
     """
+    from bhmm.estimators._tmatrix_disconnected import stationary_distribution
+
     # input
     if P is None:
         P = Prev
@@ -85,39 +89,52 @@ def msm_to_hmm(Prev, nstates, P=None, indexes=None, nfull=None, bmin=None):
         assert indexes is not None, 'If nfull is specified, must specify indexes too.'
     if indexes is None:
         indexes = np.arange(nfull)
-    if bmin is None:  # default output probability, in order to avoid zero columns
-        bmin = 0.01 / nfull
-
-    print 'Coarse-graining: \n', Prev
+    if eps_A is None:  # default transition probability, in order to avoid zero columns
+        eps_A = 0.01 / nstates
+    if eps_B is None:  # default output probability, in order to avoid zero columns
+        eps_B = 0.01 / nfull
 
     # coarse-grain
     if nstates > n:
         raise NotImplementedError('Trying to initialize '+str(nstates)+'-state HMM from smaller '+str(n)+'-state MSM.')
-    elif nstates == n:
-        A = P
-        B = np.eye(n)
     else:
         # pcca
         from msmtools.analysis.dense.pcca import PCCA
         pcca_obj = PCCA(Prev, nstates)
-        # Use PCCA distributions, but avoid 100% assignment to any state (prevents convergence)
-        B_conn = np.maximum(pcca_obj.output_probabilities, bmin)
+        M = pcca_obj.memberships
+
+        # coarse-grained transition matrix
+        A = coarse_grain_transition_matrix(P, M, eps=eps_A)
+
+        # compress stationary probabilities.
+        C_coarse = M.T.dot(C).dot(M)
+        pi = stationary_distribution(C_coarse, A)  # need C_coarse in case if A is disconnected
+
         # full state space output matrix
-        B = bmin * np.ones((nstates, nfull), dtype=np.float64)
-        # expand B_conn to full state space
-        B[:, indexes] = B_conn[:, :]
+        B = eps_B * np.ones((nstates, nfull), dtype=np.float64)
+        # fill PCCA distributions if they exceed eps_B
+        B[:, indexes] = np.maximum(B[:, indexes], pcca_obj.output_probabilities)
         # renormalize B to make it row-stochastic
         B /= B.sum(axis=1)[:, None]
-        # coarse-grained transition matrix
-        A = coarse_grain_transition_matrix(P, pcca_obj.memberships)
 
-        print 'Memberships = \n', pcca_obj.memberships
-
-    return A, B
+    return pi, A, B
 
 
-def estimate_initial_model(observations, nstates, reversible=True, prior_neighbor=0.0, prior_diag=0.0):
-    """Generate an initial model with discrete output densities
+def estimate_initial_hmm(observations, nstates, reversible=True, eps_A=None, eps_B=None):
+    """Generate an initial HMM with discrete output densities
+
+    Initialized HMM as described in [1]_. First estimates a Markov state model
+    on the given observations, then uses PCCA+ to coarse-grain the transition
+    matrix [2]_ which initializes the HMM transition matrix. The HMM output
+    probabilities are given by Bayesian inversion from the PCCA+ memberships [1]_.
+
+    A weak prior count matrix may be added in the first MSM estimation step, if
+    the number of nontransient (closed) sets is smaller than the requested number
+    of hidden states. The regularization parameters eps_A and eps_B are used
+    to guarantee that the hidden transition matrix and output probability matrix
+    have no zeros. HMM estimation algorithms such as the EM algorithm and the
+    Bayesian sampling algorithm cannot recover from zero entries, i.e. once they
+    are zero, they will stay zero.
 
     Parameters
     ----------
@@ -125,60 +142,74 @@ def estimate_initial_model(observations, nstates, reversible=True, prior_neighbo
         list of arrays of length T_i with observation data
     nstates : int
         The number of states.
-    revprior : reversible prior counts using in MSM transition matrix estimation
-        before it is coarse-grained. Defined by b_ij = revprior for all i,j with
-        c_ij+c_ji > 0.
+    reversible : bool
+        Estimate reversible HMM transition matrix.
+    eps_A : float or None
+        Minimum transition probability. Default: 0.01 / nstates
+    eps_B : float or None
+        Minimum output probability. Default: 0.01 / nfull
+
+    Raises
+    ------
+    NotImplementedError
+        If the number of hidden states exceeds the number of observed states.
 
     Examples
     --------
-
     Generate initial model for a discrete output model.
 
     >>> from bhmm import testsystems
     >>> [model, observations, states] = testsystems.generate_synthetic_observations(output_model_type='discrete')
-    >>> initial_model = estimate_initial_model(observations, model.nstates)
+    >>> initial_model = estimate_initial_hmm(observations, model.nstates)
+
+    References
+    ----------
+    .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner: Projected and hidden
+        Markov models for calculating kinetics and  metastable states of
+        complex molecules. J. Chem. Phys. 139, 184114 (2013)
+    .. [2] S. Kube and M. Weber: A coarse graining method for the identification
+        of transition rates between molecular conformations.
+        J. Chem. Phys. 126, 024103 (2007)
 
     """
-    # full count matrix at lag 1 (do we need a general lag here?)
-    C_full = msmtools.estimation.count_matrix(observations, 1)
-    print 'Cobs\n', C_full
-    if prior_neighbor > 0:
-        # prior matrix
-        B = msmtools.estimation.prior_neighbor(C_full, alpha=prior_neighbor)
-        print 'B_neighbor\n', B
-        # posterior count matrix
-        C_full += B
-        print 'Cpost\n', C_full
-    # make dense, because we don't have sparse implementations of the next steps yet
-    C_full = C_full.toarray()
-    if prior_diag > 0:  # posterior count matrix
-        C_full += prior_diag * np.eye(C_full.shape[0])
-        print 'Cpost+diag\n', C_full
+    # local imports
+    from bhmm.estimators import _tmatrix_disconnected
+
+    # MICROSTATE COUNT MATRIX
+    C_full = msmtools.estimation.count_matrix(observations, 1).toarray()  # need to be dense here
     # truncate to states with at least one observed incoming or outgoing count.
     indexes = np.where(C_full.sum(axis=0) + C_full.sum(axis=1) > 0)[0]
     C = C_full[np.ix_(indexes, indexes)]
+    # check if we can proceed
+    if indexes.size < nstates:
+        raise NotImplementedError('Trying to initialize ' + str(nstates) + '-state HMM from smaller '
+                                  + str(indexes.size) + '-state MSM.')
 
-    print 'C\n', C
+    # MICROSTATE TRANSITION MATRIX (MSM). This matrix may be disconnected and have transient states
+    P_msm = _tmatrix_disconnected.estimate_P(C, reversible=reversible)
 
-    # estimate reversible transition matrix-needed for PCCA
-    # Note that states with zero rows will get a diagonal 1 in the resulting P.
-    from bhmm.estimators._tmatrix_disconnected import estimate_P, enforce_reversible
-    Prev = estimate_P(C, reversible=True)
-    P = None
-    # if needed, also estimate nonreversible transition matrix
-    if not reversible:
-        P = estimate_P(C, reversible=False)
+    # MICROSTATE TRANSITION MATRIX FOR PCCA+
+    # does the count matrix too few closed sets to give nstates metastable states? Then we need a prior
+    if len(_tmatrix_disconnected.closed_sets(C)) < nstates:
+        msm_prior = 0.001
+        B = msm_prior * np.eye(C_full.shape[0])  # diagonal prior
+        B += msmtools.estimation.prior_neighbor(C, alpha=msm_prior)  # neighbor prior
+        C_post = C + B  # posterior
+        P_for_pcca = _tmatrix_disconnected.estimate_P(C_post, reversible=True)
+    elif reversible:  # in this case we already have a reversible estimate that is large enough
+        P_for_pcca = P_msm
+    else:  # enough metastable states, but not yet reversible. re-estimate
+        P_for_pcca = _tmatrix_disconnected.estimate_P(C, reversible=True)
 
-    print 'P_micro_rev\n', Prev
-    print 'P_micro\n', P
-
-    # initialize HMM
-    A, B = msm_to_hmm(Prev, nstates, P=P, indexes=indexes, nfull=C_full.shape[0])
+    # INITIALIZE HMM
+    pi, A, B = msm_to_hmm(C, P_for_pcca, nstates, P=P_msm, indexes=indexes, nfull=C_full.shape[0],
+                          eps_A=eps_A, eps_B=eps_B)
     if reversible:
-        A = enforce_reversible(A)
+        A = _tmatrix_disconnected.enforce_reversible_on_closed(A)
 
-    print 'A\n', A
-    print 'B\n', B
+    #print 'cg pi: ', pi
+    #print 'cg A:\n ', A
+    #print 'cg B:\n ', B
 
     logger().info('Initial model: ')
     logger().info('transition matrix = \n'+str(A))
@@ -186,7 +217,7 @@ def estimate_initial_model(observations, nstates, reversible=True, prior_neighbo
 
     # initialize HMM
     output_model = DiscreteOutputModel(B)
-    model = HMM(A, output_model, reversible=reversible)
+    model = HMM(pi, A, output_model)
     return model
 
 

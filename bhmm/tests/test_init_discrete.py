@@ -11,7 +11,7 @@ class TestHMM(unittest.TestCase):
     # Test correct initialization of metastable trajectories
     # ------------------------------------------------------------------------------------------------------
 
-    def _test_discrete_2_2(self):
+    def test_discrete_2_2(self):
         # 2x2 transition matrix
         P = np.array([[0.99,0.01],[0.01,0.99]])
         # generate realization
@@ -19,7 +19,7 @@ class TestHMM(unittest.TestCase):
         T = 10000
         dtrajs = [msmgen.generate_traj(P, T)]
         # estimate initial HMM with 2 states - should be identical to P
-        hmm = initdisc.estimate_initial_model(dtrajs, 2)
+        hmm = initdisc.estimate_initial_hmm(dtrajs, 2)
         # test
         A = hmm.transition_matrix
         B = hmm.output_model.output_probabilities
@@ -33,7 +33,7 @@ class TestHMM(unittest.TestCase):
         assert(np.max(A-P) < 0.01)
         assert(np.max(B-np.eye(2)) < 0.01)
 
-    def _test_discrete_4_2(self):
+    def test_discrete_4_2(self):
         # 4x4 transition matrix
         nstates = 2
         P = np.array([[0.90, 0.10, 0.00, 0.00],
@@ -45,7 +45,7 @@ class TestHMM(unittest.TestCase):
         T = 10000
         dtrajs = [msmgen.generate_traj(P, T)]
         # estimate initial HMM with 2 states - should be identical to P
-        hmm = initdisc.estimate_initial_model(dtrajs, nstates)
+        hmm = initdisc.estimate_initial_hmm(dtrajs, nstates)
         # Test if model fit is close to reference. Note that we do not have an exact reference, so we cannot set the
         # tolerance in a rigorous way to test statistical significance. These are just sanity checks.
         Tij = hmm.transition_matrix
@@ -63,7 +63,7 @@ class TestHMM(unittest.TestCase):
         assert(np.max(Tij-Tij_ref) < 0.01)
         assert(np.max(B-Bref) < 0.05 or np.max(B[[1,0]]-Bref) < 0.05)
 
-    def _test_discrete_6_3(self):
+    def test_discrete_6_3(self):
         # 4x4 transition matrix
         nstates = 3
         P = np.array([[0.90, 0.10, 0.00, 0.00, 0.00, 0.00],
@@ -77,7 +77,7 @@ class TestHMM(unittest.TestCase):
         T = 10000
         dtrajs = [msmgen.generate_traj(P, T)]
         # estimate initial HMM with 2 states - should be identical to P
-        hmm = initdisc.estimate_initial_model(dtrajs, nstates)
+        hmm = initdisc.estimate_initial_hmm(dtrajs, nstates)
         # Test stochasticity and reversibility
         Tij = hmm.transition_matrix
         B = hmm.output_model.output_probabilities
@@ -90,21 +90,21 @@ class TestHMM(unittest.TestCase):
     # Test correct initialization of pathological cases - single states, partial connectivity, etc.
     # ------------------------------------------------------------------------------------------------------
 
-    def _test_1state_1obs(self):
+    def test_1state_1obs(self):
         obs = np.array([0, 0, 0, 0, 0])
         Aref = np.array([[1.0]])
         Bref = np.array([[1.0]])
         for rev in [True, False]:  # reversibiliy doesn't matter in this example
-            hmm = initdisc.estimate_initial_model([obs], 1, reversible=rev)
+            hmm = initdisc.estimate_initial_hmm([obs], 1, reversible=rev)
             assert(np.allclose(hmm.transition_matrix, Aref))
             assert(np.allclose(hmm.output_model.output_probabilities, Bref))
 
-    # TODO: should also raise because there is only one metastable state.
-    def _test_1state_2obs(self):
+
+    def test_1state_2obs(self):
         obs = np.array([0, 0, 0, 0, 1])
         Aref = np.array([[1.0]])
         for rev in [True, False]:  # reversibiliy doesn't matter in this example
-            hmm = initdisc.estimate_initial_model([obs], 1, reversible=rev)
+            hmm = initdisc.estimate_initial_hmm([obs], 1, reversible=rev)
             assert(np.allclose(hmm.transition_matrix, Aref))
             # output must be 1 x 2, and no zeros
             B = hmm.output_model.output_probabilities
@@ -113,27 +113,29 @@ class TestHMM(unittest.TestCase):
 
     def test_2state_2obs_unidirectional(self):
         obs = np.array([0, 0, 0, 0, 1])
-        Aref = np.array([[ 0.75,  0.25],
-                         [ 0.  ,  1.  ]])
-        Bref = np.array([[ 1.,  0.],
-                         [ 0.,  1.]])
+        Aref_naked = np.array([[ 0.75,  0.25],
+                               [ 0.  ,  1.  ]])
+        Bref_naked = np.array([[ 1.,  0.],
+                               [ 0.,  1.]])
+        perm = [1, 0]  # permutation
         for rev in [True, False]:  # reversibiliy doesn't matter in this example
-            hmm = initdisc.estimate_initial_model([obs], 2, reversible=rev)
-            assert np.allclose(hmm.transition_matrix, Aref)
-            assert np.allclose(hmm.output_model.output_probabilities, Bref)
+            hmm = initdisc.estimate_initial_hmm([obs], 2, reversible=rev, eps_A=0, eps_B=0)
+            assert np.allclose(hmm.transition_matrix, Aref_naked) \
+                   or np.allclose(hmm.transition_matrix, Aref_naked[np.ix_(perm, perm)])  # test permutation
+            assert np.allclose(hmm.output_model.output_probabilities, Bref_naked) \
+                   or np.allclose(hmm.output_model.output_probabilities, Bref_naked[perm])  # test permutation
 
-    def _test_3state_fail(self):
-        obs = np.array([0, 1, 2, 0, 3, 4])
-        # this example doesn't admit more than 1 metastable state. Raise.
-        with self.assertRaises(AssertionError):
-            initdisc.estimate_initial_model([obs], 2, reversible=False)
+    def test_3state_fail(self):
+        obs = np.array([0, 1, 0, 0, 1, 1])
+        # this example doesn't admit more than 2 metastable states. Raise.
+        with self.assertRaises(NotImplementedError):
+            initdisc.estimate_initial_hmm([obs], 3, reversible=False)
 
-    def _test_3state_prev(self):
+    def test_3state_prev(self):
         import msmtools.analysis as msmana
         obs = np.array([0, 1, 2, 0, 3, 4])
-        # this example doesn't admit more than 1 metastable state. Raise.
         for rev in [True, False]:
-            hmm = initdisc.estimate_initial_model([obs], 3, reversible=rev, prior_neighbor=0.01, prior_diag=0.01)
+            hmm = initdisc.estimate_initial_hmm([obs], 3, reversible=rev)
             assert msmana.is_transition_matrix(hmm.transition_matrix)
             if rev:
                 assert msmana.is_reversible(hmm.transition_matrix)

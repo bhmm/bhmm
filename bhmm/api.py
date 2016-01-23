@@ -48,6 +48,7 @@ def _guess_model_type(observations):
     raise TypeError('Observations is neither sequences of integers nor 1D-sequences of floats. The current version'
                     'does not support your input.')
 
+# TODO: Also subsample if desired
 def _lag_observations(observations, lag):
     """ Create new trajectories that are subsampled at lag but shifted
 
@@ -98,7 +99,7 @@ def init_hmm(observations, nstates, lag=1, type=None):
 
     if type == 'discrete':
         from bhmm.init import discrete
-        return discrete.estimate_initial_model(observations, nstates, lag=lag, reversible=True)
+        return discrete.estimate_initial_hmm(observations, nstates, lag=lag, reversible=True)
     elif type == 'gaussian':
         from bhmm.init import gaussian
         return gaussian.initial_model_gaussian1d(observations, nstates, reversible=True)

@@ -3,6 +3,11 @@ __author__ = 'noe'
 import numpy as np
 
 
+def is_connected(C, mincount_connectivity=0, strong=True):
+    S = connected_sets(C, mincount_connectivity=mincount_connectivity, strong=strong)
+    return len(S) == 1
+
+
 def connected_sets(C, mincount_connectivity=0, strong=True):
     """ Computes the connected sets of C.
 
@@ -19,6 +24,19 @@ def connected_sets(C, mincount_connectivity=0, strong=True):
     # treat each connected set separately
     S = msmest.connected_sets(Cconn, directed=strong)
     return S
+
+
+def closed_sets(C, mincount_connectivity=0):
+    """ Computes the strongly connected closed sets of C """
+    n = np.shape(C)[0]
+    S = connected_sets(C, mincount_connectivity=mincount_connectivity, strong=True)
+    closed = []
+    for s in S:
+        mask = np.zeros(n, dtype=bool)
+        mask[s] = True
+        if C[np.ix_(mask, ~mask)].sum() == 0:  # closed set, take it
+            closed.append(s)
+    return closed
 
 
 def estimate_P(C, reversible=True, fixed_statdist=None, maxiter=1000000, maxerr=1e-8, mincount_connectivity=0):
@@ -146,17 +164,40 @@ def transition_matrix_partial_rev(C, P, S, maxiter=1000000, maxerr=1e-8):
     P[S] /= P[S].sum(axis=1)[:, None]
 
 
-def enforce_reversible(P):
-    """ Enforces transition matrix P to be reversible. """
-    # compute stationary probability
-    from msmtools.analysis import stationary_distribution
-    pi = stationary_distribution(P)
-    # symmetrize
-    X = np.dot(np.diag(pi), P)
-    X = 0.5 * (X + X.T)
-    # normalize
-    Prev = X / X.sum(axis=1)[:, None]
+def enforce_reversible_on_closed(P):
+    """ Enforces transition matrix P to be reversible on its closed sets. """
+    import msmtools.analysis as msmana
+    n = np.shape(P)[0]
+    Prev = P.copy()
+    # treat each weakly connected set separately
+    sets = closed_sets(P)
+    for s in sets:
+        I = np.ix_(s, s)
+        # compute stationary probability
+        pi_s = msmana.stationary_distribution(P[I])
+        # symmetrize
+        X_s = pi_s[:, None] * P[I]
+        X_s = 0.5 * (X_s + X_s.T)
+        # normalize
+        Prev[I] = X_s / X_s.sum(axis=1)[:, None]
     return Prev
+
+
+def is_reversible(P):
+    """ Returns if P is reversible on its weakly connected sets """
+    import msmtools.analysis as msmana
+    # treat each weakly connected set separately
+    sets = connected_sets(P, strong=False)
+    for s in sets:
+        Ps = P[s, :][:, s]
+        if not msmana.is_transition_matrix(Ps):
+            return False  # isn't even a transition matrix!
+        pi = msmana.stationary_distribution(Ps)
+        X = pi[:, None] * Ps
+        if not np.allclose(X, X.T):
+            return False
+    # survived.
+    return True
 
 
 def stationary_distribution(C, P, mincount_connectivity=0):
