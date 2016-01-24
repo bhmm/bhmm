@@ -49,7 +49,7 @@ class TestBHMM(unittest.TestCase):
         assert self.sampled_hmm_lag10.is_reversible
 
     def test_stationary(self):
-        assert self.sampled_hmm_lag10.is_stationary
+        assert not self.sampled_hmm_lag10.is_stationary
 
     def test_lag(self):
         assert self.sampled_hmm_lag10.lag == 10

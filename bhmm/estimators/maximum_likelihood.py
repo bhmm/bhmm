@@ -51,7 +51,7 @@ class MaximumLikelihoodEstimator(object):
 
     """
     def __init__(self, observations, nstates, initial_model=None, type='gaussian',
-                 reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000, mincount_connectivity=1e-6):
+                 reversible=True, stationary=False, p=None, accuracy=1e-3, maxit=1000, mincount_connectivity=1e-6):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -244,7 +244,6 @@ class MaximumLikelihoodEstimator(object):
             trajectory
 
         """
-        print "FORWARD-BACKWARD"
         # get parameters
         A = self._hmm.transition_matrix
         pi = self._hmm.initial_distribution
@@ -308,8 +307,8 @@ class MaximumLikelihoodEstimator(object):
         T = estimate_P(C, reversible=self._hmm.is_reversible, fixed_statdist=self._fixed_stationary_distribution,
                        maxiter=maxiter, maxerr=1e-12, mincount_connectivity=self._mincount_connectivity)
         print 'P:\n', T
-        # stationary or init distribution
-        if self._hmm.is_stationary:
+        # estimate stationary or init distribution
+        if self._stationary:
             if self._fixed_stationary_distribution is None:
                 pi = stationary_distribution(C, T, mincount_connectivity=self._mincount_connectivity)
             else:
@@ -319,10 +318,11 @@ class MaximumLikelihoodEstimator(object):
                 pi = gamma0_sum / np.sum(gamma0_sum)
             else:
                 pi = self._fixed_initial_distribution
+        print 'pi: ', pi, ' stationary = ', self._hmm.is_stationary
 
         # update model
         # TODO: distinguish initial and stationary distribution in HMM object.
-        self._hmm.update(T, pi)
+        self._hmm.update(pi, T)
 
         logger().info("T: \n"+str(T))
         logger().info("pi: \n"+str(pi))

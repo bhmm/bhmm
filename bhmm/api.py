@@ -97,9 +97,12 @@ def init_hmm(observations, nstates, lag=1, type=None):
     if (type is None):
         type = _guess_model_type(observations)
 
+    if lag > 1:
+        observations = _lag_observations(observations, lag)
+
     if type == 'discrete':
         from bhmm.init import discrete
-        return discrete.estimate_initial_hmm(observations, nstates, lag=lag, reversible=True)
+        return discrete.estimate_initial_hmm(observations, nstates, reversible=True)
     elif type == 'gaussian':
         from bhmm.init import gaussian
         return gaussian.initial_model_gaussian1d(observations, nstates, reversible=True)
@@ -167,7 +170,7 @@ def discrete_hmm(P, pout, pi=None, stationary=True, reversible=True):
     return dhmm
 
 def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
-                 reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000, mincount_connectivity=1e-2):
+                 reversible=True, stationary=False, p=None, accuracy=1e-3, maxit=1000, mincount_connectivity=1e-2):
     r""" Estimate maximum-likelihood HMM
 
     Generic maximum-likelihood estimation of HMMs
@@ -189,9 +192,11 @@ def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
     reversible : bool, optional, default=True
         If True, a prior that enforces reversible transition matrices (detailed balance) is used;
         otherwise, a standard  non-reversible prior is used.
-    stationary : bool, optional, default=True
+    stationary : bool, optional, default=False
         If True, the initial distribution of hidden states is self-consistently computed as the stationary
         distribution of the transition matrix. If False, it will be estimated from the starting states.
+        Only set this to true if you're sure that the observation trajectories are initiated from a global
+        equilibrium distribution.
     p : ndarray (nstates), optional, default=None
         Initial or fixed stationary distribution. If given and stationary=True, transition matrices will be
         estimated with the constraint that they have p as their stationary distribution. If given and

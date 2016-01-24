@@ -192,7 +192,7 @@ def estimate_initial_hmm(observations, nstates, reversible=True, eps_A=None, eps
     # does the count matrix too few closed sets to give nstates metastable states? Then we need a prior
     if len(_tmatrix_disconnected.closed_sets(C)) < nstates:
         msm_prior = 0.001
-        B = msm_prior * np.eye(C_full.shape[0])  # diagonal prior
+        B = msm_prior * np.eye(C.shape[0])  # diagonal prior
         B += msmtools.estimation.prior_neighbor(C, alpha=msm_prior)  # neighbor prior
         C_post = C + B  # posterior
         P_for_pcca = _tmatrix_disconnected.estimate_P(C_post, reversible=True)

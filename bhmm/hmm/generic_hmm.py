@@ -13,7 +13,7 @@ __license__ = "LGPL"
 __maintainer__ = "John D. Chodera"
 __email__ = "jchodera AT gmail DOT com"
 
-from msmtools.estimation import count_matrix
+import msmtools.estimation as msmest
 from bhmm.estimators import _tmatrix_disconnected
 
 
@@ -96,8 +96,8 @@ class HMM(object):
                                                                          repr(self._Tij),
                                                                          outrepr,
                                                                          repr(self._Pi),
-                                                                         repr(self._stationary),
-                                                                         repr(self._reversible))
+                                                                         repr(self.is_stationary),
+                                                                         repr(self.is_reversible))
 
     def __str__(self):
         """ Returns a human-readable string representation of the HMM """
@@ -118,7 +118,7 @@ class HMM(object):
         return output
 
     def _do_spectral_decomposition(self):
-        self._R, self._D, self._L = _tmatrix_disconnected.rdl_decomposition(self._Tij, reversible=self._reversible)
+        self._R, self._D, self._L = _tmatrix_disconnected.rdl_decomposition(self._Tij, reversible=self.is_reversible)
         self._eigenvalues = np.diag(self._D)
         self._spectral_decomp_available = True
 
@@ -246,6 +246,7 @@ class HMM(object):
         """
         from msmtools.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
 
+        self._ensure_spectral_decomposition()
         ts = _timescales(self._eigenvalues, tau=self._lag)
         return ts[1:]
 
@@ -287,14 +288,9 @@ class HMM(object):
         return HMM(pi_sub, P_sub, out_sub, lag=self.lag)
 
 
-    def count_matrix(self, dtype=np.float64):
+    def count_matrix(self):
         # TODO: does this belong here or to the BHMM sampler, or in a subclass containing HMM with data?
         """Compute the transition count matrix from hidden state trajectory.
-
-        Parameters
-        ----------
-        dtype : numpy.dtype, optional, default=numpy.float64
-            The numpy dtype to use for the count matrix.
 
         Returns
         -------
@@ -310,16 +306,28 @@ class HMM(object):
         --------
 
         """
-
         if self.hidden_state_trajectories is None:
             raise RuntimeError('HMM model does not have a hidden state trajectory.')
 
-        C = count_matrix(self.hidden_state_trajectories, 1, nstates=self._nstates)
-        #C = np.zeros((self._nstates,self._nstates), dtype=dtype)
-        #for S in self.hidden_state_trajectories:
-        #    for t in range(len(S)-1):
-        #        C[S[t],S[t+1]] += 1
+        C = msmest.count_matrix(self.hidden_state_trajectories, 1, nstates=self._nstates)
         return C.toarray()
+
+
+    def count_init(self):
+        """Compute the counts at the first time step
+
+        Returns
+        -------
+        n : ndarray(nstates)
+            n[i] is the number of trajectories starting in state i
+
+        """
+        if self.hidden_state_trajectories is None:
+            raise RuntimeError('HMM model does not have a hidden state trajectory.')
+
+        n = [traj[0] for traj in self.hidden_state_trajectories]
+        return np.bincount(n, minlength=self.nstates)
+
 
     # def emission_probability(self, state, observation):
     #     """Compute the emission probability of an observation from a given state.
