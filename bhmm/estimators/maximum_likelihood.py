@@ -260,16 +260,16 @@ class MaximumLikelihoodEstimator(object):
         # count matrix
         hidden.transition_counts(self._alpha, self._beta, A, self._pobs, T=T, out=self._Cs[itraj])
         # any problems here?
-        if np.any(np.isnan(self._pobs)):
-            print "Pobs is NAN"
-        if np.any(np.isnan(self._alpha)):
-            print "Alpha is NAN"
-        if np.any(np.isnan(self._beta)):
-            print "Beta is NAN"
-        if np.any(np.isnan(self._gammas[itraj])):
-            print "Gamma is NAN"
-        if np.any(np.isnan(self._Cs[itraj])):
-            print "Cs is NAN: ", itraj, "\n", self._Cs[itraj]
+        # if np.any(np.isnan(self._pobs)):
+        #     print "Pobs is NAN"
+        # if np.any(np.isnan(self._alpha)):
+        #     print "Alpha is NAN"
+        # if np.any(np.isnan(self._beta)):
+        #     print "Beta is NAN"
+        # if np.any(np.isnan(self._gammas[itraj])):
+        #     print "Gamma is NAN"
+        # if np.any(np.isnan(self._Cs[itraj])):
+        #     print "Cs is NAN: ", itraj, "\n", self._Cs[itraj]
         # return results
         return logprob
 
@@ -306,7 +306,7 @@ class MaximumLikelihoodEstimator(object):
         from bhmm.estimators._tmatrix_disconnected import estimate_P, stationary_distribution
         T = estimate_P(C, reversible=self._hmm.is_reversible, fixed_statdist=self._fixed_stationary_distribution,
                        maxiter=maxiter, maxerr=1e-12, mincount_connectivity=self._mincount_connectivity)
-        print 'P:\n', T
+        # print 'P:\n', T
         # estimate stationary or init distribution
         if self._stationary:
             if self._fixed_stationary_distribution is None:
@@ -318,7 +318,7 @@ class MaximumLikelihoodEstimator(object):
                 pi = gamma0_sum / np.sum(gamma0_sum)
             else:
                 pi = self._fixed_initial_distribution
-        print 'pi: ', pi, ' stationary = ', self._hmm.is_stationary
+        # print 'pi: ', pi, ' stationary = ', self._hmm.is_stationary
 
         # update model
         # TODO: distinguish initial and stationary distribution in HMM object.
@@ -377,41 +377,33 @@ class MaximumLikelihoodEstimator(object):
         # flag if connectivity has changed (e.g. state lost) - in that case the likelihood
         # is discontinuous and can't be used as a convergence criterion in that iteration.
         connected_sets = [np.arange(self._nstates)]
-        maxiter_P = 100  # start with 10 iterations, and steadily increase them
+        maxiter_P = 100000
         converged = False
 
         while (not converged and it < self.maxit):
-            print 'Beginning of iteration'
             t1 = time.time()
             loglik = 0.0
             for k in range(self._nobs):
                 loglik += self._forward_backward(k)
             t2 = time.time()
 
-            print 'Convergence check'
             # convergence check
             if it > 0:
                 dL = loglik - self._likelihoods[it-1]
-                if 1 > dL > 0:
-                    maxiter_P = 100000#math.ceil(1.0/dL) ** 2
-                print 'dL ', dL, 'iter_P ', maxiter_P
+                # print 'dL ', dL, 'iter_P ', maxiter_P
                 if dL < self._accuracy:
                     #print "CONVERGED! Likelihood change = ",(loglik - self.likelihoods[it-1])
                     converged = True
 
-            print 'Update model'
             # update model
             self._update_model(self._gammas, self._Cs, maxiter=maxiter_P)
             t3 = time.time()
 
-            print 'Connectivity check'
             # connectivity change check
             connected_sets_new = msmest.connected_sets(self._hmm.transition_matrix, directed=True)
             if not np.array_equal(connected_sets, connected_sets_new):
                 converged = False  # unset converged
                 connected_sets = connected_sets_new
-                print 'Connectivity has changed:', connected_sets
-                print 'Converged = ', converged
 
             print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ',(loglik - self._likelihoods[it-1])
 
@@ -422,7 +414,6 @@ class MaximumLikelihoodEstimator(object):
             # end of iteration
             self._likelihoods[it] = loglik
             it += 1
-            print 'End of iteration. Continue = ', (not converged and it < self.maxit)
 
         # final update with high precision
         # self._update_model(self._gammas, self._Cs, maxiter=10000000)
