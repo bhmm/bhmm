@@ -12,7 +12,6 @@ __email__="frank DOT noe AT fu-berlin DOT de"
 
 import time
 import copy
-import math
 
 import numpy as np
 
@@ -25,6 +24,7 @@ import bhmm
 import bhmm.hidden as hidden
 from bhmm.util.logger import logger
 from bhmm.util import config
+
 
 class MaximumLikelihoodEstimator(object):
     """
@@ -51,7 +51,8 @@ class MaximumLikelihoodEstimator(object):
 
     """
     def __init__(self, observations, nstates, initial_model=None, type='gaussian',
-                 reversible=True, stationary=False, p=None, accuracy=1e-3, maxit=1000, mincount_connectivity=1e-6):
+                 reversible=True, stationary=False, p=None, accuracy=1e-3, maxit=1000, maxit_P=100000,
+                 mincount_connectivity=1e-6):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -85,6 +86,9 @@ class MaximumLikelihoodEstimator(object):
             stopping criterion for EM iteration. When so many iterations are
             performed without reaching the requested accuracy, the iteration is
             stopped without convergence (a warning is given)
+        maxit_P : int
+            maximum number of iterations for reversible transition matrix estimation.
+            Only used with reversible=True.
         mincount_connectivity
             minimum number of counts to consider a connection between two states.
             Counts lower than that will count zero in the connectivity check and
@@ -140,6 +144,7 @@ class MaximumLikelihoodEstimator(object):
         # convergence options
         self._accuracy = accuracy
         self._maxit = maxit
+        self._maxit_P = maxit_P
         self._mincount_connectivity = mincount_connectivity
         self._likelihoods = None
 
@@ -293,7 +298,7 @@ class MaximumLikelihoodEstimator(object):
         N = self._nstates
 
         C = np.zeros((N, N))
-        gamma0_sum = np.zeros((N))
+        gamma0_sum = np.zeros(N)
         for k in range(K):
             # update state counts
             gamma0_sum += gammas[k][0]
@@ -342,7 +347,7 @@ class MaximumLikelihoodEstimator(object):
         pi = self._hmm.initial_distribution
 
         # compute viterbi path for each trajectory
-        paths = np.empty((K), dtype=object)
+        paths = np.empty(K, dtype=object)
         for itraj in range(K):
             obs = self._observations[itraj]
             # compute output probability matrix
@@ -372,15 +377,14 @@ class MaximumLikelihoodEstimator(object):
         initial_time = time.time()
 
         it = 0
-        self._likelihoods = np.zeros((self.maxit))
+        self._likelihoods = np.zeros(self.maxit)
         loglik = 0.0
         # flag if connectivity has changed (e.g. state lost) - in that case the likelihood
         # is discontinuous and can't be used as a convergence criterion in that iteration.
         connected_sets = [np.arange(self._nstates)]
-        maxiter_P = 100000
         converged = False
 
-        while (not converged and it < self.maxit):
+        while not converged and it < self.maxit:
             t1 = time.time()
             loglik = 0.0
             for k in range(self._nobs):
@@ -392,11 +396,11 @@ class MaximumLikelihoodEstimator(object):
                 dL = loglik - self._likelihoods[it-1]
                 # print 'dL ', dL, 'iter_P ', maxiter_P
                 if dL < self._accuracy:
-                    #print "CONVERGED! Likelihood change = ",(loglik - self.likelihoods[it-1])
+                    # print "CONVERGED! Likelihood change = ",(loglik - self.likelihoods[it-1])
                     converged = True
 
             # update model
-            self._update_model(self._gammas, self._Cs, maxiter=maxiter_P)
+            self._update_model(self._gammas, self._Cs, maxiter=self._maxit_P)
             t3 = time.time()
 
             # connectivity change check
@@ -405,11 +409,11 @@ class MaximumLikelihoodEstimator(object):
                 converged = False  # unset converged
                 connected_sets = connected_sets_new
 
-            print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ',(loglik - self._likelihoods[it-1])
+            # print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ', (loglik - self._likelihoods[it-1])
 
-            logger().info(str(it)+" ll = "+str(loglik))
-            #print self.model.output_model
-            #print "---------------------"
+            logger().info(str(it) + " ll = " + str(loglik))
+            # print self.model.output_model
+            # print "---------------------"
 
             # end of iteration
             self._likelihoods[it] = loglik
@@ -442,7 +446,6 @@ class MaximumLikelihoodEstimator(object):
         logger().info("=================================================================")
 
         return self._hmm
-
 
     # TODO: reactive multiprocessing
     # ###################

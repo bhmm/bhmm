@@ -2,6 +2,9 @@ __author__ = 'noe'
 
 import numpy as _np
 
+
+# TODO: type needs to be renamed because it shadows built-in type
+
 def _guess_model_type(observations):
     """ Suggests a HMM model type based on the observation data
 
@@ -48,21 +51,31 @@ def _guess_model_type(observations):
     raise TypeError('Observations is neither sequences of integers nor 1D-sequences of floats. The current version'
                     'does not support your input.')
 
-# TODO: Also subsample if desired
-def _lag_observations(observations, lag):
-    """ Create new trajectories that are subsampled at lag but shifted
+
+def lag_observations(observations, lag, stride=1):
+    r""" Create new trajectories that are subsampled at lag but shifted
 
     Given a trajectory (s0, s1, s2, s3, s4, ...) and lag 3, this function will generate 3 trajectories
     (s0, s3, s6, ...), (s1, s4, s7, ...) and (s2, s5, s8, ...). Use this function in order to parametrize a MLE
     at lag times larger than 1 without discarding data. Do not use this function for Bayesian estimators, where
     data must be given such that subsequent transitions are uncorrelated.
 
+    Parameters
+    ----------
+    observations : list of int arrays
+        observation trajectories
+    lag : int
+        lag time
+    stride : int, default=1
+        will return only one trajectory for every stride. Use this for Bayesian analysis.
+
     """
     obsnew = []
     for obs in observations:
-        for shift in range(0, lag):
+        for shift in range(0, lag, stride):
             obsnew.append(obs[shift:][::lag])
     return obsnew
+
 
 def init_hmm(observations, nstates, lag=1, type=None):
     """Use a heuristic scheme to generate an initial model.
@@ -94,11 +107,11 @@ def init_hmm(observations, nstates, lag=1, type=None):
 
     """
     # select output model type
-    if (type is None):
+    if type is None:
         type = _guess_model_type(observations)
 
     if lag > 1:
-        observations = _lag_observations(observations, lag)
+        observations = lag_observations(observations, lag)
 
     if type == 'discrete':
         from bhmm.init import discrete
@@ -108,6 +121,7 @@ def init_hmm(observations, nstates, lag=1, type=None):
         return gaussian.initial_model_gaussian1d(observations, nstates, reversible=True)
     else:
         raise NotImplementedError('output model type '+str(type)+' not yet implemented.')
+
 
 def gaussian_hmm(pi, P, means, sigmas):
     """ Initializes a 1D-Gaussian HMM
@@ -141,6 +155,7 @@ def gaussian_hmm(pi, P, means, sigmas):
     ghmm = GaussianHMM(ghmm)
     return ghmm
 
+
 def discrete_hmm(pi, P, pout):
     """ Initializes a discrete HMM
 
@@ -171,8 +186,10 @@ def discrete_hmm(pi, P, pout):
     dhmm = DiscreteHMM(dhmm)
     return dhmm
 
+
 def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
-                 reversible=True, stationary=False, p=None, accuracy=1e-3, maxit=1000, mincount_connectivity=1e-2):
+                 reversible=True, stationary=False, p=None, accuracy=1e-3, maxit=1000, maxit_P=100000,
+                 mincount_connectivity=1e-2):
     r""" Estimate maximum-likelihood HMM
 
     Generic maximum-likelihood estimation of HMMs
@@ -216,22 +233,24 @@ def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
 
     """
     # select output model type
-    if (type is None):
+    if type is None:
         type = _guess_model_type(observations)
 
     if lag > 1:
-        observations = _lag_observations(observations, lag)
+        observations = lag_observations(observations, lag)
 
     # construct estimator
     from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
     est = _MaximumLikelihoodEstimator(observations, nstates, initial_model=initial_model, type=type,
-                                      reversible=reversible, stationary=stationary, p=p, accuracy=accuracy, maxit=maxit)
+                                      reversible=reversible, stationary=stationary, p=p, accuracy=accuracy,
+                                      maxit=maxit, maxit_P=maxit_P)
     # run
     est.fit()
     # set lag time
     est.hmm._lag = lag
     # return model
     return est.hmm
+
 
 def bayesian_hmm(observations, estimated_hmm, nsample=100, reversible=True, stationary=False,
                  p0_prior='mixed', transition_matrix_prior='mixed', store_hidden=False, call_back=None):
