@@ -44,17 +44,19 @@ class HMM(object):
 
     >>> # Gaussian HMM
     >>> nstates = 2
+    >>> pi = np.array([0.5, 0.5])
     >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
     >>> from bhmm import GaussianOutputModel
     >>> output_model = GaussianOutputModel(nstates, means=[-1, +1], sigmas=[1, 1])
-    >>> model = HMM(Tij, output_model)
+    >>> model = HMM(pi, Tij, output_model)
 
     >>> # Discrete HMM
     >>> nstates = 2
+    >>> pi = np.array([0.5, 0.5])
     >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
     >>> from bhmm import DiscreteOutputModel
     >>> output_model = DiscreteOutputModel([[0.5, 0.1, 0.4], [0.2, 0.3, 0.5]])
-    >>> model = HMM(Tij, output_model)
+    >>> model = HMM(pi, Tij, output_model)
 
     """
     def __init__(self, Pi, Tij, output_model, lag=1):

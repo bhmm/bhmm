@@ -126,7 +126,6 @@ class BayesianHMMSampler(object):
             raise ValueError('initial distribution prior mode undefined: '+str(p0_prior))
 
         # prior count matrix
-        print 'prior option: ', transition_matrix_prior
         if transition_matrix_prior is None:
             self.prior_C = np.zeros((self.nstates, self.nstates))
         elif isinstance(transition_matrix_prior, np.ndarray):
