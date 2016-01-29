@@ -409,7 +409,7 @@ class MaximumLikelihoodEstimator(object):
                 converged = False  # unset converged
                 connected_sets = connected_sets_new
 
-            # print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ', (loglik - self._likelihoods[it-1])
+            #  print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ', (loglik - self._likelihoods[it-1])
 
             logger().info(str(it) + " ll = " + str(loglik))
             # print self.model.output_model
