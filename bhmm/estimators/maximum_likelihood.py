@@ -101,28 +101,17 @@ class MaximumLikelihoodEstimator(object):
         self._Ts = [len(o) for o in observations]
         self._maxT = np.max(self._Ts)
 
-        # Store the number of states.
+        # Set parameters
         self._nstates = nstates
+        self._reversible = reversible
+        self._stationary = stationary
 
         if initial_model is not None:
             # Use user-specified initial model, if provided.
             self._hmm = copy.deepcopy(initial_model)
-            # consistency checks
-            if self._hmm.is_stationary != stationary:
-                logger().warn('Requested stationary=' + str(stationary) + ' but initial model is stationary=' +
-                              str(self._hmm.is_stationary) + '. Using stationary='+str(self._hmm.is_stationary))
-            if self._hmm.is_reversible != reversible:
-                logger().warn('Requested reversible=' + str(reversible) + ' but initial model is reversible=' +
-                              str(self._hmm.is_reversible) + '. Using reversible='+str(self._hmm.is_reversible))
-            # setting parameters
-            self._reversible = self._hmm.is_reversible
-            self._stationary = self._hmm.is_stationary
         else:
             # Generate our own initial model.
             self._hmm = bhmm.init_hmm(observations, nstates, type=type)
-            # setting parameters
-            self._reversible = reversible
-            self._stationary = stationary
 
         # stationary and initial distribution
         self._fixed_stationary_distribution = None
@@ -409,7 +398,7 @@ class MaximumLikelihoodEstimator(object):
                 converged = False  # unset converged
                 connected_sets = connected_sets_new
 
-            #  print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ', (loglik - self._likelihoods[it-1])
+            print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ', (loglik - self._likelihoods[it-1])
 
             logger().info(str(it) + " ll = " + str(loglik))
             # print self.model.output_model

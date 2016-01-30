@@ -19,8 +19,7 @@ class DiscreteHMM(HMM, DiscreteOutputModel):
             raise TypeError('Given hmm is not a discrete HMM, but has an output model of type: '+
                             str(type(hmm.output_model)))
         DiscreteOutputModel.__init__(self, hmm.output_model.output_probabilities)
-        HMM.__init__(self, hmm.transition_matrix, self, lag=hmm.lag, Pi=hmm.initial_distribution,
-                     stationary=hmm.is_stationary, reversible=hmm.is_reversible)
+        HMM.__init__(self, hmm.initial_distribution, hmm.transition_matrix, self, lag=hmm.lag)
 
 
 class SampledDiscreteHMM(DiscreteHMM, SampledHMM):

@@ -29,8 +29,7 @@ class GaussianHMM(HMM, GaussianOutputModel):
             raise TypeError('Given hmm is not a Gaussian HMM, but has an output model of type: '+
                             str(type(hmm.output_model)))
         GaussianOutputModel.__init__(self, hmm.nstates, means=hmm.output_model.means, sigmas=hmm.output_model.sigmas)
-        HMM.__init__(self, hmm.transition_matrix, self, lag=hmm.lag, Pi=hmm.initial_distribution,
-                     stationary=hmm.is_stationary, reversible=hmm.is_reversible)
+        HMM.__init__(self, hmm.initial_distribution, hmm.transition_matrix, self, lag=hmm.lag)
 
 
 class SampledGaussianHMM(GaussianHMM, SampledHMM):
