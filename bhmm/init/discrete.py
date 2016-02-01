@@ -98,7 +98,7 @@ def estimate_initial_coarse_graining(C, Prev, nstates, eps=None):
     return M, B
 
 
-def estimate_initial_hmm(C, nstates, reversible=True, P=None, active=None,
+def estimate_initial_hmm(C_full, nstates, reversible=True, active_set=None, P=None,
                          eps_A=None, eps_B=None, separate=None):
     """Generate an initial HMM with discrete output densities
 
@@ -115,17 +115,17 @@ def estimate_initial_hmm(C, nstates, reversible=True, P=None, active=None,
 
     Parameters
     ----------
-    C : ndarray(n, n)
-        Transition count matrix
+    C_full : ndarray(N, N)
+        Transition count matrix on the full observable state space
     nstates : int
         The number of hidden states.
     reversible : bool
         Estimate reversible HMM transition matrix.
+    active_set : ndarray(n, dtype=int) or None
+        Index area. Will estimate kinetics only on the given subset of C
     P : ndarray(n, n)
         Transition matrix estimated from C (with option reversible). Use this
         option if P has already been estimated to avoid estimating it twice.
-    active : ndarray(N, dtype=bool)
-        Boolean array marking which states of the full state space are used by C and P
     eps_A : float or None
         Minimum transition probability. Default: 0.01 / nstates
     eps_B : float or None
@@ -136,6 +136,8 @@ def estimate_initial_hmm(C, nstates, reversible=True, P=None, active=None,
 
     Raises
     ------
+    ValueError
+        If the given active set is illegal.
     NotImplementedError
         If the number of hidden states exceeds the number of observed states.
 
@@ -159,10 +161,8 @@ def estimate_initial_hmm(C, nstates, reversible=True, P=None, active=None,
     """
     # local imports
     from bhmm.estimators import _tmatrix_disconnected
-    import sys
 
     # MICROSTATE COUNT MATRIX
-    C_full = C
     nfull = C_full.shape[0]
 
     # INPUTS
@@ -170,80 +170,96 @@ def estimate_initial_hmm(C, nstates, reversible=True, P=None, active=None,
         eps_A = 0.01 / nstates
     if eps_B is None:  # default output probability, in order to avoid zero columns
         eps_B = 0.01 / nfull
-
-    # truncate to states with at least one observed incoming or outgoing count.
-    nonempty = _tmatrix_disconnected.nonempty_set(C_full)
-    C_nonempty = C_full[np.ix_(nonempty, nonempty)]
-
+    # Manage sets
+    symsum = C_full.sum(axis=0) + C_full.sum(axis=1)
+    nonempty = np.where(symsum > 0)[0]
+    if active_set is None:
+        active_set = nonempty
+    else:
+        if np.any(symsum[active_set] == 0):
+            raise ValueError('Given active set has empty states')  # don't tolerate empty states
+    if P is not None:
+        if np.shape(P)[0] != active_set.size:  # needs to fit to active
+            raise ValueError('Given initial transition matrix P has shape ' + np.shape(P)
+                             + 'while active set has size ' + active_set.size)
     # when using separate states, only keep the nonempty ones (the others don't matter)
     if separate is None:
-        nonseparate = nonempty.copy()
+        active_nonseparate = active_set.copy()
         nmeta = nstates
     else:
-        separate = np.array(list(set(separate).intersection(set(nonempty))))
-        nonseparate = np.array(list(set(nonempty) - set(separate)))
+        active_nonseparate = np.array(list(set(active_set) - set(separate)))
         nmeta = nstates - 1
-
     # check if we can proceed
-    if nonseparate.size < nmeta:
+    if active_nonseparate.size < nmeta:
         raise NotImplementedError('Trying to initialize ' + str(nmeta) + '-state HMM from smaller '
-                                  + str(nonseparate.size) + '-state MSM.')
+                                  + str(active_nonseparate.size) + '-state MSM.')
 
-    # MICROSTATE TRANSITION MATRIX (MSM). This matrix may be disconnected and have transient states
-    if P is not None:
-        P_msm = P[nonempty, :][:, nonempty]  # if we already have P, just remove empty states
+    # MICROSTATE TRANSITION MATRIX (MSM).
+    C_active = C_full[np.ix_(active_set, active_set)]
+    if P is None:  # This matrix may be disconnected and have transient states
+        P_active = _tmatrix_disconnected.estimate_P(C_active, reversible=reversible)
     else:
-        P_msm = _tmatrix_disconnected.estimate_P(C_nonempty, reversible=reversible)
-    pi_msm = _tmatrix_disconnected.stationary_distribution(C_nonempty, P_msm)
+        P_active = P
+
+    # MICROSTATE EQUILIBRIUM DISTRIBUTION
+    pi_active = _tmatrix_disconnected.stationary_distribution(C_active, P_active)
     pi_full = np.zeros(nfull)
-    pi_full[nonempty] = pi_msm
+    pi_full[active_set] = pi_active
 
     # NONSEPARATE TRANSITION MATRIX FOR PCCA+
-    C_nonseparate = C_full[np.ix_(nonseparate, nonseparate)]
-    if reversible and nonseparate.size == nonempty.size:  # in this case we already have a reversible estimate that is large enough
-        P_for_pcca = P_msm
+    C_active_nonseparate = C_full[np.ix_(active_nonseparate, active_nonseparate)]
+    if reversible and separate is None:  # in this case we already have a reversible estimate with the right size
+        P_active_nonseparate = P_active
     else:  # not yet reversible. re-estimate
-        P_for_pcca = _tmatrix_disconnected.estimate_P(C_nonseparate, reversible=True)
+        P_active_nonseparate = _tmatrix_disconnected.estimate_P(C_active_nonseparate, reversible=True)
 
-    # COARSE-GRAINING
-    if nonseparate.size > nmeta:
-        M_ns, B_ns = estimate_initial_coarse_graining(C_nonseparate, P_for_pcca, nmeta, eps=eps_B)
+    # COARSE-GRAINING WITH PCCA+
+    if active_nonseparate.size > nmeta:
+        from msmtools.analysis.dense.pcca import PCCA
+        pcca_obj = PCCA(P_active_nonseparate, nmeta)
+        M_active_nonseparate = pcca_obj.memberships  # memberships
+        B_active_nonseparate = pcca_obj.output_probabilities  #  output probabilities
     else:  # equal size
-        M_ns = np.eye(nmeta)
-        B_ns = np.eye(nmeta)
+        M_active_nonseparate = np.eye(nmeta)
+        B_active_nonseparate = np.eye(nmeta)
 
-    # MEMBERSHIP
-    M = np.zeros((nfull, nstates))
-    M[nonseparate, :nmeta] = M_ns
-    if separate is not None:  # add separate states
-        M[separate, -1] = 1
+    # ADD SEPARATE STATE IF NEEDED
+    if separate is None:
+        M_active = M_active_nonseparate
+    else:
+        M_full = np.zeros((nfull, nstates))
+        M_full[active_nonseparate, :nmeta] = M_active_nonseparate
+        M_full[separate, -1] = 1
+        M_active = M_full[active_set]
 
     # COARSE-GRAINED TRANSITION MATRIX
-    P_coarse = coarse_grain_transition_matrix(P_msm, M[nonempty], eps=eps_A)
+    P_hmm = coarse_grain_transition_matrix(P_active, M_active, eps=eps_A)
     if reversible:
-        P_coarse = _tmatrix_disconnected.enforce_reversible_on_closed(P_coarse)
-    C_coarse = M[nonempty].T.dot(C_nonempty).dot(M[nonempty])
-    pi_coarse = _tmatrix_disconnected.stationary_distribution(C_coarse, P_coarse)  # need C_coarse in case if A is disconnected
+        P_hmm = _tmatrix_disconnected.enforce_reversible_on_closed(P_hmm)
+    C_hmm = M_active.T.dot(C_active).dot(M_active)
+    pi_hmm = _tmatrix_disconnected.stationary_distribution(C_hmm, P_hmm)  # need C_hmm in case if A is disconnected
 
     # COARSE-GRAINED OUTPUT DISTRIBUTION
-    B = np.zeros((nstates, nfull))
-    B[:nmeta, nonseparate] = B_ns
+    # TODO: add eps_B to nonempty nonactive
+    B_hmm = np.zeros((nstates, nfull))
+    B_hmm[:nmeta, active_nonseparate] = np.maximum(B_active_nonseparate, eps_B)  # never allow 0.0 or 1.0
     if separate is not None:  # add separate states
-        B[-1, separate] = pi_full[separate]
-    B /= B.sum(axis=1)[:, None]  # normalize rows
+        B_hmm[-1, separate] = pi_full[separate]
+    nonempty_nonactive = np.array(list(set(nonempty) - set(active_set)), dtype=int)
+    B_hmm[:, nonempty_nonactive] = eps_B
+    B_hmm /= B_hmm.sum(axis=1)[:, None]  # normalize rows
 
-    # print 'cg pi: ', pi_coarse
-    # print 'cg A:\n ', P_coarse
+    # print 'cg pi: ', pi_hmm
+    # print 'cg A:\n ', P_hmm
     # print 'cg B:\n ', B
 
     logger().info('Initial model: ')
-    logger().info('initial distribution = \n'+str(pi_coarse))
-    logger().info('transition matrix = \n'+str(P_coarse))
-    logger().info('output matrix = \n'+str(B.T))
+    logger().info('initial distribution = \n'+str(pi_hmm))
+    logger().info('transition matrix = \n'+str(P_hmm))
+    logger().info('output matrix = \n'+str(B_hmm.T))
 
     # initialize HMM
-    output_model = DiscreteOutputModel(B)
-    model = HMM(pi_coarse, P_coarse, output_model)
+    model = HMM(pi_hmm, P_hmm, DiscreteOutputModel(B_hmm))
     return model
 
 

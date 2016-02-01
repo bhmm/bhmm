@@ -70,7 +70,7 @@ class MaximumLikelihoodEstimator(object):
         reversible : bool, optional, default=True
             If True, a prior that enforces reversible transition matrices (detailed
             balance) is used; otherwise, a standard  non-reversible prior is used.
-        stationary : bool, optional, default=True
+        stationary : bool, optional, default=False
             If True, the initial distribution of hidden states is self-consistently
             computed as the stationary distribution of the transition matrix. If
             False, it will be estimated from the starting states.
@@ -267,6 +267,18 @@ class MaximumLikelihoodEstimator(object):
         # return results
         return logprob
 
+    def _init_counts(self, gammas):
+        gamma0_sum = np.zeros(self._nstates)
+        for k in range(len(self._observations)):  # update state counts
+            gamma0_sum += gammas[k][0]
+        return gamma0_sum
+
+    def _transition_counts(self, count_matrices):
+        C = np.zeros((self._nstates, self._nstates))
+        for k in range(len(self._observations)):  # update count matrix
+            C += count_matrices[k]
+        return C
+
     def _update_model(self, gammas, count_matrices, maxiter=10000000):
         """
         Maximization step: Updates the HMM model given the hidden state assignment and count matrices
@@ -283,17 +295,9 @@ class MaximumLikelihoodEstimator(object):
             an iterative method is used.
 
         """
-        K = len(self._observations)
-        N = self._nstates
-
-        C = np.zeros((N, N))
-        gamma0_sum = np.zeros(N)
-        for k in range(K):
-            # update state counts
-            gamma0_sum += gammas[k][0]
-            # update count matrix
-            C += count_matrices[k]
-
+        gamma0_sum = self._init_counts(gammas)
+        C = self._transition_counts(count_matrices)
+        logger().info("Initial count = \n"+str(gamma0_sum))
         logger().info("Count matrix = \n"+str(C))
 
         # compute new transition matrix
@@ -323,7 +327,7 @@ class MaximumLikelihoodEstimator(object):
 
         # update output model
         # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
-        self._hmm.output_model._estimate_output_model(self._observations, gammas)
+        self._hmm.output_model.estimate(self._observations, gammas)
 
     def compute_viterbi_paths(self):
         """
@@ -398,7 +402,7 @@ class MaximumLikelihoodEstimator(object):
                 converged = False  # unset converged
                 connected_sets = connected_sets_new
 
-            print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ', (loglik - self._likelihoods[it-1])
+            #  print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ', (loglik - self._likelihoods[it-1])
 
             logger().info(str(it) + " ll = " + str(loglik))
             # print self.model.output_model
@@ -415,6 +419,9 @@ class MaximumLikelihoodEstimator(object):
         self._likelihoods = self._likelihoods[:it]
         # set final likelihood
         self._hmm.likelihood = loglik
+        # set final count matrix
+        self.count_matrix = self._transition_counts(self._Cs)
+        self.initial_count = self._init_counts(self._gammas)
 
         final_time = time.time()
         elapsed_time = final_time - initial_time

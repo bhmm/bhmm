@@ -314,7 +314,7 @@ class GaussianOutputModel(OutputModel):
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
 
 
-    def _estimate_output_model(self, observations, weights):
+    def estimate(self, observations, weights):
         """
         Fits the output model given the observations and weights
 
@@ -339,7 +339,7 @@ class GaussianOutputModel(OutputModel):
 
         Update the observation model parameters my a maximum-likelihood fit.
 
-        >>> output_model._estimate_output_model(observations, weights)
+        >>> output_model.estimate(observations, weights)
 
         """
         # sizes
@@ -373,7 +373,7 @@ class GaussianOutputModel(OutputModel):
         self._sigmas = np.sqrt(self.sigmas)
 
 
-    def _sample_output_model(self, observations):
+    def sample(self, observations, prior=None):
         """
         Sample a new set of distribution parameters given a sample of observations from the given state.
 
@@ -383,6 +383,8 @@ class GaussianOutputModel(OutputModel):
         ----------
         observations :  [ numpy.array with shape (N_k,) ] with `nstates` elements
             observations[k] is a set of observations sampled from state `k`
+        prior : object
+            prior option for compatibility
 
         Examples
         --------
@@ -397,7 +399,7 @@ class GaussianOutputModel(OutputModel):
 
         Update output parameters by sampling.
 
-        >>> output_model._sample_output_model(observations)
+        >>> output_model.sample(observations)
 
         """
         for state_index in range(self.nstates):
