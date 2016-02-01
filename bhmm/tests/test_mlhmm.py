@@ -19,7 +19,8 @@ __license__ = "FreeBSD"
 __maintainer__ = "John D. Chodera"
 __email__="jchodera AT gmail DOT com"
 
-class TestMLHMM(unittest.TestCase):
+
+class TestMLHMM_DoubleWell(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -53,8 +54,8 @@ class TestMLHMM(unittest.TestCase):
         assert self.hmm_lag10.is_reversible
 
     def test_stationary(self):
-        assert self.hmm_lag1.is_stationary
-        assert self.hmm_lag10.is_stationary
+        assert not self.hmm_lag1.is_stationary
+        assert not self.hmm_lag10.is_stationary
 
     def test_lag(self):
         assert self.hmm_lag1.lag == 1
@@ -92,10 +93,8 @@ class TestMLHMM(unittest.TestCase):
         for mu in [self.hmm_lag1.initial_distribution, self.hmm_lag10.initial_distribution]:
             # normalization
             assert np.isclose(mu.sum(), 1.0)
-            # positivity
-            assert np.all(mu > 0.0)
-            # this data: approximately equal probability
-            assert np.max(np.abs(mu[0]-mu[1])) < 0.05
+            # should be on one side
+            assert np.isclose(mu[0], 1.0) or np.isclose(mu[0], 0.0)
 
     def test_stationary_distribution(self):
         for mu in [self.hmm_lag1.stationary_distribution, self.hmm_lag10.stationary_distribution]:

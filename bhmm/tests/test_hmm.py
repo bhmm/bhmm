@@ -39,11 +39,15 @@ class TestHMM(unittest.TestCase):
         # Create a simple two-state model.
         nstates = 2
         Tij = testsystems.generate_transition_matrix(reversible=True)
+        # stationary distribution
+        import msmtools.analysis as msmana
+        Pi = msmana.stationary_distribution(Tij)
+
         from bhmm import GaussianOutputModel
         means=[-1,+1]
         sigmas=[1,1]
         output_model = GaussianOutputModel(nstates, means=means, sigmas=sigmas)
-        model = bhmm.HMM(Tij, output_model)
+        model = bhmm.HMM(Pi, Tij, output_model)
         # Compute stationary probability using ARPACK.
         from scipy.sparse.linalg import eigs
         from numpy.linalg import norm

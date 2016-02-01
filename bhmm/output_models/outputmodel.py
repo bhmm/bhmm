@@ -71,6 +71,10 @@ class OutputModel(object):
             warnings.warn('Implementation '+impl+' is not known. Using the fallback python implementation.')
             self.__impl__ = self.__IMPL_PYTHON__
 
+    @abstractmethod
+    def sub_output_model(self, states):
+        """ Returns output model on a subset of states """
+        pass
 
     def log_p_obs(self, obs, out=None, dtype=np.float32):
         """

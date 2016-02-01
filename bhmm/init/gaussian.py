@@ -65,9 +65,11 @@ def initial_model_gaussian1d(observations, nstates, reversible=True):
 
     # Compute transition matrix maximum likelihood estimate.
     import msmtools.estimation as msmest
+    import msmtools.analysis as msmana
     Tij = msmest.transition_matrix(Nij, reversible=reversible)
+    pi = msmana.stationary_distribution(Tij)
 
     # Update model.
-    model = HMM(Tij, output_model, reversible=reversible)
+    model = HMM(pi, Tij, output_model)
 
     return model

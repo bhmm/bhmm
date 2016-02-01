@@ -160,9 +160,13 @@ def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 
 
     Tij = generate_transition_matrix(nstates, lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible)
 
+    # stationary distribution
+    import msmtools.analysis as msmana
+    Pi = msmana.stationary_distribution(Tij)
+
     # Construct HMM with these parameters.
     from bhmm import HMM
-    model = HMM(Tij, output_model)
+    model = HMM(Pi, Tij, output_model)
 
     return model
 

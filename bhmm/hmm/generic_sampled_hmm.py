@@ -31,9 +31,8 @@ class SampledHMM(HMM):
     """
     def __init__(self, estimated_hmm, sampled_hmms, conf=0.95):
         # call superclass constructer with estimated_hmm
-        HMM.__init__(self, estimated_hmm.transition_matrix, estimated_hmm.output_model,
-                     lag=estimated_hmm.lag, Pi=estimated_hmm.initial_distribution,
-                     stationary=estimated_hmm.is_stationary, reversible=estimated_hmm.is_reversible)
+        HMM.__init__(self, estimated_hmm.initial_distribution, estimated_hmm.transition_matrix,
+                     estimated_hmm.output_model, lag=estimated_hmm.lag)
         # save sampled HMMs to calculate statistical moments.
         self._sampled_hmms = sampled_hmms
         self._nsamples = len(sampled_hmms)

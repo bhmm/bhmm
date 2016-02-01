@@ -25,6 +25,7 @@ import bhmm.hidden as hidden
 from bhmm.util.logger import logger
 from bhmm.util import config
 
+
 class MaximumLikelihoodEstimator(object):
     """
     Maximum likelihood Hidden Markov model (HMM).
@@ -44,41 +45,54 @@ class MaximumLikelihoodEstimator(object):
 
     References
     ----------
-    [1] L. E. Baum and J. A. Egon, "An inequality with applications to statistical estimation for probabilistic
-        functions of a Markov process and to a model for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
+    [1] L. E. Baum and J. A. Egon, "An inequality with applications to statistical
+        estimation for probabilistic functions of a Markov process and to a model
+        for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
 
     """
     def __init__(self, observations, nstates, initial_model=None, type='gaussian',
-                 reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000):
+                 reversible=True, stationary=False, p=None, accuracy=1e-3, maxit=1000, maxit_P=100000,
+                 mincount_connectivity=1e-6):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
         ----------
         observations : list of numpy arrays representing temporal data
-            `observations[i]` is a 1d numpy array corresponding to the observed trajectory index `i`
+            `observations[i]` is a 1d numpy array corresponding to the observed
+            trajectory index `i`
         nstates : int
             The number of states in the model.
         initial_model : HMM, optional, default=None
-            If specified, the given initial model will be used to initialize the BHMM.
-            Otherwise, a heuristic scheme is used to generate an initial guess.
+            If specified, the given initial model will be used to initialize the
+            BHMM. Otherwise, a heuristic scheme is used to generate an initial guess.
         type : str, optional, default=None
             Output model type from [None, 'gaussian', 'discrete'].
         reversible : bool, optional, default=True
-            If True, a prior that enforces reversible transition matrices (detailed balance) is used;
-            otherwise, a standard  non-reversible prior is used.
+            If True, a prior that enforces reversible transition matrices (detailed
+            balance) is used; otherwise, a standard  non-reversible prior is used.
         stationary : bool, optional, default=True
-            If True, the initial distribution of hidden states is self-consistently computed as the stationary
-            distribution of the transition matrix. If False, it will be estimated from the starting states.
+            If True, the initial distribution of hidden states is self-consistently
+            computed as the stationary distribution of the transition matrix. If
+            False, it will be estimated from the starting states.
         p : ndarray (nstates), optional, default=None
-            Initial or fixed stationary distribution. If given and stationary=True, transition matrices will be
-            estimated with the constraint that they have p as their stationary distribution. If given and
-            stationary=False, p is the fixed initial distribution of hidden states.
+            Initial or fixed stationary distribution. If given and stationary=True,
+            transition matrices will be estimated with the constraint that they
+            have p as their stationary distribution. If given and stationary=False,
+            p is the fixed initial distribution of hidden states.
         accuracy : float
-            convergence threshold for EM iteration. When two the likelihood does not increase by more than accuracy, the
-            iteration is stopped successfully.
+            convergence threshold for EM iteration. When two the likelihood does
+            not increase by more than accuracy, the iteration is stopped successfully.
         maxit : int
-            stopping criterion for EM iteration. When so many iterations are performanced without reaching the requested
-            accuracy, the iteration is stopped without convergence (a warning is given)
+            stopping criterion for EM iteration. When so many iterations are
+            performed without reaching the requested accuracy, the iteration is
+            stopped without convergence (a warning is given)
+        maxit_P : int
+            maximum number of iterations for reversible transition matrix estimation.
+            Only used with reversible=True.
+        mincount_connectivity
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix.
 
         """
         # Store a copy of the observations.
@@ -130,6 +144,8 @@ class MaximumLikelihoodEstimator(object):
         # convergence options
         self._accuracy = accuracy
         self._maxit = maxit
+        self._maxit_P = maxit_P
+        self._mincount_connectivity = mincount_connectivity
         self._likelihoods = None
 
         # Kernel for computing things
@@ -235,7 +251,7 @@ class MaximumLikelihoodEstimator(object):
         """
         # get parameters
         A = self._hmm.transition_matrix
-        pi = self._hmm.stationary_distribution
+        pi = self._hmm.initial_distribution
         obs = self._observations[itraj]
         T = len(obs)
         # compute output probability matrix
@@ -248,10 +264,21 @@ class MaximumLikelihoodEstimator(object):
         hidden.state_probabilities(self._alpha, self._beta, T=T, gamma_out=self._gammas[itraj])
         # count matrix
         hidden.transition_counts(self._alpha, self._beta, A, self._pobs, T=T, out=self._Cs[itraj])
+        # any problems here?
+        # if np.any(np.isnan(self._pobs)):
+        #     print "Pobs is NAN"
+        # if np.any(np.isnan(self._alpha)):
+        #     print "Alpha is NAN"
+        # if np.any(np.isnan(self._beta)):
+        #     print "Beta is NAN"
+        # if np.any(np.isnan(self._gammas[itraj])):
+        #     print "Gamma is NAN"
+        # if np.any(np.isnan(self._Cs[itraj])):
+        #     print "Cs is NAN: ", itraj, "\n", self._Cs[itraj]
         # return results
         return logprob
 
-    def _update_model(self, gammas, count_matrices):
+    def _update_model(self, gammas, count_matrices, maxiter=10000000):
         """
         Maximization step: Updates the HMM model given the hidden state assignment and count matrices
 
@@ -260,14 +287,18 @@ class MaximumLikelihoodEstimator(object):
         gamma : [ ndarray(T,N, dtype=float) ]
             list of state probabilities for each trajectory
         count_matrix : [ ndarray(N,N, dtype=float) ]
-            list of the Baum-Welch transition count matrices for each hidden state trajectory
+            list of the Baum-Welch transition count matrices for each hidden
+            state trajectory
+        maxiter : int
+            maximum number of iterations of the transition matrix estimation if
+            an iterative method is used.
 
         """
         K = len(self._observations)
         N = self._nstates
 
         C = np.zeros((N, N))
-        gamma0_sum = np.zeros((N))
+        gamma0_sum = np.zeros(N)
         for k in range(K):
             # update state counts
             gamma0_sum += gammas[k][0]
@@ -278,11 +309,13 @@ class MaximumLikelihoodEstimator(object):
 
         # compute new transition matrix
         from bhmm.estimators._tmatrix_disconnected import estimate_P, stationary_distribution
-        T = estimate_P(C, reversible=self._hmm.is_reversible, fixed_statdist=self._fixed_stationary_distribution)
-        # stationary or init distribution
-        if self._hmm.is_stationary:
+        T = estimate_P(C, reversible=self._hmm.is_reversible, fixed_statdist=self._fixed_stationary_distribution,
+                       maxiter=maxiter, maxerr=1e-12, mincount_connectivity=self._mincount_connectivity)
+        # print 'P:\n', T
+        # estimate stationary or init distribution
+        if self._stationary:
             if self._fixed_stationary_distribution is None:
-                pi = stationary_distribution(C, T)
+                pi = stationary_distribution(C, T, mincount_connectivity=self._mincount_connectivity)
             else:
                 pi = self._fixed_stationary_distribution
         else:
@@ -290,9 +323,11 @@ class MaximumLikelihoodEstimator(object):
                 pi = gamma0_sum / np.sum(gamma0_sum)
             else:
                 pi = self._fixed_initial_distribution
+        # print 'pi: ', pi, ' stationary = ', self._hmm.is_stationary
 
         # update model
-        self._hmm.update(T, pi)
+        # TODO: distinguish initial and stationary distribution in HMM object.
+        self._hmm.update(pi, T)
 
         logger().info("T: \n"+str(T))
         logger().info("pi: \n"+str(pi))
@@ -309,10 +344,10 @@ class MaximumLikelihoodEstimator(object):
         # get parameters
         K = len(self._observations)
         A = self._hmm.transition_matrix
-        pi = self._hmm.stationary_distribution
+        pi = self._hmm.initial_distribution
 
         # compute viterbi path for each trajectory
-        paths = np.empty((K), dtype=object)
+        paths = np.empty(K, dtype=object)
         for itraj in range(K):
             obs = self._observations[itraj]
             # compute output probability matrix
@@ -333,6 +368,7 @@ class MaximumLikelihoodEstimator(object):
             The maximum likelihood HMM model.
 
         """
+        import msmtools.estimation as msmest
         logger().info("=================================================================")
         logger().info("Running Baum-Welch:")
         logger().info("  input observations: "+str(self.nobservations)+" of lengths "+str(self.observation_lengths))
@@ -341,28 +377,50 @@ class MaximumLikelihoodEstimator(object):
         initial_time = time.time()
 
         it = 0
-        self._likelihoods = np.zeros((self.maxit))
+        self._likelihoods = np.zeros(self.maxit)
         loglik = 0.0
+        # flag if connectivity has changed (e.g. state lost) - in that case the likelihood
+        # is discontinuous and can't be used as a convergence criterion in that iteration.
+        connected_sets = [np.arange(self._nstates)]
         converged = False
 
-        while (not converged and it < self.maxit):
+        while not converged and it < self.maxit:
+            t1 = time.time()
             loglik = 0.0
             for k in range(self._nobs):
                 loglik += self._forward_backward(k)
+            t2 = time.time()
 
-            self._update_model(self._gammas, self._Cs)
-            logger().info(str(it)+" ll = "+str(loglik))
-            #print self.model.output_model
-            #print "---------------------"
-
-            self._likelihoods[it] = loglik
-
+            # convergence check
             if it > 0:
-                if loglik - self._likelihoods[it-1] < self._accuracy:
-                    #print "CONVERGED! Likelihood change = ",(loglik - self.likelihoods[it-1])
+                dL = loglik - self._likelihoods[it-1]
+                # print 'dL ', dL, 'iter_P ', maxiter_P
+                if dL < self._accuracy:
+                    # print "CONVERGED! Likelihood change = ",(loglik - self.likelihoods[it-1])
                     converged = True
 
+            # update model
+            self._update_model(self._gammas, self._Cs, maxiter=self._maxit_P)
+            t3 = time.time()
+
+            # connectivity change check
+            connected_sets_new = msmest.connected_sets(self._hmm.transition_matrix, directed=True)
+            if not np.array_equal(connected_sets, connected_sets_new):
+                converged = False  # unset converged
+                connected_sets = connected_sets_new
+
+            #  print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ', (loglik - self._likelihoods[it-1])
+
+            logger().info(str(it) + " ll = " + str(loglik))
+            # print self.model.output_model
+            # print "---------------------"
+
+            # end of iteration
+            self._likelihoods[it] = loglik
             it += 1
+
+        # final update with high precision
+        # self._update_model(self._gammas, self._Cs, maxiter=10000000)
 
         # truncate likelihood history
         self._likelihoods = self._likelihoods[:it]
@@ -388,7 +446,6 @@ class MaximumLikelihoodEstimator(object):
         logger().info("=================================================================")
 
         return self._hmm
-
 
     # TODO: reactive multiprocessing
     # ###################

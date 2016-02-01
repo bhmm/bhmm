@@ -113,6 +113,9 @@ class GaussianOutputModel(OutputModel):
         r""" Standard deviations of Gaussian output densities """
         return self._sigmas
 
+    def sub_output_model(self, states):
+        return GaussianOutputModel(self._means[states], self._sigmas[states])
+
     # TODO: remove code when we're sure we don't need it
     # TODO: when cleaning up, save the functionality of the last function (log_p_o) and integrate into and overwrite of log_pobs.
     # def p_o_i(self, o, i):

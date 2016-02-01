@@ -2,6 +2,9 @@ __author__ = 'noe'
 
 import numpy as _np
 
+
+# TODO: type needs to be renamed because it shadows built-in type
+
 def _guess_model_type(observations):
     """ Suggests a HMM model type based on the observation data
 
@@ -48,20 +51,31 @@ def _guess_model_type(observations):
     raise TypeError('Observations is neither sequences of integers nor 1D-sequences of floats. The current version'
                     'does not support your input.')
 
-def _lag_observations(observations, lag):
-    """ Create new trajectories that are subsampled at lag but shifted
+
+def lag_observations(observations, lag, stride=1):
+    r""" Create new trajectories that are subsampled at lag but shifted
 
     Given a trajectory (s0, s1, s2, s3, s4, ...) and lag 3, this function will generate 3 trajectories
     (s0, s3, s6, ...), (s1, s4, s7, ...) and (s2, s5, s8, ...). Use this function in order to parametrize a MLE
     at lag times larger than 1 without discarding data. Do not use this function for Bayesian estimators, where
     data must be given such that subsequent transitions are uncorrelated.
 
+    Parameters
+    ----------
+    observations : list of int arrays
+        observation trajectories
+    lag : int
+        lag time
+    stride : int, default=1
+        will return only one trajectory for every stride. Use this for Bayesian analysis.
+
     """
     obsnew = []
     for obs in observations:
-        for shift in range(0, lag):
+        for shift in range(0, lag, stride):
             obsnew.append(obs[shift:][::lag])
     return obsnew
+
 
 def init_hmm(observations, nstates, lag=1, type=None):
     """Use a heuristic scheme to generate an initial model.
@@ -93,31 +107,35 @@ def init_hmm(observations, nstates, lag=1, type=None):
 
     """
     # select output model type
-    if (type is None):
+    if type is None:
         type = _guess_model_type(observations)
+
+    if lag > 1:
+        observations = lag_observations(observations, lag)
 
     if type == 'discrete':
         from bhmm.init import discrete
-        return discrete.initial_model_discrete(observations, nstates, lag=lag, reversible=True)
+        return discrete.estimate_initial_hmm(observations, nstates, reversible=True)
     elif type == 'gaussian':
         from bhmm.init import gaussian
         return gaussian.initial_model_gaussian1d(observations, nstates, reversible=True)
     else:
         raise NotImplementedError('output model type '+str(type)+' not yet implemented.')
 
-def gaussian_hmm(P, means, sigmas, pi=None, stationary=True, reversible=True):
+
+def gaussian_hmm(pi, P, means, sigmas):
     """ Initializes a 1D-Gaussian HMM
 
     Parameters
     ----------
+    pi : ndarray(nstates, )
+        Initial distribution.
     P : ndarray(nstates,nstates)
         Hidden transition matrix
     means : ndarray(nstates, )
         Means of Gaussian output distributions
     sigmas : ndarray(nstates, )
         Standard deviations of Gaussian output distributions
-    pi : ndarray(nstates, )
-        Fixed initial (if stationary=False) or fixed stationary distribution (if stationary=True).
     stationary : bool, optional, default=True
         If True: initial distribution is equal to stationary distribution of transition matrix
     reversible : bool, optional, default=True
@@ -132,16 +150,19 @@ def gaussian_hmm(P, means, sigmas, pi=None, stationary=True, reversible=True):
     output_model = GaussianOutputModel(nstates, means, sigmas)
     # initialize general HMM
     from bhmm.hmm.generic_hmm import HMM as _HMM
-    ghmm = _HMM(P, output_model, Pi=pi, stationary=stationary, reversible=reversible)
+    ghmm = _HMM(pi, P, output_model)
     # turn it into a Gaussian HMM
     ghmm = GaussianHMM(ghmm)
     return ghmm
 
-def discrete_hmm(P, pout, pi=None, stationary=True, reversible=True):
+
+def discrete_hmm(pi, P, pout):
     """ Initializes a discrete HMM
 
     Parameters
     ----------
+    pi : ndarray(nstates, )
+        Initial distribution.
     P : ndarray(nstates,nstates)
         Hidden transition matrix
     pout : ndarray(nstates,nsymbols)
@@ -160,13 +181,15 @@ def discrete_hmm(P, pout, pi=None, stationary=True, reversible=True):
     output_model = DiscreteOutputModel(pout)
     # initialize general HMM
     from bhmm.hmm.generic_hmm import HMM as _HMM
-    dhmm = _HMM(P, output_model, Pi=pi, stationary=stationary, reversible=reversible)
+    dhmm = _HMM(pi, P, output_model)
     # turn it into a Gaussian HMM
     dhmm = DiscreteHMM(dhmm)
     return dhmm
 
+
 def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
-                 reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000):
+                 reversible=True, stationary=False, p=None, accuracy=1e-3, maxit=1000, maxit_P=100000,
+                 mincount_connectivity=1e-2):
     r""" Estimate maximum-likelihood HMM
 
     Generic maximum-likelihood estimation of HMMs
@@ -188,9 +211,11 @@ def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
     reversible : bool, optional, default=True
         If True, a prior that enforces reversible transition matrices (detailed balance) is used;
         otherwise, a standard  non-reversible prior is used.
-    stationary : bool, optional, default=True
+    stationary : bool, optional, default=False
         If True, the initial distribution of hidden states is self-consistently computed as the stationary
         distribution of the transition matrix. If False, it will be estimated from the starting states.
+        Only set this to true if you're sure that the observation trajectories are initiated from a global
+        equilibrium distribution.
     p : ndarray (nstates), optional, default=None
         Initial or fixed stationary distribution. If given and stationary=True, transition matrices will be
         estimated with the constraint that they have p as their stationary distribution. If given and
@@ -208,16 +233,17 @@ def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
 
     """
     # select output model type
-    if (type is None):
+    if type is None:
         type = _guess_model_type(observations)
 
     if lag > 1:
-        observations = _lag_observations(observations, lag)
+        observations = lag_observations(observations, lag)
 
     # construct estimator
     from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
     est = _MaximumLikelihoodEstimator(observations, nstates, initial_model=initial_model, type=type,
-                                      reversible=reversible, stationary=stationary, p=p, accuracy=accuracy, maxit=maxit)
+                                      reversible=reversible, stationary=stationary, p=p, accuracy=accuracy,
+                                      maxit=maxit, maxit_P=maxit_P)
     # run
     est.fit()
     # set lag time
@@ -225,8 +251,9 @@ def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
     # return model
     return est.hmm
 
-def bayesian_hmm(observations, estimated_hmm, nsample=100, transition_matrix_prior=None,
-                 store_hidden=False, call_back=None):
+
+def bayesian_hmm(observations, estimated_hmm, nsample=100, reversible=True, stationary=False,
+                 p0_prior='mixed', transition_matrix_prior='mixed', store_hidden=False, call_back=None):
     r""" Bayesian HMM based on sampling the posterior
 
     Generic maximum-likelihood estimation of HMMs
@@ -237,16 +264,30 @@ def bayesian_hmm(observations, estimated_hmm, nsample=100, transition_matrix_pri
         `observations[i]` is a 1d numpy array corresponding to the observed trajectory index `i`
     estimated_hmm : HMM
         HMM estimated from estimate_hmm or initialize_hmm
+    reversible : bool, optional, default=True
+        If True, a prior that enforces reversible transition matrices (detailed balance) is used;
+        otherwise, a standard  non-reversible prior is used.
+    stationary : bool, optional, default=False
+        If True, the stationary distribution of the transition matrix will be used as initial distribution.
+        Only use True if you are confident that the observation trajectories are started from a global
+        equilibrium. If False, the initial distribution will be estimated as usual from the first step
+        of the hidden trajectories.
     nsample : int, optional, default=100
         number of Gibbs sampling steps
+    p0_prior : None or float or ndarray(n)
+        prior count array for the initial distribution to be used for transition matrix sampling.
+        |  'mixed' (default),  1 count is distributed according to p0 of initial model
+        |  None,  -1 prior is used that ensures coincidence between mean an MLE.
+            Will sooner or later lead to sampling problems, because as soon as zero trajectories are drawn
+            from a given state, the sampler cannot recover and that state will never serve as a starting
+            state subsequently. Only recommended for when the probability to sample zero trajectories
+            from any state is negligible.
     transition_matrix_prior : str or ndarray(n,n)
         prior count matrix to be used for transition matrix sampling, or a keyword specifying the prior mode
-        |  None (default),  -1 prior is used that ensures consistency between mean and MLE. Can lead to sampling
+        |  'mixed' (default),  1 count is distributed to every row according to P of initial model.
+        |  None,  -1 prior is used that ensures coincidence between mean and MLE. Can lead to sampling
             disconnected matrices in the low-data regime. If you have disconnectivity problems, consider
             using 'init-connect'
-        |  'init-connect',  prior count matrix ensuring the same connectivity as in the initial model. 1 count
-            is added to all diagonals. All off-diagonals share one prior count distributed proportional to
-            the row of the initial transition matrix.
     store_hidden : bool, optional, default=False
         store hidden trajectories in sampled HMMs
     call_back : function, optional, default=None
@@ -261,8 +302,9 @@ def bayesian_hmm(observations, estimated_hmm, nsample=100, transition_matrix_pri
     # construct estimator
     from bhmm.estimators.bayesian_sampling import BayesianHMMSampler as _BHMM
     sampler = _BHMM(observations, estimated_hmm.nstates, initial_model=estimated_hmm,
-                    reversible=estimated_hmm.is_reversible, transition_matrix_sampling_steps=1000,
-                    transition_matrix_prior=transition_matrix_prior, type=estimated_hmm.output_model.model_type)
+                    reversible=reversible, stationary=stationary, transition_matrix_sampling_steps=1000,
+                    p0_prior=p0_prior, transition_matrix_prior=transition_matrix_prior,
+                    type=estimated_hmm.output_model.model_type)
 
     # Sample models.
     sampled_hmms = sampler.sample(nsamples=nsample, save_hidden_state_trajectory=store_hidden,

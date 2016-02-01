@@ -11,9 +11,11 @@ __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
 __license__ = "LGPL"
 __maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
+__email__ = "jchodera AT gmail DOT com"
 
-from msmtools.estimation import count_matrix
+import msmtools.estimation as msmest
+from bhmm.estimators import _tmatrix_disconnected
+
 
 class HMM(object):
     r""" Hidden Markov model (HMM).
@@ -42,84 +44,48 @@ class HMM(object):
 
     >>> # Gaussian HMM
     >>> nstates = 2
+    >>> pi = np.array([0.5, 0.5])
     >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
     >>> from bhmm import GaussianOutputModel
     >>> output_model = GaussianOutputModel(nstates, means=[-1, +1], sigmas=[1, 1])
-    >>> model = HMM(Tij, output_model)
+    >>> model = HMM(pi, Tij, output_model)
 
     >>> # Discrete HMM
     >>> nstates = 2
+    >>> pi = np.array([0.5, 0.5])
     >>> Tij = np.array([[0.8, 0.2], [0.5, 0.5]])
     >>> from bhmm import DiscreteOutputModel
     >>> output_model = DiscreteOutputModel([[0.5, 0.1, 0.4], [0.2, 0.3, 0.5]])
-    >>> model = HMM(Tij, output_model)
+    >>> model = HMM(pi, Tij, output_model)
 
     """
-    def __init__(self, Tij, output_model, lag=1, Pi=None, stationary=True, reversible=True):
+    def __init__(self, Pi, Tij, output_model, lag=1):
         # set number of states
-        self._nstates = np.array(Tij).shape[0]
+        self._nstates = np.shape(Tij)[0]
         # lag time
         self._lag = lag
         # output model
         self.output_model = output_model
         # hidden state trajectories are optional
         self.hidden_state_trajectories = None
-        # parameters
-        self._stationary = stationary
-        self._reversible = reversible
         # update numbers
-        self.update(Tij, Pi)
+        self.update(Pi, Tij)
 
-    def update(self, Tij, Pi=None):
+    def update(self, Pi, Tij):
         r""" Updates the transition matrix and recomputes all derived quantities """
-        # EMMA imports
         from msmtools import analysis as msmana
 
-        # save a copy of the transition matrix
+        # update transition matrix by copy
         self._Tij = np.array(Tij)
         assert msmana.is_transition_matrix(self._Tij), 'Given transition matrix is not a stochastic matrix'
         assert self._Tij.shape[0] == self._nstates, 'Given transition matrix has unexpected number of states '
+        # reset spectral decomposition
+        self._spectral_decomp_available = False
 
-        # initial / stationary distribution
-        if (Pi is not None):
-            assert np.all(Pi >= 0), 'Given initial distribution contains negative elements.'
-            Pi = np.array(Pi) / np.sum(Pi) # ensure normalization and make a copy
-
-        if (self._stationary):
-            pT = msmana.stationary_distribution(self._Tij)
-            if Pi is None: # stationary and no stationary distribution fixed, so computing it from trans. mat.
-                self._Pi = pT
-            else: # stationary but stationary distribution is fixed, so the transition matrix must be consistent
-                assert np.allclose(Pi, pT), 'Stationary HMM requested, but given distribution is not the ' \
-                                            'stationary distribution of the given transition matrix.'
-                self._Pi = Pi
-        else:
-            if Pi is None: # no initial distribution given, so use stationary distribution anyway
-                self._Pi = msmana.stationary_distribution(self._Tij)
-            else:
-                self._Pi = Pi
-
-        # reversible
-        if self._reversible:
-            assert msmana.is_reversible(Tij), 'Reversible HMM requested, but given transition matrix is not reversible.'
-
-        # try to do eigendecomposition by default, because it's very cheap for hidden transition matrices
-        from scipy.linalg import LinAlgError
-        try:
-            if self._reversible:
-                self._R, self._D, self._L = msmana.rdl_decomposition(self._Tij, norm='reversible')
-                # everything must be real-valued
-                self._R = self._R.real
-                self._D = self._D.real
-                self._L = self._L.real
-            else:
-                self._R, self._D, self._L = msmana.rdl_decomposition(self._Tij, norm='standard')
-            self._eigenvalues = np.diag(self._D)
-            self._spectral_decomp_available = True
-        except LinAlgError:
-            logger().warn('Eigendecomposition failed for transition matrix\n'+str(self._Tij)+
-                          '\nspectral properties will not be available')
-            self._spectral_decomp_available = False
+        # check initial distribution
+        assert np.all(Pi >= 0), 'Given initial distribution contains negative elements.'
+        assert np.any(Pi > 0), 'Given initial distribution is zero'
+        self._Pi = np.array(Pi) / np.sum(Pi) # ensure normalization and make a copy
 
     def __repr__(self):
         from bhmm.output_models import OutputModel
@@ -132,12 +98,12 @@ class HMM(object):
                                                                          repr(self._Tij),
                                                                          outrepr,
                                                                          repr(self._Pi),
-                                                                         repr(self._stationary),
-                                                                         repr(self._reversible))
+                                                                         repr(self.is_stationary),
+                                                                         repr(self.is_reversible))
 
     def __str__(self):
         """ Returns a human-readable string representation of the HMM """
-        output  = 'Hidden Markov model\n'
+        output = 'Hidden Markov model\n'
         output += '-------------------\n'
         output += 'nstates: %d\n' % self._nstates
         output += 'Tij:\n'
@@ -153,10 +119,16 @@ class HMM(object):
         output += '\n'
         return output
 
-    def _assert_spectral_decomposition(self):
+    def _do_spectral_decomposition(self):
+        self._R, self._D, self._L = _tmatrix_disconnected.rdl_decomposition(self._Tij, reversible=self.is_reversible)
+        self._eigenvalues = np.diag(self._D)
+        self._spectral_decomp_available = True
+
+    def _ensure_spectral_decomposition(self):
+        """
+        """
         if not self._spectral_decomp_available:
-            raise RuntimeError('Trying to access eigenvalues or eigenvectors, but spectral decomposition is not '
-                               'available.')
+            self._do_spectral_decomposition()
 
     @property
     def lag(self):
@@ -164,15 +136,35 @@ class HMM(object):
         return self._lag
 
     @property
+    def is_strongly_connected(self):
+        r""" Whether the HMM transition matrix is strongly connected """
+        return _tmatrix_disconnected.is_connected(self._Tij, strong=True)
+
+    @property
+    def strongly_connected_sets(self):
+        return _tmatrix_disconnected.connected_sets(self._Tij, strong=True)
+
+    @property
+    def is_weakly_connected(self):
+        r""" Whether the HMM transition matrix is weakly connected """
+        return _tmatrix_disconnected.is_connected(self._Tij, strong=False)
+
+    @property
+    def weakly_connected_sets(self):
+        return _tmatrix_disconnected.connected_sets(self._Tij, strong=False)
+
+    @property
     def is_reversible(self):
         r""" Whether the HMM is reversible """
-        return self._reversible
+        return _tmatrix_disconnected.is_reversible(self._Tij)
 
     @property
     def is_stationary(self):
         r""" Whether the MSM is stationary, i.e. whether the initial distribution is the stationary distribution
          of the hidden transition matrix. """
-        return self._stationary
+        # for disconnected matrices, the stationary distribution depends on the estimator, so we can't compute
+        # it directly. Therefore we test whether the initial distribution is stationary.
+        return np.allclose(np.dot(self._Pi, self._Tij), self._Pi)
 
     @property
     def nstates(self):
@@ -186,17 +178,17 @@ class HMM(object):
 
     @property
     def stationary_distribution(self):
-        r""" The stationary distribution of hidden states.
+        r""" Compute stationary distribution of hidden states if possible.
 
         Raises
         ------
         ValueError if the HMM is not stationary
 
         """
-        if self._stationary:
-            return self._Pi
-        else:
-            raise ValueError('HMM is not stationary')
+        assert _tmatrix_disconnected.is_connected(self._Tij, strong=False), \
+            'No unique stationary distribution because transition matrix is not connected'
+        import msmtools.analysis as msmana
+        return msmana.stationary_distribution(self._Tij)
 
     @property
     def transition_matrix(self):
@@ -213,7 +205,7 @@ class HMM(object):
             transition matrix eigenvalues :math:`\lambda_i, i = 1,...,k`., sorted by descending norm.
 
         """
-        self._assert_spectral_decomposition()
+        self._ensure_spectral_decomposition()
         return self._eigenvalues
 
     @property
@@ -226,7 +218,7 @@ class HMM(object):
             left eigenvectors in a row matrix. l_ij is the j'th component of the i'th left eigenvector
 
         """
-        self._assert_spectral_decomposition()
+        self._ensure_spectral_decomposition()
         return self._L
 
     @property
@@ -239,7 +231,7 @@ class HMM(object):
             right eigenvectors in a column matrix. r_ij is the i'th component of the j'th right eigenvector
 
         """
-        self._assert_spectral_decomposition()
+        self._ensure_spectral_decomposition()
         return self._R
 
     @property
@@ -256,6 +248,7 @@ class HMM(object):
         """
         from msmtools.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
 
+        self._ensure_spectral_decomposition()
         ts = _timescales(self._eigenvalues, tau=self._lag)
         return ts[1:]
 
@@ -273,14 +266,33 @@ class HMM(object):
         """
         return -self._lag / np.log(np.diag(self.transition_matrix))
 
-    def count_matrix(self, dtype=np.float64):
+    def sub_hmm(self, states):
+        r""" Returns HMM on a subset of states
+
+        Returns the HMM restricted to the selected subset of states.
+        Will raise exception if the hidden transition matrix cannot be normalized on this subset
+
+        """
+        # restrict initial distribution
+        pi_sub = self._Pi[states]
+        pi_sub /= pi_sub.sum()
+
+        # restrict transition matrix
+        P_sub = self._Tij[states, :][:, states]
+        # checks if this selection is possible
+        assert np.all(P_sub.sum(axis=1) > 0), \
+            'Illegal sub_hmm request: transition matrix cannot be normalized on ' + str(states)
+        P_sub /= P_sub.sum(axis=1)[:, None]
+
+        # restrict output model
+        out_sub = self.output_model.sub_output_model(states)
+
+        return HMM(pi_sub, P_sub, out_sub, lag=self.lag)
+
+
+    def count_matrix(self):
         # TODO: does this belong here or to the BHMM sampler, or in a subclass containing HMM with data?
         """Compute the transition count matrix from hidden state trajectory.
-
-        Parameters
-        ----------
-        dtype : numpy.dtype, optional, default=numpy.float64
-            The numpy dtype to use for the count matrix.
 
         Returns
         -------
@@ -296,16 +308,28 @@ class HMM(object):
         --------
 
         """
-
         if self.hidden_state_trajectories is None:
             raise RuntimeError('HMM model does not have a hidden state trajectory.')
 
-        C = count_matrix(self.hidden_state_trajectories, 1, nstates=self._nstates)
-        #C = np.zeros((self._nstates,self._nstates), dtype=dtype)
-        #for S in self.hidden_state_trajectories:
-        #    for t in range(len(S)-1):
-        #        C[S[t],S[t+1]] += 1
+        C = msmest.count_matrix(self.hidden_state_trajectories, 1, nstates=self._nstates)
         return C.toarray()
+
+
+    def count_init(self):
+        """Compute the counts at the first time step
+
+        Returns
+        -------
+        n : ndarray(nstates)
+            n[i] is the number of trajectories starting in state i
+
+        """
+        if self.hidden_state_trajectories is None:
+            raise RuntimeError('HMM model does not have a hidden state trajectory.')
+
+        n = [traj[0] for traj in self.hidden_state_trajectories]
+        return np.bincount(n, minlength=self.nstates)
+
 
     # def emission_probability(self, state, observation):
     #     """Compute the emission probability of an observation from a given state.
@@ -553,12 +577,11 @@ class HMM(object):
         >>> [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100, initial_Pi=np.array([1,0,0]))
 
         """
-        O = list() # observations
-        S = list() # state trajectories
+        O = list()  # observations
+        S = list()  # state trajectories
         for trajectory_index in range(ntrajectories):
             [o_t, s_t] = self.generate_synthetic_observation_trajectory(length=length, initial_Pi=initial_Pi)
             O.append(o_t)
             S.append(s_t)
 
         return [O, S]
-

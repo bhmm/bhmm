@@ -100,6 +100,9 @@ class DiscreteOutputModel(OutputModel):
         r""" Number of symbols, or observable output states """
         return self._nsymbols
 
+    def sub_output_model(self, states):
+        return DiscreteOutputModel(self._output_probabilities[states])
+
     # TODO: remove this code if we're sure we don't need it.
     # def p_o_i(self, o, i):
     #     """
