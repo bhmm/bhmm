@@ -70,7 +70,7 @@ class MaximumLikelihoodEstimator(object):
         reversible : bool, optional, default=True
             If True, a prior that enforces reversible transition matrices (detailed
             balance) is used; otherwise, a standard  non-reversible prior is used.
-        stationary : bool, optional, default=True
+        stationary : bool, optional, default=False
             If True, the initial distribution of hidden states is self-consistently
             computed as the stationary distribution of the transition matrix. If
             False, it will be estimated from the starting states.
@@ -101,28 +101,17 @@ class MaximumLikelihoodEstimator(object):
         self._Ts = [len(o) for o in observations]
         self._maxT = np.max(self._Ts)
 
-        # Store the number of states.
+        # Set parameters
         self._nstates = nstates
+        self._reversible = reversible
+        self._stationary = stationary
 
         if initial_model is not None:
             # Use user-specified initial model, if provided.
             self._hmm = copy.deepcopy(initial_model)
-            # consistency checks
-            if self._hmm.is_stationary != stationary:
-                logger().warn('Requested stationary=' + str(stationary) + ' but initial model is stationary=' +
-                              str(self._hmm.is_stationary) + '. Using stationary='+str(self._hmm.is_stationary))
-            if self._hmm.is_reversible != reversible:
-                logger().warn('Requested reversible=' + str(reversible) + ' but initial model is reversible=' +
-                              str(self._hmm.is_reversible) + '. Using reversible='+str(self._hmm.is_reversible))
-            # setting parameters
-            self._reversible = self._hmm.is_reversible
-            self._stationary = self._hmm.is_stationary
         else:
             # Generate our own initial model.
             self._hmm = bhmm.init_hmm(observations, nstates, type=type)
-            # setting parameters
-            self._reversible = reversible
-            self._stationary = stationary
 
         # stationary and initial distribution
         self._fixed_stationary_distribution = None
@@ -278,6 +267,18 @@ class MaximumLikelihoodEstimator(object):
         # return results
         return logprob
 
+    def _init_counts(self, gammas):
+        gamma0_sum = np.zeros(self._nstates)
+        for k in range(len(self._observations)):  # update state counts
+            gamma0_sum += gammas[k][0]
+        return gamma0_sum
+
+    def _transition_counts(self, count_matrices):
+        C = np.zeros((self._nstates, self._nstates))
+        for k in range(len(self._observations)):  # update count matrix
+            C += count_matrices[k]
+        return C
+
     def _update_model(self, gammas, count_matrices, maxiter=10000000):
         """
         Maximization step: Updates the HMM model given the hidden state assignment and count matrices
@@ -294,17 +295,9 @@ class MaximumLikelihoodEstimator(object):
             an iterative method is used.
 
         """
-        K = len(self._observations)
-        N = self._nstates
-
-        C = np.zeros((N, N))
-        gamma0_sum = np.zeros(N)
-        for k in range(K):
-            # update state counts
-            gamma0_sum += gammas[k][0]
-            # update count matrix
-            C += count_matrices[k]
-
+        gamma0_sum = self._init_counts(gammas)
+        C = self._transition_counts(count_matrices)
+        logger().info("Initial count = \n"+str(gamma0_sum))
         logger().info("Count matrix = \n"+str(C))
 
         # compute new transition matrix
@@ -334,7 +327,7 @@ class MaximumLikelihoodEstimator(object):
 
         # update output model
         # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
-        self._hmm.output_model._estimate_output_model(self._observations, gammas)
+        self._hmm.output_model.estimate(self._observations, gammas)
 
     def compute_viterbi_paths(self):
         """
@@ -426,6 +419,9 @@ class MaximumLikelihoodEstimator(object):
         self._likelihoods = self._likelihoods[:it]
         # set final likelihood
         self._hmm.likelihood = loglik
+        # set final count matrix
+        self.count_matrix = self._transition_counts(self._Cs)
+        self.initial_count = self._init_counts(self._gammas)
 
         final_time = time.time()
         elapsed_time = final_time - initial_time

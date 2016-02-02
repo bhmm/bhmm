@@ -23,15 +23,26 @@ class DiscreteOutputModel(OutputModel):
 
     """
 
-    def __init__(self, B):
+    def __init__(self, B, prior=None):
         """
         Create a 1D Gaussian output model.
 
         Parameters
         ----------
-        B : ndarray((N,M),dtype=float)
+        B : ndarray((N, M), dtype=float)
             output probability matrix using N hidden states and M observable symbols.
             This matrix needs to be row-stochastic.
+        prior : None or broadcastable to ndarray((N, M), dtype=float)
+            Prior for the initial distribution of the HMM.
+            Currently implements the Dirichlet prior that is conjugate to the
+            Dirichlet distribution of :math:`b_i`. :math:`b_i` is sampled from:
+            .. math:
+                b_i \sim \prod_j b_{ij}_i^{a_{ij} + n_{ij} - 1}
+            where :math:`n_{ij}` are the number of times symbol :math:`j` has
+            been observed when the hidden trajectory was in state :math:`i`
+            and :math:`a_{ij}` is the prior count.
+            The default prior=None corresponds to :math:`a_{ij} = 0`.
+                This option ensures coincidence between sample mean an MLE.
 
         Examples
         --------
@@ -39,18 +50,22 @@ class DiscreteOutputModel(OutputModel):
         Create an observation model.
 
         >>> import numpy as np
-        >>> B = np.array([[0.5,0.5],[0.1,0.9]])
+        >>> B = np.array([[0.5, 0.5], [0.1, 0.9]])
         >>> output_model = DiscreteOutputModel(B)
 
         """
         self._output_probabilities = np.array(B, dtype=config.dtype)
-        nstates,self._nsymbols = self._output_probabilities.shape[0],self._output_probabilities.shape[1]
+        nstates, self._nsymbols = self._output_probabilities.shape[0], self._output_probabilities.shape[1]
         # superclass constructor
         OutputModel.__init__(self, nstates)
         # test if row-stochastic
-        assert np.allclose(np.sum(self._output_probabilities, axis=1), np.ones(self.nstates)), 'B is not a stochastic matrix'
-        # set output matrix
-        self._output_probabilities = B
+        assert np.allclose(self._output_probabilities.sum(axis=1), np.ones(self.nstates)), 'B is no stochastic matrix'
+        # set prior matrix
+        if prior is None:
+            prior = np.zeros((nstates, self._nsymbols))
+        else:
+            prior = np.zeros((nstates, self._nsymbols)) + prior  # will fail if not broadcastable
+        self.prior = prior
 
     def __repr__(self):
         r""" String representation of this output model
@@ -103,82 +118,6 @@ class DiscreteOutputModel(OutputModel):
     def sub_output_model(self, states):
         return DiscreteOutputModel(self._output_probabilities[states])
 
-    # TODO: remove this code if we're sure we don't need it.
-    # def p_o_i(self, o, i):
-    #     """
-    #     Returns the output probability for symbol o given hidden state i
-    #
-    #     Parameters
-    #     ----------
-    #     o : int
-    #         the discrete symbol o (observation)
-    #     i : int
-    #         the hidden state index
-    #
-    #     Return
-    #     ------
-    #     p_o : float
-    #         the probability that hidden state i generates symbol o
-    #
-    #     """
-    #     # TODO: so far we don't use this method. Perhaps we don't need it.
-    #     return self.B[i,o]
-    #
-    # def log_p_o_i(self, o, i):
-    #     """
-    #     Returns the logarithm of the output probability for symbol o given hidden state i
-    #
-    #     Parameters
-    #     ----------
-    #     o : int
-    #         the discrete symbol o (observation)
-    #     i : int
-    #         the hidden state index
-    #
-    #     Return
-    #     ------
-    #     p_o : float
-    #         the log probability that hidden state i generates symbol o
-    #
-    #     """
-    #     # TODO: check if we need the log-probabilities
-    #     return log(self.B[i,o])
-    #
-    #
-    # def p_o(self, o):
-    #     """
-    #     Returns the output probability for symbol o from all hidden states
-    #
-    #     Parameters
-    #     ----------
-    #     o : int
-    #         the discrete symbol o (observation)
-    #
-    #     Return
-    #     ------
-    #     p_o : ndarray (N)
-    #         the probability that any of the N hidden states generates symbol o
-    #
-    #     """
-    #     # TODO: so far we don't use this method. Perhaps we don't need it.
-    #     return self.B[:,o]
-    #
-    # def log_p_o(self, o):
-    #     """
-    #     Returns the logarithm of the output probabilities for symbol o from all hidden states
-    #
-    #     Parameters
-    #     ----------
-    #     o : int
-    #         the discrete symbol o (observation)
-    #
-    #     Return
-    #     ------
-    #     p_o : ndarray (N)
-    #         the log probability that any of the N hidden states generates symbol o
-    #
-    #     """
-    #     return np.log(self.B[:,o])
 
     def p_obs(self, obs, out=None):
         """
@@ -209,16 +148,16 @@ class DiscreteOutputModel(OutputModel):
             # out /= np.sum(out, axis=1)[:,None]
             return out
 
-    def _estimate_output_model(self, observations, weights):
+    def estimate(self, observations, weights):
         """
-        Fits the output model given the observations and weights
+        Maximum likelihood estimation of output model given the observations and weights
 
         Parameters
         ----------
 
         observations : [ ndarray(T_k) ] with K elements
             A list of K observation trajectories, each having length T_k
-        weights : [ ndarray(T_k,N) ] with K elements
+        weights : [ ndarray(T_k, N) ] with K elements
             A list of K weight matrices, each having length T_k and containing the probability of any of the states in
             the given time step
 
@@ -245,7 +184,7 @@ class DiscreteOutputModel(OutputModel):
 
         Update the observation model parameters my a maximum-likelihood fit.
 
-        >>> output_model._estimate_output_model(obs, weights)
+        >>> output_model.estimate(obs, weights)
 
         """
         # sizes
@@ -267,42 +206,40 @@ class DiscreteOutputModel(OutputModel):
         # normalize
         self._output_probabilities /= np.sum(self._output_probabilities, axis=1)[:,None]
 
-    def _sample_output_model(self, observations):
+    def sample(self, observations_by_state):
         """
         Sample a new set of distribution parameters given a sample of observations from the given state.
 
-        Both the internal parameters and the attached HMM model are updated.
+        The internal parameters are updated.
 
         Parameters
         ----------
         observations :  [ numpy.array with shape (N_k,) ] with nstates elements
-            observations[k] is a set of observations sampled from state k
+            observations[k] are all observations associated with hidden state k
 
         Examples
         --------
 
         initialize output model
 
-        >>> B = np.array([[0.5,0.5],[0.1,0.9]])
+        >>> B = np.array([[0.5, 0.5], [0.1, 0.9]])
         >>> output_model = DiscreteOutputModel(B)
 
         sample given observation
 
-        >>> obs = [[0,0,0,1,1,1],[1,1,1,1,1,1]]
-        >>> output_model._sample_output_model(obs)
+        >>> obs = [[0, 0, 0, 1, 1, 1], [1, 1, 1, 1, 1, 1]]
+        >>> output_model.sample(obs)
 
         """
         from numpy.random import dirichlet
-        # total number of observation symbols
-        M = self._output_probabilities.shape[1]
-        count_full = np.zeros((M), dtype = int)
-        for i in range(len(observations)):
+        N, M = self._output_probabilities.shape  # nstates, nsymbols
+        for i in range(len(observations_by_state)):
             # count symbols found in data
-            count = np.bincount(observations[i])
-            # blow up to full symbol space (if symbols are missing in this observation)
-            count_full[:count.shape[0]] = count[:]
+            count = np.bincount(observations_by_state[i], minlength=M).astype(float)
             # sample dirichlet distribution
-            self._output_probabilities[i,:] = dirichlet(count_full + 1)
+            count += self.prior[i]
+            if count.sum() > 0:  # if counts at all: can't sample, so leave output probabilities as they are.
+                self._output_probabilities[i,:] = dirichlet(self.prior[i] + count)
 
     def generate_observation_from_state(self, state_index):
         """

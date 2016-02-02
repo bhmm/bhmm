@@ -2,7 +2,9 @@ __author__ = 'noe'
 
 import numpy as np
 import unittest
-import bhmm.init.discrete as initdisc
+from bhmm import init_discrete_hmm
+from bhmm.init.discrete import estimate_initial_hmm
+import msmtools.estimation as msmest
 
 
 class TestHMM(unittest.TestCase):
@@ -18,8 +20,9 @@ class TestHMM(unittest.TestCase):
         import msmtools.generation as msmgen
         T = 10000
         dtrajs = [msmgen.generate_traj(P, T)]
+        C = msmest.count_matrix(dtrajs, 1).toarray()
         # estimate initial HMM with 2 states - should be identical to P
-        hmm = initdisc.estimate_initial_hmm(dtrajs, 2)
+        hmm = init_discrete_hmm(dtrajs, 2)
         # test
         A = hmm.transition_matrix
         B = hmm.output_model.output_probabilities
@@ -44,8 +47,9 @@ class TestHMM(unittest.TestCase):
         import msmtools.generation as msmgen
         T = 10000
         dtrajs = [msmgen.generate_traj(P, T)]
+        C = msmest.count_matrix(dtrajs, 1).toarray()
         # estimate initial HMM with 2 states - should be identical to P
-        hmm = initdisc.estimate_initial_hmm(dtrajs, nstates)
+        hmm = init_discrete_hmm(dtrajs, nstates)
         # Test if model fit is close to reference. Note that we do not have an exact reference, so we cannot set the
         # tolerance in a rigorous way to test statistical significance. These are just sanity checks.
         Tij = hmm.transition_matrix
@@ -76,8 +80,9 @@ class TestHMM(unittest.TestCase):
         import msmtools.generation as msmgen
         T = 10000
         dtrajs = [msmgen.generate_traj(P, T)]
+        C = msmest.count_matrix(dtrajs, 1).toarray()
         # estimate initial HMM with 2 states - should be identical to P
-        hmm = initdisc.estimate_initial_hmm(dtrajs, nstates)
+        hmm = init_discrete_hmm(dtrajs, nstates)
         # Test stochasticity and reversibility
         Tij = hmm.transition_matrix
         B = hmm.output_model.output_probabilities
@@ -91,20 +96,34 @@ class TestHMM(unittest.TestCase):
     # ------------------------------------------------------------------------------------------------------
 
     def test_1state_1obs(self):
-        obs = np.array([0, 0, 0, 0, 0])
+        dtraj = np.array([0, 0, 0, 0, 0])
+        C = msmest.count_matrix(dtraj, 1).toarray()
         Aref = np.array([[1.0]])
         Bref = np.array([[1.0]])
         for rev in [True, False]:  # reversibiliy doesn't matter in this example
-            hmm = initdisc.estimate_initial_hmm([obs], 1, reversible=rev)
+            hmm = init_discrete_hmm(dtraj, 1, reversible=rev)
             assert(np.allclose(hmm.transition_matrix, Aref))
             assert(np.allclose(hmm.output_model.output_probabilities, Bref))
 
-
-    def test_1state_2obs(self):
-        obs = np.array([0, 0, 0, 0, 1])
+    def test_2state_2obs_deadend(self):
+        dtraj = np.array([0, 0, 0, 0, 1])
+        C = msmest.count_matrix(dtraj, 1).toarray()
         Aref = np.array([[1.0]])
         for rev in [True, False]:  # reversibiliy doesn't matter in this example
-            hmm = initdisc.estimate_initial_hmm([obs], 1, reversible=rev)
+            hmm = init_discrete_hmm(dtraj, 1, reversible=rev)
+            assert(np.allclose(hmm.transition_matrix, Aref))
+            # output must be 1 x 2, and no zeros
+            B = hmm.output_model.output_probabilities
+            assert(np.array_equal(B.shape, np.array([1, 2])))
+            assert(np.all(B > 0.0))
+
+    def test_2state_2obs_Pgiven(self):
+        obs = np.array([0, 0, 1, 1, 0])
+        C = msmest.count_matrix(obs, 1).toarray()
+        Aref = np.array([[1.0]])
+        for rev in [True, False]:  # reversibiliy doesn't matter in this example
+            P = msmest.transition_matrix(C, reversible=rev)
+            hmm = estimate_initial_hmm(C, 1, reversible=rev, P=P)
             assert(np.allclose(hmm.transition_matrix, Aref))
             # output must be 1 x 2, and no zeros
             B = hmm.output_model.output_probabilities
@@ -112,35 +131,70 @@ class TestHMM(unittest.TestCase):
             assert(np.all(B > 0.0))
 
     def test_2state_2obs_unidirectional(self):
-        obs = np.array([0, 0, 0, 0, 1])
-        Aref_naked = np.array([[ 0.75,  0.25],
-                               [ 0.  ,  1.  ]])
+        dtraj = np.array([0, 0, 0, 0, 1])
+        C = msmest.count_matrix(dtraj, 1).toarray()
+        Aref_naked = np.array([[ 0.75, 0.25],
+                               [ 0   , 1   ]])
         Bref_naked = np.array([[ 1.,  0.],
                                [ 0.,  1.]])
         perm = [1, 0]  # permutation
         for rev in [True, False]:  # reversibiliy doesn't matter in this example
-            hmm = initdisc.estimate_initial_hmm([obs], 2, reversible=rev, eps_A=0, eps_B=0)
+            hmm = init_discrete_hmm(dtraj, 2, reversible=rev, msm_diag_prior=0, msm_neighbor_prior=0, eps_P=0, eps_pout=0)
             assert np.allclose(hmm.transition_matrix, Aref_naked) \
                    or np.allclose(hmm.transition_matrix, Aref_naked[np.ix_(perm, perm)])  # test permutation
             assert np.allclose(hmm.output_model.output_probabilities, Bref_naked) \
                    or np.allclose(hmm.output_model.output_probabilities, Bref_naked[perm])  # test permutation
 
     def test_3state_fail(self):
-        obs = np.array([0, 1, 0, 0, 1, 1])
+        dtraj = np.array([0, 1, 0, 0, 1, 1])
+        C = msmest.count_matrix(dtraj, 1).toarray()
         # this example doesn't admit more than 2 metastable states. Raise.
         with self.assertRaises(NotImplementedError):
-            initdisc.estimate_initial_hmm([obs], 3, reversible=False)
+            init_discrete_hmm(dtraj, 3, reversible=False)
 
     def test_3state_prev(self):
         import msmtools.analysis as msmana
-        obs = np.array([0, 1, 2, 0, 3, 4])
+        dtraj = np.array([0, 1, 2, 0, 3, 4])
+        C = msmest.count_matrix(dtraj, 1).toarray()
         for rev in [True, False]:
-            hmm = initdisc.estimate_initial_hmm([obs], 3, reversible=rev)
+            hmm = init_discrete_hmm(dtraj, 3, reversible=rev)
             assert msmana.is_transition_matrix(hmm.transition_matrix)
             if rev:
                 assert msmana.is_reversible(hmm.transition_matrix)
             assert np.allclose(hmm.output_model.output_probabilities.sum(axis=1), 1)
 
+    def test_state_splitting(self):
+        dtraj = np.array([0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2,
+                          0, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 0, 1, 2, 2, 2, 2, 2, 2])
+        C = msmest.count_matrix(dtraj, 1).toarray()
+        hmm0 = init_discrete_hmm(dtraj, 3, separate=[0])
+        piref = np.array([ 0.35801562,  0.55534566,  0.08663872])
+        Aref = np.array([[ 0.76464362,  0.10261374,  0.13274264],
+                         [ 0.06615217,  0.89465375,  0.03919408],
+                         [ 0.54853002,  0.25123017,  0.20023981]])
+        Bref = np.array([[ 0, 1, 0],
+                         [ 0, 0, 1],
+                         [ 1, 0, 0]])
+        assert np.allclose(hmm0.initial_distribution, piref, atol=1e-5)
+        assert np.allclose(hmm0.transition_matrix, Aref, atol=1e-5)
+        assert np.max(np.abs(hmm0.output_model.output_probabilities - Bref)) < 0.01
+
+    def test_state_splitting_empty(self):
+        dtraj = np.array([0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2,
+                          0, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 0, 1, 2, 2, 2, 2, 2, 2])
+        dtraj += 2  # create empty labels
+        C = msmest.count_matrix(dtraj, 1).toarray()
+        hmm0 = init_discrete_hmm(dtraj, 3, separate=[1, 2])  # include an empty label in separate
+        piref = np.array([ 0.35801562,  0.55534566,  0.08663872])
+        Aref = np.array([[ 0.76464362,  0.10261374,  0.13274264],
+                         [ 0.06615217,  0.89465375,  0.03919408],
+                         [ 0.54853002,  0.25123017,  0.20023981]])
+        Bref = np.array([[ 0, 0, 0, 1, 0],
+                         [ 0, 0, 0, 0, 1],
+                         [ 0, 0, 1, 0, 0]])
+        assert np.allclose(hmm0.initial_distribution, piref, atol=1e-5)
+        assert np.allclose(hmm0.transition_matrix, Aref, atol=1e-5)
+        assert np.max(np.abs(hmm0.output_model.output_probabilities - Bref)) < 0.01
 
 if __name__=="__main__":
     unittest.main()
