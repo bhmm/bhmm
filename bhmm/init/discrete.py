@@ -180,13 +180,16 @@ def estimate_initial_hmm(C_full, nstates, reversible=True, active_set=None, P=No
             raise ValueError('Given active set has empty states')  # don't tolerate empty states
     if P is not None:
         if np.shape(P)[0] != active_set.size:  # needs to fit to active
-            raise ValueError('Given initial transition matrix P has shape ' + np.shape(P)
-                             + 'while active set has size ' + active_set.size)
+            raise ValueError('Given initial transition matrix P has shape ' + str(np.shape(P))
+                             + 'while active set has size ' + str(active_set.size))
     # when using separate states, only keep the nonempty ones (the others don't matter)
     if separate is None:
         active_nonseparate = active_set.copy()
         nmeta = nstates
     else:
+        if np.max(separate) >= nfull:
+            raise ValueError('Separate set has indexes that do not exist in full state space: '
+                             + str(np.max(separate)))
         active_nonseparate = np.array(list(set(active_set) - set(separate)))
         nmeta = nstates - 1
     # check if we can proceed

@@ -196,5 +196,10 @@ class TestHMM(unittest.TestCase):
         assert np.allclose(hmm0.transition_matrix, Aref, atol=1e-5)
         assert np.max(np.abs(hmm0.output_model.output_probabilities - Bref)) < 0.01
 
+    def test_state_splitting_fail(self):
+        dtraj = np.array([0, 0, 1, 1])
+        with self.assertRaises(ValueError):
+            init_discrete_hmm(dtraj, 2, separate=[0, 2])
+
 if __name__=="__main__":
     unittest.main()
