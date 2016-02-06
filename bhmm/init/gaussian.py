@@ -6,7 +6,7 @@ from bhmm.hmm.generic_hmm import HMM
 from bhmm.util.logger import logger
 from bhmm.util import config
 
-def initial_model_gaussian1d(observations, nstates, reversible=True):
+def init_model_gaussian1d(observations, nstates, reversible=True):
     """Generate an initial model with 1D-Gaussian output densities
 
     Parameters
@@ -22,8 +22,8 @@ def initial_model_gaussian1d(observations, nstates, reversible=True):
     Generate initial model for a gaussian output model.
 
     >>> from bhmm import testsystems
-    >>> [model, observations, states] = testsystems.generate_synthetic_observations(output_model_type='gaussian')
-    >>> initial_model = initial_model_gaussian1d(observations, model.nstates)
+    >>> [model, observations, states] = testsystems.generate_synthetic_observations(output='gaussian')
+    >>> initial_model = init_model_gaussian1d(observations, model.nstates)
 
     """
     ntrajectories = len(observations)

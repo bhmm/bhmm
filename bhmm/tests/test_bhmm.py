@@ -37,7 +37,7 @@ class TestBHMM(unittest.TestCase):
 
         # EM with lag 10
         lag = 10
-        cls.hmm_lag10 = bhmm.estimate_hmm([obs], cls.nstates, lag=lag, type='discrete')
+        cls.hmm_lag10 = bhmm.estimate_hmm([obs], cls.nstates, lag=lag, output='discrete')
         # BHMM
         cls.sampled_hmm_lag10 = bhmm.bayesian_hmm([obs[::lag]], cls.hmm_lag10, nsample=cls.nsamples)
 

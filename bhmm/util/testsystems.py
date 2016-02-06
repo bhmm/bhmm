@@ -88,7 +88,7 @@ def force_spectroscopy_model():
     return model
 
 def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0,
-                 lifetime_max = 100, lifetime_min = 10, reversible = True, output_model_type = 'gaussian'):
+                 lifetime_max = 100, lifetime_min = 10, reversible = True, output = 'gaussian'):
     """
     Construct a test multistate model with regular spaced emission means (linearly interpolated between omin and omax)
     and variable emission widths (linearly interpolated between sigma_min and sigma_max).
@@ -136,7 +136,7 @@ def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 
 
     Generate a discrete output model.
 
-    >>> model = dalton_model(output_model_type='discrete')
+    >>> model = dalton_model(output='discrete')
 
     """
 
@@ -145,9 +145,9 @@ def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 
     sigmas = np.linspace(sigma_min, sigma_max, num = nstates)
 
     # Define state emission probabilities.
-    if output_model_type == 'gaussian':
+    if output == 'gaussian':
         output_model = GaussianOutputModel(nstates, means=means, sigmas=sigmas)
-    elif output_model_type == 'discrete':
+    elif output == 'discrete':
         # Construct matrix of output probabilities, B[i,j] is probability state i produces symbol j, where nsymbols = nstates
         B = np.zeros([nstates,nstates], dtype=np.float64)
         for i in range(nstates):
@@ -156,7 +156,7 @@ def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 
             B[i,:] /= B[i,:].sum()
         output_model = DiscreteOutputModel(B)
     else:
-        raise Exception("output_model_type = '%s' unknown, must be one of ['gaussian', 'discrete']" % output_model_type)
+        raise Exception("output_model_type = '%s' unknown, must be one of ['gaussian', 'discrete']" % output)
 
     Tij = generate_transition_matrix(nstates, lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible)
 
@@ -174,7 +174,7 @@ def dalton_model(nstates = 3, omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 
 def generate_synthetic_observations(nstates=3, ntrajectories=10, length=10000,
                          omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0,
                          lifetime_max = 100, lifetime_min = 10, reversible = True,
-                         output_model_type = 'gaussian'):
+                         output = 'gaussian'):
 
     """Generate synthetic data from a random HMM model.
 
@@ -219,14 +219,14 @@ def generate_synthetic_observations(nstates=3, ntrajectories=10, length=10000,
 
     Generate synthetic observations with discrete state model.
 
-    >>> [model, observations, states] = generate_synthetic_observations(output_model_type='discrete')
+    >>> [model, observations, states] = generate_synthetic_observations(output='discrete')
 
     """
 
     # Generate a random HMM model.
     model = dalton_model(nstates, omin = omin, omax = omax, sigma_min = sigma_min, sigma_max = sigma_max,
                          lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible,
-                         output_model_type = output_model_type)
+                         output= output)
 
     # Generate synthetic data.
     [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
@@ -237,7 +237,7 @@ def generate_synthetic_observations(nstates=3, ntrajectories=10, length=10000,
 def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000,
                          omin = -5, omax = 5, sigma_min = 0.5, sigma_max = 2.0,
                          lifetime_max = 100, lifetime_min = 10, reversible = True,
-                         output_model_type = 'gaussian'):
+                         output = 'gaussian'):
     """Generate a BHMM model from synthetic data from a random HMM model.
 
     Parameters
@@ -283,14 +283,14 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000,
 
     Generate BHMM with discerete states.
 
-    >>> [model, observations, bhmm] = generate_random_bhmm(output_model_type='discrete')
+    >>> [model, observations, bhmm] = generate_random_bhmm(output='discrete')
 
     """
 
     # Generate a random HMM model.
     model = dalton_model(nstates, omin = omin, omax = omax, sigma_min = sigma_min, sigma_max = sigma_max,
                          lifetime_max = lifetime_max, lifetime_min = lifetime_min, reversible = reversible,
-                         output_model_type = output_model_type)
+                         output= output)
     # Generate synthetic data.
     [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
     # Initialize a new BHMM model.

@@ -3,7 +3,7 @@ __author__ = 'noe'
 import numpy as np
 import unittest
 from bhmm import init_discrete_hmm
-from bhmm.init.discrete import estimate_initial_hmm
+from bhmm.init.discrete import init_discrete_hmm_spectral
 import msmtools.estimation as msmest
 
 
@@ -123,12 +123,11 @@ class TestHMM(unittest.TestCase):
         Aref = np.array([[1.0]])
         for rev in [True, False]:  # reversibiliy doesn't matter in this example
             P = msmest.transition_matrix(C, reversible=rev)
-            hmm = estimate_initial_hmm(C, 1, reversible=rev, P=P)
-            assert(np.allclose(hmm.transition_matrix, Aref))
+            p0, P0, B0 = init_discrete_hmm_spectral(C, 1, reversible=rev, P=P)
+            assert(np.allclose(P0, Aref))
             # output must be 1 x 2, and no zeros
-            B = hmm.output_model.output_probabilities
-            assert(np.array_equal(B.shape, np.array([1, 2])))
-            assert(np.all(B > 0.0))
+            assert(np.array_equal(B0.shape, np.array([1, 2])))
+            assert(np.all(B0 > 0.0))
 
     def test_2state_2obs_unidirectional(self):
         dtraj = np.array([0, 0, 0, 0, 1])
@@ -139,7 +138,7 @@ class TestHMM(unittest.TestCase):
                                [ 0.,  1.]])
         perm = [1, 0]  # permutation
         for rev in [True, False]:  # reversibiliy doesn't matter in this example
-            hmm = init_discrete_hmm(dtraj, 2, reversible=rev, msm_diag_prior=0, msm_neighbor_prior=0, eps_P=0, eps_pout=0)
+            hmm = init_discrete_hmm(dtraj, 2, reversible=rev, method='spectral', regularize=False)
             assert np.allclose(hmm.transition_matrix, Aref_naked) \
                    or np.allclose(hmm.transition_matrix, Aref_naked[np.ix_(perm, perm)])  # test permutation
             assert np.allclose(hmm.output_model.output_probabilities, Bref_naked) \
@@ -168,10 +167,10 @@ class TestHMM(unittest.TestCase):
                           0, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 0, 1, 2, 2, 2, 2, 2, 2])
         C = msmest.count_matrix(dtraj, 1).toarray()
         hmm0 = init_discrete_hmm(dtraj, 3, separate=[0])
-        piref = np.array([ 0.35801562,  0.55534566,  0.08663872])
-        Aref = np.array([[ 0.76464362,  0.10261374,  0.13274264],
-                         [ 0.06615217,  0.89465375,  0.03919408],
-                         [ 0.54853002,  0.25123017,  0.20023981]])
+        piref = np.array([ 0.35801876,  0.55535398,  0.08662726])
+        Aref = np.array([[ 0.76462978,  0.10261978,  0.13275044],
+                         [ 0.06615566,  0.89464821,  0.03919614],
+                         [ 0.54863966,  0.25128039,  0.20007995]])
         Bref = np.array([[ 0, 1, 0],
                          [ 0, 0, 1],
                          [ 1, 0, 0]])
@@ -185,10 +184,10 @@ class TestHMM(unittest.TestCase):
         dtraj += 2  # create empty labels
         C = msmest.count_matrix(dtraj, 1).toarray()
         hmm0 = init_discrete_hmm(dtraj, 3, separate=[1, 2])  # include an empty label in separate
-        piref = np.array([ 0.35801562,  0.55534566,  0.08663872])
-        Aref = np.array([[ 0.76464362,  0.10261374,  0.13274264],
-                         [ 0.06615217,  0.89465375,  0.03919408],
-                         [ 0.54853002,  0.25123017,  0.20023981]])
+        piref = np.array([ 0.35801876,  0.55535398,  0.08662726])
+        Aref = np.array([[ 0.76462978,  0.10261978,  0.13275044],
+                         [ 0.06615566,  0.89464821,  0.03919614],
+                         [ 0.54863966,  0.25128039,  0.20007995]])
         Bref = np.array([[ 0, 0, 0, 1, 0],
                          [ 0, 0, 0, 0, 1],
                          [ 0, 0, 1, 0, 0]])

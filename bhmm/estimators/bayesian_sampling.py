@@ -45,10 +45,9 @@ class BayesianHMMSampler(object):
     >>> models = bhmm_sampler.sample(nsamples=10)
 
     """
-    def __init__(self, observations, nstates, initial_model=None,
-                 reversible=True, stationary=False,
+    def __init__(self, observations, nstates, initial_model=None, reversible=True, stationary=False,
                  transition_matrix_sampling_steps=1000, p0_prior='mixed', transition_matrix_prior='mixed',
-                 type='gaussian'):
+                 output='gaussian'):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -147,7 +146,7 @@ class BayesianHMMSampler(object):
             self.model = copy.deepcopy(initial_model)
         else:
             # Generate our own initial model.
-            self.model = self._generateInitialModel(type)
+            self.model = self._generateInitialModel(output)
 
         # prior initial vector
         if p0_prior is None or p0_prior == 'sparse':
@@ -347,7 +346,7 @@ class BayesianHMMSampler(object):
 
         # INITIAL DISTRIBUTION
         if self.stationary:  # p0 is consistent with P
-            p0 = _tmatrix_disconnected.stationary_distribution(C, Tij)
+            p0 = _tmatrix_disconnected.stationary_distribution(Tij, C=C)
         else:
             n0 = self.model.count_init().astype(float)
             p0 = np.random.dirichlet(n0 + self.prior_n0)  # sample p0 from posterior
@@ -361,7 +360,7 @@ class BayesianHMMSampler(object):
         """
         logger().info("Generating initial model for BHMM using MLHMM...")
         from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator
-        mlhmm = MaximumLikelihoodEstimator(self.observations, self.nstates, reversible=self.reversible, type=output_model_type)
+        mlhmm = MaximumLikelihoodEstimator(self.observations, self.nstates, reversible=self.reversible, output=output_model_type)
         model = mlhmm.fit()
         return model
 
