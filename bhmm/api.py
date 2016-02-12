@@ -3,9 +3,7 @@ __author__ = 'noe'
 import numpy as _np
 
 
-# TODO: type needs to be renamed because it shadows built-in type
-
-def _guess_model_type(observations):
+def _guess_output_type(observations):
     """ Suggests a HMM model type based on the observation data
 
     Uses simple rules in order to decide which HMM model type makes sense based on observation data.
@@ -14,14 +12,14 @@ def _guess_model_type(observations):
     If observations consist of arrays/lists of 1D-floats, our guess is 'discrete'.
     In any other case, a TypeError is raised because we are not supporting that data type yet.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     observations : list of lists or arrays
         observation trajectories
 
-    Returns:
-    --------
-    model_type : str
+    Returns
+    -------
+    output_type : str
         One of {'discrete', 'gaussian'}
 
     """
@@ -77,125 +75,6 @@ def lag_observations(observations, lag, stride=1):
             if len(obs_lagged) > 1:
                 obsnew.append(obs_lagged)
     return obsnew
-
-
-def init_hmm(observations, nstates, lag=1, type=None, reversible=True):
-    """Use a heuristic scheme to generate an initial model.
-
-    Parameters
-    ----------
-    observations : list of ndarray((T_i))
-        list of arrays of length T_i with observation data
-    nstates : int
-        The number of states.
-    type : str, optional, default=None
-        Output model type from [None, 'gaussian', 'discrete']. If None, will automatically select an output
-        model type based on the format of observations.
-
-    Examples
-    --------
-
-    Generate initial model for a gaussian output model.
-
-    >>> import bhmm
-    >>> [model, observations, states] = bhmm.testsystems.generate_synthetic_observations(output_model_type='gaussian')
-    >>> initial_model = init_hmm(observations, model.nstates, type='gaussian')
-
-    Generate initial model for a discrete output model.
-
-    >>> import bhmm
-    >>> [model, observations, states] = bhmm.testsystems.generate_synthetic_observations(output_model_type='discrete')
-    >>> initial_model = init_hmm(observations, model.nstates, type='discrete')
-
-    """
-    # select output model type
-    if type is None:
-        type = _guess_model_type(observations)
-
-    if type == 'discrete':
-        return init_discrete_hmm(observations, nstates, lag=lag, reversible=reversible)
-    elif type == 'gaussian':
-        return init_gaussian_hmm(observations, nstates, lag=lag, reversible=reversible)
-    else:
-        raise NotImplementedError('output model type '+str(type)+' not yet implemented.')
-
-
-def init_gaussian_hmm(observations, nstates, lag=1, reversible=True):
-    """ Use a heuristic scheme to generate an initial model.
-
-    Parameters
-    ----------
-    observations : list of ndarray((T_i))
-        list of arrays of length T_i with observation data
-    nstates : int
-        The number of states.
-
-    Examples
-    --------
-
-    Generate initial model for a gaussian output model.
-
-    >>> import bhmm
-    >>> [model, observations, states] = bhmm.testsystems.generate_synthetic_observations(output_model_type='gaussian')
-    >>> initial_model = init_gaussian_hmm(observations, model.nstates)
-
-    """
-    from bhmm.init import gaussian
-    if lag > 1:
-        observations = lag_observations(observations, lag)
-    hmm0 = gaussian.initial_model_gaussian1d(observations, nstates, reversible=reversible)
-    hmm0._lag = lag
-    return hmm0
-
-
-def init_discrete_hmm(observations, nstates, lag=1, reversible=True,
-                      msm_neighbor_prior=0.001, msm_diag_prior=0.001,
-                      eps_P=0.001, eps_pout=0.001, separate=None):
-    """Use a heuristic scheme to generate an initial model.
-
-    Parameters
-    ----------
-    observations : list of ndarray((T_i))
-        list of arrays of length T_i with observation data
-    nstates : int
-        The number of states.
-    msm_neighbor_prior : float
-        prior used to strongly connect weakly connected sets before MSM estimation.
-        Defined by:
-        * msm_neighbor_prior if c_ij + c_ji > 0
-        * 0 else.
-    msm_diag_prior : float
-        will add msm_diag_prior to all nonempty states i (defined by :math:`\sum_j c_ij + c_ji > 0`)
-    eps_P : float or None
-        Minimum transition probability. Default: 0.01 / nstates
-    eps_pout : float or None
-        Minimum output probability. Default: 0.01 / nfull
-    separate : None or iterable of int
-        Force the given set of observed states to stay in a separate hidden state.
-        The remaining nstates-1 states will be assigned by a metastable decomposition.
-
-    Examples
-    --------
-
-    Generate initial model for a discrete output model.
-
-    >>> import bhmm
-    >>> [model, observations, states] = bhmm.testsystems.generate_synthetic_observations(output_model_type='discrete')
-    >>> initial_model = init_discrete_hmm(observations, model.nstates)
-
-    """
-    from bhmm.init.discrete import estimate_initial_hmm
-    from bhmm.estimators import _tmatrix_disconnected
-    import msmtools.estimation as msmest
-    C = msmest.count_matrix(observations, lag).toarray()
-    if msm_neighbor_prior > 0:
-        C += msmest.prior_neighbor(C, msm_neighbor_prior)
-    if msm_diag_prior > 0:
-        nonempty = _tmatrix_disconnected.nonempty_set(C)
-        C[nonempty, nonempty] += msm_diag_prior
-    hmm0 = estimate_initial_hmm(C, nstates, reversible=reversible, eps_A=eps_P, eps_B=eps_pout, separate=separate)
-    hmm0._lag = lag
-    return hmm0
 
 
 def gaussian_hmm(pi, P, means, sigmas):
@@ -262,7 +141,155 @@ def discrete_hmm(pi, P, pout):
     return dhmm
 
 
-def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
+def init_hmm(observations, nstates, lag=1, output=None, reversible=True):
+    """Use a heuristic scheme to generate an initial model.
+
+    Parameters
+    ----------
+    observations : list of ndarray((T_i))
+        list of arrays of length T_i with observation data
+    nstates : int
+        The number of states.
+    output : str, optional, default=None
+        Output model type from [None, 'gaussian', 'discrete']. If None, will automatically select an output
+        model type based on the format of observations.
+
+    Examples
+    --------
+
+    Generate initial model for a gaussian output model.
+
+    >>> import bhmm
+    >>> [model, observations, states] = bhmm.testsystems.generate_synthetic_observations(output='gaussian')
+    >>> initial_model = init_hmm(observations, model.nstates, output='gaussian')
+
+    Generate initial model for a discrete output model.
+
+    >>> import bhmm
+    >>> [model, observations, states] = bhmm.testsystems.generate_synthetic_observations(output='discrete')
+    >>> initial_model = init_hmm(observations, model.nstates, output='discrete')
+
+    """
+    # select output model type
+    if output is None:
+        output = _guess_output_type(observations)
+
+    if output == 'discrete':
+        return init_discrete_hmm(observations, nstates, lag=lag, reversible=reversible)
+    elif output == 'gaussian':
+        return init_gaussian_hmm(observations, nstates, lag=lag, reversible=reversible)
+    else:
+        raise NotImplementedError('output model type '+str(output)+' not yet implemented.')
+
+
+def init_gaussian_hmm(observations, nstates, lag=1, reversible=True):
+    """ Use a heuristic scheme to generate an initial model.
+
+    Parameters
+    ----------
+    observations : list of ndarray((T_i))
+        list of arrays of length T_i with observation data
+    nstates : int
+        The number of states.
+
+    Examples
+    --------
+
+    Generate initial model for a gaussian output model.
+
+    >>> import bhmm
+    >>> [model, observations, states] = bhmm.testsystems.generate_synthetic_observations(output='gaussian')
+    >>> initial_model = init_gaussian_hmm(observations, model.nstates)
+
+    """
+    from bhmm.init import gaussian
+    if lag > 1:
+        observations = lag_observations(observations, lag)
+    hmm0 = gaussian.init_model_gaussian1d(observations, nstates, reversible=reversible)
+    hmm0._lag = lag
+    return hmm0
+
+
+# TODO: remove lag here?
+def init_discrete_hmm(observations, nstates, lag=1, reversible=True, stationary=True, regularize=True,
+                      method='connect-spectral', separate=None):
+    """Use a heuristic scheme to generate an initial model.
+
+    Parameters
+    ----------
+    observations : list of ndarray((T_i))
+        list of arrays of length T_i with observation data
+    nstates : int
+        The number of states.
+    lag : int
+        Lag time at which the observations should be counted.
+    reversible : bool
+        Estimate reversible HMM transition matrix.
+    stationary : bool
+        p0 is the stationary distribution of P. Currently only reversible=True is implemented
+    regularize : bool
+        Regularize HMM probabilities to avoid 0's.
+    method : str
+        * 'lcs-spectral' : Does spectral clustering on the largest connected set
+            of observed states.
+        * 'connect-spectral' : Uses a weak regularization to connect the weakly
+            connected sets and then initializes HMM using spectral clustering on
+            the nonempty set.
+        * 'spectral' : Uses spectral clustering on the nonempty subsets. Separated
+            observed states will end up in separate hidden states. This option is
+            only recommended for small observation spaces. Use connect-spectral for
+            large observation spaces.
+    separate : None or iterable of int
+        Force the given set of observed states to stay in a separate hidden state.
+        The remaining nstates-1 states will be assigned by a metastable decomposition.
+
+    Examples
+    --------
+
+    Generate initial model for a discrete output model.
+
+    >>> import bhmm
+    >>> [model, observations, states] = bhmm.testsystems.generate_synthetic_observations(output='discrete')
+    >>> initial_model = init_discrete_hmm(observations, model.nstates)
+
+    """
+    import msmtools.estimation as msmest
+    from bhmm.init.discrete import init_discrete_hmm_spectral
+    C = msmest.count_matrix(observations, lag).toarray()
+    # regularization
+    if regularize:
+        eps_A = None
+        eps_B = None
+    else:
+        eps_A = 0
+        eps_B = 0
+    if not stationary:
+        raise NotImplementedError('Discrete-HMM initialization with stationary=False is not yet implemented.')
+
+    if method=='lcs-spectral':
+        lcs = msmest.largest_connected_set(C)
+        p0, P, B = init_discrete_hmm_spectral(C, nstates, reversible=reversible, stationary=stationary,
+                                              active_set=lcs, separate=separate, eps_A=eps_A, eps_B=eps_B)
+    elif method=='connect-spectral':
+        # make sure we're strongly connected
+        C += msmest.prior_neighbor(C, 0.001)
+        nonempty = _np.where(C.sum(axis=0) + C.sum(axis=1) > 0)[0]
+        C[nonempty, nonempty] = _np.maximum(C[nonempty, nonempty], 0.001)
+        p0, P, B = init_discrete_hmm_spectral(C, nstates, reversible=reversible, stationary=stationary,
+                                              active_set=nonempty, separate=separate, eps_A=eps_A, eps_B=eps_B)
+    elif method=='spectral':
+        p0, P, B = init_discrete_hmm_spectral(C, nstates, reversible=reversible, stationary=stationary,
+                                              active_set=None, separate=separate, eps_A=eps_A, eps_B=eps_B)
+    else:
+        raise NotImplementedError('Unknown discrete-HMM initialization method ' + str(method))
+
+    hmm0 = discrete_hmm(p0, P, B)
+    hmm0._lag = lag
+    return hmm0
+
+
+# TODO: remove lag here?
+def estimate_hmm(observations, nstates, lag=1, initial_model=None, output=None,
                  reversible=True, stationary=False, p=None, accuracy=1e-3, maxit=1000, maxit_P=100000,
                  mincount_connectivity=1e-2):
     r""" Estimate maximum-likelihood HMM
@@ -280,7 +307,7 @@ def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
     initial_model : HMM, optional, default=None
         If specified, the given initial model will be used to initialize the BHMM.
         Otherwise, a heuristic scheme is used to generate an initial guess.
-    type : str, optional, default=None
+    output : str, optional, default=None
         Output model type from [None, 'gaussian', 'discrete']. If None, will automatically select an output
         model type based on the format of observations.
     reversible : bool, optional, default=True
@@ -308,15 +335,15 @@ def estimate_hmm(observations, nstates, lag=1, initial_model=None, type=None,
 
     """
     # select output model type
-    if type is None:
-        type = _guess_model_type(observations)
+    if output is None:
+        output = _guess_output_type(observations)
 
     if lag > 1:
         observations = lag_observations(observations, lag)
 
     # construct estimator
     from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
-    est = _MaximumLikelihoodEstimator(observations, nstates, initial_model=initial_model, type=type,
+    est = _MaximumLikelihoodEstimator(observations, nstates, initial_model=initial_model, output=output,
                                       reversible=reversible, stationary=stationary, p=p, accuracy=accuracy,
                                       maxit=maxit, maxit_P=maxit_P)
     # run
@@ -416,7 +443,7 @@ def bayesian_hmm(observations, estimated_hmm, nsample=100, reversible=True, stat
     sampler = _BHMM(observations, estimated_hmm.nstates, initial_model=estimated_hmm,
                     reversible=reversible, stationary=stationary, transition_matrix_sampling_steps=1000,
                     p0_prior=p0_prior, transition_matrix_prior=transition_matrix_prior,
-                    type=estimated_hmm.output_model.model_type)
+                    output=estimated_hmm.output_model.model_type)
 
     # Sample models.
     sampled_hmms = sampler.sample(nsamples=nsample, save_hidden_state_trajectory=store_hidden,

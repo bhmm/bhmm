@@ -37,8 +37,8 @@ class TestMLHMM_DoubleWell(unittest.TestCase):
         nstates = 2
 
         # run with lag 1 and 10
-        cls.hmm_lag1 = bhmm.estimate_hmm([obs], nstates, lag=1, type='discrete')
-        cls.hmm_lag10 = bhmm.estimate_hmm([obs], nstates, lag=10, type='discrete')
+        cls.hmm_lag1 = bhmm.estimate_hmm([obs], nstates, lag=1, output='discrete')
+        cls.hmm_lag10 = bhmm.estimate_hmm([obs], nstates, lag=10, output='discrete')
 
     # =============================================================================
     # Test

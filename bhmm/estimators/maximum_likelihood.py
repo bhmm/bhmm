@@ -16,7 +16,7 @@ import copy
 import numpy as np
 
 
-# TODO: reactivate multiprocessing
+# TODO: reactivate multiprocessing, parallelize model fitting and forward-backward
 # from multiprocessing import Queue, Process, cpu_count
 
 # BHMM imports
@@ -50,9 +50,8 @@ class MaximumLikelihoodEstimator(object):
         for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
 
     """
-    def __init__(self, observations, nstates, initial_model=None, type='gaussian',
-                 reversible=True, stationary=False, p=None, accuracy=1e-3, maxit=1000, maxit_P=100000,
-                 mincount_connectivity=1e-6):
+    def __init__(self, observations, nstates, initial_model=None, output='gaussian',
+                 reversible=True, stationary=False, p=None, accuracy=1e-3, maxit=1000, maxit_P=100000):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
@@ -89,10 +88,6 @@ class MaximumLikelihoodEstimator(object):
         maxit_P : int
             maximum number of iterations for reversible transition matrix estimation.
             Only used with reversible=True.
-        mincount_connectivity
-            minimum number of counts to consider a connection between two states.
-            Counts lower than that will count zero in the connectivity check and
-            may thus separate the resulting transition matrix.
 
         """
         # Store a copy of the observations.
@@ -111,7 +106,7 @@ class MaximumLikelihoodEstimator(object):
             self._hmm = copy.deepcopy(initial_model)
         else:
             # Generate our own initial model.
-            self._hmm = bhmm.init_hmm(observations, nstates, type=type)
+            self._hmm = bhmm.init_hmm(observations, nstates, output=output)
 
         # stationary and initial distribution
         self._fixed_stationary_distribution = None
@@ -134,7 +129,6 @@ class MaximumLikelihoodEstimator(object):
         self._accuracy = accuracy
         self._maxit = maxit
         self._maxit_P = maxit_P
-        self._mincount_connectivity = mincount_connectivity
         self._likelihoods = None
 
         # Kernel for computing things
@@ -244,26 +238,26 @@ class MaximumLikelihoodEstimator(object):
         obs = self._observations[itraj]
         T = len(obs)
         # compute output probability matrix
+        # t1 = time.time()
         self._hmm.output_model.p_obs(obs, out=self._pobs)
+        # t2 = time.time()
+        # self._fbtimings[0] += t2-t1
         # forward variables
         logprob = hidden.forward(A, self._pobs, pi, T=T, alpha_out=self._alpha)[0]
+        # t3 = time.time()
+        # self._fbtimings[1] += t3-t2
         # backward variables
         hidden.backward(A, self._pobs, T=T, beta_out=self._beta)
+        # t4 = time.time()
+        # self._fbtimings[2] += t4-t3
         # gamma
         hidden.state_probabilities(self._alpha, self._beta, T=T, gamma_out=self._gammas[itraj])
+        # t5 = time.time()
+        # self._fbtimings[3] += t5-t4
         # count matrix
         hidden.transition_counts(self._alpha, self._beta, A, self._pobs, T=T, out=self._Cs[itraj])
-        # any problems here?
-        # if np.any(np.isnan(self._pobs)):
-        #     print "Pobs is NAN"
-        # if np.any(np.isnan(self._alpha)):
-        #     print "Alpha is NAN"
-        # if np.any(np.isnan(self._beta)):
-        #     print "Beta is NAN"
-        # if np.any(np.isnan(self._gammas[itraj])):
-        #     print "Gamma is NAN"
-        # if np.any(np.isnan(self._Cs[itraj])):
-        #     print "Cs is NAN: ", itraj, "\n", self._Cs[itraj]
+        # t6 = time.time()
+        # self._fbtimings[4] += t6-t5
         # return results
         return logprob
 
@@ -303,12 +297,12 @@ class MaximumLikelihoodEstimator(object):
         # compute new transition matrix
         from bhmm.estimators._tmatrix_disconnected import estimate_P, stationary_distribution
         T = estimate_P(C, reversible=self._hmm.is_reversible, fixed_statdist=self._fixed_stationary_distribution,
-                       maxiter=maxiter, maxerr=1e-12, mincount_connectivity=self._mincount_connectivity)
+                       maxiter=maxiter, maxerr=1e-12, mincount_connectivity=1e-16)
         # print 'P:\n', T
         # estimate stationary or init distribution
         if self._stationary:
             if self._fixed_stationary_distribution is None:
-                pi = stationary_distribution(C, T, mincount_connectivity=self._mincount_connectivity)
+                pi = stationary_distribution(T, C=C, mincount_connectivity=1e-16)
             else:
                 pi = self._fixed_stationary_distribution
         else:
@@ -319,14 +313,12 @@ class MaximumLikelihoodEstimator(object):
         # print 'pi: ', pi, ' stationary = ', self._hmm.is_stationary
 
         # update model
-        # TODO: distinguish initial and stationary distribution in HMM object.
         self._hmm.update(pi, T)
 
         logger().info("T: \n"+str(T))
         logger().info("pi: \n"+str(pi))
 
         # update output model
-        # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
         self._hmm.output_model.estimate(self._observations, gammas)
 
     def compute_viterbi_paths(self):
@@ -361,7 +353,6 @@ class MaximumLikelihoodEstimator(object):
             The maximum likelihood HMM model.
 
         """
-        import msmtools.estimation as msmest
         logger().info("=================================================================")
         logger().info("Running Baum-Welch:")
         logger().info("  input observations: "+str(self.nobservations)+" of lengths "+str(self.observation_lengths))
@@ -374,10 +365,11 @@ class MaximumLikelihoodEstimator(object):
         loglik = 0.0
         # flag if connectivity has changed (e.g. state lost) - in that case the likelihood
         # is discontinuous and can't be used as a convergence criterion in that iteration.
-        connected_sets = [np.arange(self._nstates)]
+        tmatrix_nonzeros = self.hmm.transition_matrix.nonzero()
         converged = False
 
         while not converged and it < self.maxit:
+            # self._fbtimings = np.zeros(5)
             t1 = time.time()
             loglik = 0.0
             for k in range(self._nobs):
@@ -397,12 +389,13 @@ class MaximumLikelihoodEstimator(object):
             t3 = time.time()
 
             # connectivity change check
-            connected_sets_new = msmest.connected_sets(self._hmm.transition_matrix, directed=True)
-            if not np.array_equal(connected_sets, connected_sets_new):
+            tmatrix_nonzeros_new = self.hmm.transition_matrix.nonzero()
+            if not np.array_equal(tmatrix_nonzeros, tmatrix_nonzeros_new):
                 converged = False  # unset converged
-                connected_sets = connected_sets_new
+                tmatrix_nonzeros = tmatrix_nonzeros_new
 
-            #  print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ', (loglik - self._likelihoods[it-1])
+            # print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ', (loglik - self._likelihoods[it-1])
+            # print '  fb timings (ms): pobs', (1000.0*self._fbtimings).astype(int)
 
             logger().info(str(it) + " ll = " + str(loglik))
             # print self.model.output_model

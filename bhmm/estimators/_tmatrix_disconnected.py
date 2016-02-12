@@ -209,10 +209,16 @@ def is_reversible(P):
     return True
 
 
-def stationary_distribution(C, P, mincount_connectivity=0):
+def stationary_distribution(P, C=None, mincount_connectivity=0):
     """ Simple estimator for stationary distribution for multiple strongly connected sets """
     # can be replaced by msmtools.analysis.stationary_distribution in next msmtools release
     from msmtools.analysis.dense.stationary_vector import stationary_distribution as msmstatdist
+    if C is None:
+        if is_connected(P, strong=True):
+            return msmstatdist(P)
+        else:
+            raise ValueError('Computing stationary distribution for disconnected matrix. Need count matrix.')
+
     # disconnected sets
     n = np.shape(C)[0]
     ctot = np.sum(C)

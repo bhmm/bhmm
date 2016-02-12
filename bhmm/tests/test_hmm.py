@@ -42,21 +42,14 @@ class TestHMM(unittest.TestCase):
         # stationary distribution
         import msmtools.analysis as msmana
         Pi = msmana.stationary_distribution(Tij)
-
         from bhmm import GaussianOutputModel
         means=[-1,+1]
         sigmas=[1,1]
         output_model = GaussianOutputModel(nstates, means=means, sigmas=sigmas)
         model = bhmm.HMM(Pi, Tij, output_model)
-        # Compute stationary probability using ARPACK.
-        from scipy.sparse.linalg import eigs
-        from numpy.linalg import norm
-        [eigenvalues, eigenvectors] = eigs(Tij.T, k=1, which='LR')
-        eigenvectors = np.real(eigenvectors)
-        Pi = eigenvectors[:,0] / eigenvectors[:,0].sum()
         # Test model is correct.
-        assert_array_almost_equal(model._Tij, Tij)
-        assert_array_almost_equal(model._Pi, Pi)
+        assert_array_almost_equal(model.transition_matrix, Tij)
+        assert_array_almost_equal(model.stationary_distribution, Pi)
         assert(np.allclose(model.output_model.means, np.array(means)))
         assert(np.allclose(model.output_model.sigmas, np.array(sigmas)))
 

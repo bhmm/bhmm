@@ -115,6 +115,10 @@ def backward(A, pobs, T=None, beta_out=None):
         raise RuntimeError('Nonexisting implementation selected: '+str(__impl__))
 
 
+# global singletons as little helpers
+ones = None
+ones_size = 0
+
 def state_probabilities(alpha, beta, T=None, gamma_out=None):
     """ Calculate the (T,N)-probabilty matrix for being in state i at time t.
 
@@ -142,6 +146,13 @@ def state_probabilities(alpha, beta, T=None, gamma_out=None):
     backward : to calculate `beta`
 
     """
+    # get summation helper - we use matrix multiplication with 1's because it's faster than the np.sum function (yes!)
+    global ones_size
+    if ones_size != alpha.shape[1]:
+        global ones
+        ones = np.ones(alpha.shape[1])[:, None]
+        ones_size = alpha.shape[1]
+    #
     if alpha.shape[0] != beta.shape[0]:
         raise ValueError('Inconsistent sizes of alpha and beta.')
     # determine T to use
@@ -161,7 +172,7 @@ def state_probabilities(alpha, beta, T=None, gamma_out=None):
         else:
             np.multiply(alpha, beta, gamma_out)
     # normalize
-    np.multiply(gamma_out, 1.0/np.sum(gamma_out, axis=1)[:,None], out = gamma_out)
+    np.divide(gamma_out, np.dot(gamma_out, ones), out = gamma_out)
     # done
     return gamma_out
 
