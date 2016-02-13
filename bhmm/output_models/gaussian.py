@@ -395,7 +395,6 @@ class GaussianOutputModel(OutputModel):
         >>> nobs = 1000
         >>> output_model = GaussianOutputModel(nstates=nstates, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
         >>> observations = [ output_model.generate_observations_from_state(state_index, nobs) for state_index in range(nstates) ]
-        >>> weights = [ np.zeros([nobs,nstates], np.float32).T for _ in range(nstates) ]
 
         Update output parameters by sampling.
 
@@ -412,16 +411,13 @@ class GaussianOutputModel(OutputModel):
             # Skip update if no observations.
             if nsamples_in_state == 0:
                 logger().warn('Warning: State %d has no observations.' % state_index)
-                continue
-
-            # Sample new mu.
-            self.means[state_index] = np.random.randn()*self.sigmas[state_index]/np.sqrt(nsamples_in_state) + np.mean(observations_in_state)
-
-            # Sample new sigma.
-            # This scheme uses the improper Jeffreys prior on sigma^2, P(mu, sigma^2) \propto 1/sigma
-            chisquared = np.random.chisquare(nsamples_in_state-1)
-            sigmahat2 = np.mean((observations_in_state - self.means[state_index])**2)
-            self.sigmas[state_index] = np.sqrt(sigmahat2) / np.sqrt(chisquared / nsamples_in_state)
+            if nsamples_in_state > 0:  # Sample new mu.
+                self.means[state_index] = np.random.randn()*self.sigmas[state_index]/np.sqrt(nsamples_in_state) + np.mean(observations_in_state)
+            if nsamples_in_state > 1:  # Sample new sigma
+                # This scheme uses the improper Jeffreys prior on sigma^2, P(mu, sigma^2) \propto 1/sigma
+                chisquared = np.random.chisquare(nsamples_in_state-1)
+                sigmahat2 = np.mean((observations_in_state - self.means[state_index])**2)
+                self.sigmas[state_index] = np.sqrt(sigmahat2) / np.sqrt(chisquared / nsamples_in_state)
 
         return
 

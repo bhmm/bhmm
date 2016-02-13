@@ -32,9 +32,8 @@ class TestBHMMPathological(unittest.TestCase):
         mle = bhmm.estimate_hmm([obs], nstates=2, lag=1)
         sampled = bhmm.bayesian_hmm([obs], mle, reversible=False, nsample=2000,
                                     p0_prior='mixed', transition_matrix_prior='mixed')
-        print('std: \n' + str(sampled.transition_matrix_std))
         assert np.all(sampled.transition_matrix_std[0] > 0)
-        assert np.max(np.abs(sampled.transition_matrix_std[1])) < 1e-5
+        assert np.max(np.abs(sampled.transition_matrix_std[1])) < 1e-3
 
     def test_2state_rev_2step(self):
         obs = np.array([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0], dtype=int)
