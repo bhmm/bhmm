@@ -8,13 +8,14 @@ __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
 __license__ = "LGPL"
 __maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
+__email__ = "jchodera AT gmail DOT com"
 
 import numpy as np
 
 from bhmm.hmm.generic_hmm import HMM
 from bhmm.util import config
 from bhmm.util.statistics import confidence_interval_arr
+
 
 class SampledHMM(HMM):
     """ Sampled HMM with a representative single point estimate and error estimates
@@ -63,7 +64,7 @@ class SampledHMM(HMM):
         r""" Samples of the initial distribution """
         res = np.empty((self.nsamples, self.nstates), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:] = self._sampled_hmms[i].stationary_distribution
+            res[i, :] = self._sampled_hmms[i].stationary_distribution
         return res
 
     @property
@@ -109,7 +110,7 @@ class SampledHMM(HMM):
         r""" Samples of the transition matrix """
         res = np.empty((self.nsamples, self.nstates, self.nstates), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:,:] = self._sampled_hmms[i].transition_matrix
+            res[i, :, :] = self._sampled_hmms[i].transition_matrix
         return res
 
     @property
@@ -132,7 +133,7 @@ class SampledHMM(HMM):
         r""" Samples of the eigenvalues """
         res = np.empty((self.nsamples, self.nstates), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:] = self._sampled_hmms[i].eigenvalues
+            res[i, :] = self._sampled_hmms[i].eigenvalues
         return res
 
     @property
@@ -155,7 +156,7 @@ class SampledHMM(HMM):
         r""" Samples of the left eigenvectors of the hidden transition matrix """
         res = np.empty((self.nsamples, self.nstates, self.nstates), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:,:] = self._sampled_hmms[i].eigenvectors_left
+            res[i, :, :] = self._sampled_hmms[i].eigenvectors_left
         return res
 
     @property
@@ -178,7 +179,7 @@ class SampledHMM(HMM):
         r""" Samples of the right eigenvectors of the hidden transition matrix """
         res = np.empty((self.nsamples, self.nstates, self.nstates), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:,:] = self._sampled_hmms[i].eigenvectors_right
+            res[i, :, :] = self._sampled_hmms[i].eigenvectors_right
         return res
 
     @property
@@ -201,7 +202,7 @@ class SampledHMM(HMM):
         r""" Samples of the timescales """
         res = np.empty((self.nsamples, self.nstates-1), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:] = self._sampled_hmms[i].timescales
+            res[i, :] = self._sampled_hmms[i].timescales
         return res
 
     @property
@@ -224,7 +225,7 @@ class SampledHMM(HMM):
         r""" Samples of the timescales """
         res = np.empty((self.nsamples, self.nstates), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:] = self._sampled_hmms[i].lifetimes
+            res[i, :] = self._sampled_hmms[i].lifetimes
         return res
 
     @property

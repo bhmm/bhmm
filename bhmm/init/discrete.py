@@ -1,7 +1,4 @@
-import msmtools
 __author__ = 'noe'
-
-import warnings
 
 import numpy as np
 
@@ -281,7 +278,7 @@ def init_discrete_hmm_spectral(C_full, nstates, reversible=True, stationary=True
         from msmtools.analysis.dense.pcca import PCCA
         pcca_obj = PCCA(P_active_nonseparate, nmeta)
         M_active_nonseparate = pcca_obj.memberships  # memberships
-        B_active_nonseparate = pcca_obj.output_probabilities  #  output probabilities
+        B_active_nonseparate = pcca_obj.output_probabilities  # output probabilities
     else:  # equal size
         M_active_nonseparate = np.eye(nmeta)
         B_active_nonseparate = np.eye(nmeta)

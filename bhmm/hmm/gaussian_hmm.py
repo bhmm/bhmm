@@ -8,7 +8,7 @@ __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
 __license__ = "LGPL"
 __maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
+__email__ = "jchodera AT gmail DOT com"
 
 import numpy as np
 
@@ -18,6 +18,7 @@ from bhmm.output_models.gaussian import GaussianOutputModel
 from bhmm.util import config
 from bhmm.util.statistics import confidence_interval_arr
 
+
 class GaussianHMM(HMM, GaussianOutputModel):
     r""" Convenience access to an HMM with a Gaussian output model.
 
@@ -26,7 +27,7 @@ class GaussianHMM(HMM, GaussianOutputModel):
     def __init__(self, hmm):
         # superclass constructors
         if not isinstance(hmm.output_model, GaussianOutputModel):
-            raise TypeError('Given hmm is not a Gaussian HMM, but has an output model of type: '+
+            raise TypeError('Given hmm is not a Gaussian HMM, but has an output model of type: ' +
                             str(type(hmm.output_model)))
         GaussianOutputModel.__init__(self, hmm.nstates, means=hmm.output_model.means, sigmas=hmm.output_model.sigmas)
         HMM.__init__(self, hmm.initial_distribution, hmm.transition_matrix, self, lag=hmm.lag)
@@ -61,7 +62,7 @@ class SampledGaussianHMM(GaussianHMM, SampledHMM):
         res = np.empty((self.nsamples, self.nstates, self.dimension), dtype=config.dtype)
         for i in range(self.nsamples):
             for j in range(self.nstates):
-                res[i,j,:] = self._sampled_hmms[i].means[j]
+                res[i, j, :] = self._sampled_hmms[i].means[j]
         return res
 
     @property
@@ -85,7 +86,7 @@ class SampledGaussianHMM(GaussianHMM, SampledHMM):
         res = np.empty((self.nsamples, self.nstates, self.dimension), dtype=config.dtype)
         for i in range(self.nsamples):
             for j in range(self.nstates):
-                res[i,j,:] = self._sampled_hmms[i].sigmas[j]
+                res[i, j, :] = self._sampled_hmms[i].sigmas[j]
         return res
 
     @property

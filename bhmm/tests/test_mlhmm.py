@@ -17,7 +17,7 @@ __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
 __license__ = "FreeBSD"
 __maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
+__email__ = "jchodera AT gmail DOT com"
 
 
 class TestMLHMM_DoubleWell(unittest.TestCase):
@@ -79,15 +79,15 @@ class TestMLHMM_DoubleWell(unittest.TestCase):
 
     def test_eigenvectors_left(self):
         for evec in [self.hmm_lag1.eigenvectors_left, self.hmm_lag10.eigenvectors_left]:
-            assert np.array_equal(evec.shape, (2,2))
-            assert np.sign(evec[0,0]) == np.sign(evec[0,1])
-            assert np.sign(evec[1,0]) != np.sign(evec[1,1])
+            assert np.array_equal(evec.shape, (2, 2))
+            assert np.sign(evec[0, 0]) == np.sign(evec[0, 1])
+            assert np.sign(evec[1, 0]) != np.sign(evec[1, 1])
 
     def test_eigenvectors_right(self):
         for evec in [self.hmm_lag1.eigenvectors_right, self.hmm_lag10.eigenvectors_right]:
-            assert np.array_equal(evec.shape, (2,2))
-            assert np.isclose(evec[0,0], evec[1,0])
-            assert np.sign(evec[0,1]) != np.sign(evec[1,1])
+            assert np.array_equal(evec.shape, (2, 2))
+            assert np.isclose(evec[0, 0], evec[1, 0])
+            assert np.sign(evec[0, 1]) != np.sign(evec[1, 1])
 
     def test_initial_distribution(self):
         for mu in [self.hmm_lag1.initial_distribution, self.hmm_lag10.initial_distribution]:
@@ -119,5 +119,5 @@ class TestMLHMM_DoubleWell(unittest.TestCase):
         # this data: lifetimes about 680
         assert np.abs(self.hmm_lag10.timescales[0] - 340) < 20.0
 
-if __name__=="__main__":
+if __name__ == "__main__":
     unittest.main()

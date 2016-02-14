@@ -2,6 +2,7 @@ import logging
 import sys
 from bhmm.util import config
 
+
 def logger(name='BHMM', pattern='%(asctime)s %(levelname)s %(name)s: %(message)s',
            date_format='%H:%M:%S', handler=logging.StreamHandler(sys.stdout)):
     """

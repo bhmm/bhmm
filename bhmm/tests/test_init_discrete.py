@@ -15,7 +15,7 @@ class TestHMM(unittest.TestCase):
 
     def test_discrete_2_2(self):
         # 2x2 transition matrix
-        P = np.array([[0.99,0.01],[0.01,0.99]])
+        P = np.array([[0.99, 0.01], [0.01, 0.99]])
         # generate realization
         import msmtools.generation as msmgen
         T = 10000
@@ -31,8 +31,8 @@ class TestHMM(unittest.TestCase):
         msmana.is_transition_matrix(A)
         np.allclose(B.sum(axis=1), np.ones(B.shape[0]))
         # A should be close to P
-        if (B[0,0]<B[1,0]):
-            B = B[np.array([1,0]),:]
+        if B[0, 0] < B[1, 0]:
+            B = B[np.array([1, 0]), :]
         assert(np.max(A-P) < 0.01)
         assert(np.max(B-np.eye(2)) < 0.01)
 
@@ -58,14 +58,14 @@ class TestHMM(unittest.TestCase):
         import msmtools.analysis as msmana
         msmana.is_transition_matrix(Tij)
         np.allclose(B.sum(axis=1), np.ones(B.shape[0]))
-        #if (B[0,0]<B[1,0]):
-        #    B = B[np.array([1,0]),:]
+        # if (B[0,0]<B[1,0]):
+        #     B = B[np.array([1,0]),:]
         Tij_ref = np.array([[0.99, 0.01],
                             [0.01, 0.99]])
         Bref = np.array([[0.5, 0.5, 0.0, 0.0],
                          [0.0, 0.0, 0.5, 0.5]])
         assert(np.max(Tij-Tij_ref) < 0.01)
-        assert(np.max(B-Bref) < 0.05 or np.max(B[[1,0]]-Bref) < 0.05)
+        assert(np.max(B-Bref) < 0.05 or np.max(B[[1, 0]]-Bref) < 0.05)
 
     def test_discrete_6_3(self):
         # 4x4 transition matrix
@@ -132,10 +132,10 @@ class TestHMM(unittest.TestCase):
     def test_2state_2obs_unidirectional(self):
         dtraj = np.array([0, 0, 0, 0, 1])
         C = msmest.count_matrix(dtraj, 1).toarray()
-        Aref_naked = np.array([[ 0.75, 0.25],
-                               [ 0   , 1   ]])
-        Bref_naked = np.array([[ 1.,  0.],
-                               [ 0.,  1.]])
+        Aref_naked = np.array([[0.75, 0.25],
+                               [0   , 1   ]])
+        Bref_naked = np.array([[1.,  0.],
+                               [0.,  1.]])
         perm = [1, 0]  # permutation
         for rev in [True, False]:  # reversibiliy doesn't matter in this example
             hmm = init_discrete_hmm(dtraj, 2, reversible=rev, method='spectral', regularize=False)
@@ -167,13 +167,13 @@ class TestHMM(unittest.TestCase):
                           0, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 0, 1, 2, 2, 2, 2, 2, 2])
         C = msmest.count_matrix(dtraj, 1).toarray()
         hmm0 = init_discrete_hmm(dtraj, 3, separate=[0])
-        piref = np.array([ 0.35801876,  0.55535398,  0.08662726])
-        Aref = np.array([[ 0.76462978,  0.10261978,  0.13275044],
-                         [ 0.06615566,  0.89464821,  0.03919614],
-                         [ 0.54863966,  0.25128039,  0.20007995]])
-        Bref = np.array([[ 0, 1, 0],
-                         [ 0, 0, 1],
-                         [ 1, 0, 0]])
+        piref = np.array([0.35801876, 0.55535398, 0.08662726])
+        Aref = np.array([[0.76462978, 0.10261978, 0.13275044],
+                         [0.06615566, 0.89464821, 0.03919614],
+                         [0.54863966, 0.25128039, 0.20007995]])
+        Bref = np.array([[0, 1, 0],
+                         [0, 0, 1],
+                         [1, 0, 0]])
         assert np.allclose(hmm0.initial_distribution, piref, atol=1e-5)
         assert np.allclose(hmm0.transition_matrix, Aref, atol=1e-5)
         assert np.max(np.abs(hmm0.output_model.output_probabilities - Bref)) < 0.01
@@ -184,13 +184,13 @@ class TestHMM(unittest.TestCase):
         dtraj += 2  # create empty labels
         C = msmest.count_matrix(dtraj, 1).toarray()
         hmm0 = init_discrete_hmm(dtraj, 3, separate=[1, 2])  # include an empty label in separate
-        piref = np.array([ 0.35801876,  0.55535398,  0.08662726])
-        Aref = np.array([[ 0.76462978,  0.10261978,  0.13275044],
-                         [ 0.06615566,  0.89464821,  0.03919614],
-                         [ 0.54863966,  0.25128039,  0.20007995]])
-        Bref = np.array([[ 0, 0, 0, 1, 0],
-                         [ 0, 0, 0, 0, 1],
-                         [ 0, 0, 1, 0, 0]])
+        piref = np.array([0.35801876, 0.55535398, 0.08662726])
+        Aref = np.array([[0.76462978, 0.10261978, 0.13275044],
+                         [0.06615566, 0.89464821, 0.03919614],
+                         [0.54863966, 0.25128039, 0.20007995]])
+        Bref = np.array([[0, 0, 0, 1, 0],
+                         [0, 0, 0, 0, 1],
+                         [0, 0, 1, 0, 0]])
         assert np.allclose(hmm0.initial_distribution, piref, atol=1e-5)
         assert np.allclose(hmm0.transition_matrix, Aref, atol=1e-5)
         assert np.max(np.abs(hmm0.output_model.output_probabilities - Bref)) < 0.01
@@ -200,5 +200,5 @@ class TestHMM(unittest.TestCase):
         with self.assertRaises(ValueError):
             init_discrete_hmm(dtraj, 2, separate=[0, 2])
 
-if __name__=="__main__":
+if __name__ == "__main__":
     unittest.main()

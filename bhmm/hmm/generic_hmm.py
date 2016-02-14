@@ -289,7 +289,6 @@ class HMM(object):
 
         return HMM(pi_sub, P_sub, out_sub, lag=self.lag)
 
-
     def count_matrix(self):
         # TODO: does this belong here or to the BHMM sampler, or in a subclass containing HMM with data?
         """Compute the transition count matrix from hidden state trajectory.
@@ -314,7 +313,6 @@ class HMM(object):
         C = msmest.count_matrix(self.hidden_state_trajectories, 1, nstates=self._nstates)
         return C.toarray()
 
-
     def count_init(self):
         """Compute the counts at the first time step
 
@@ -329,7 +327,6 @@ class HMM(object):
 
         n = [traj[0] for traj in self.hidden_state_trajectories]
         return np.bincount(n, minlength=self.nstates)
-
 
     # def emission_probability(self, state, observation):
     #     """Compute the emission probability of an observation from a given state.

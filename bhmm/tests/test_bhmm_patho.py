@@ -16,7 +16,8 @@ __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
 __license__ = "FreeBSD"
 __maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
+__email__ = "jchodera AT gmail DOT com"
+
 
 class TestBHMMPathological(unittest.TestCase):
 
@@ -40,9 +41,8 @@ class TestBHMMPathological(unittest.TestCase):
         mle = bhmm.estimate_hmm([obs], nstates=2, lag=1)
         sampled = bhmm.bayesian_hmm([obs], mle, reversible=False, nsample=100,
                                     p0_prior='mixed', transition_matrix_prior='mixed')
-        assert np.all(sampled.transition_matrix_std>0)
+        assert np.all(sampled.transition_matrix_std > 0)
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     unittest.main()

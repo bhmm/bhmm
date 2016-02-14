@@ -19,7 +19,8 @@ __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
 __license__ = "FreeBSD"
 __maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
+__email__ = "jchodera AT gmail DOT com"
+
 
 class TestHMM(unittest.TestCase):
 
@@ -27,8 +28,8 @@ class TestHMM(unittest.TestCase):
         # Create a simple HMM model.
         model = testsystems.dalton_model(nstates=3)
         # Test model parameter access.
-        assert_equal(model.transition_matrix.shape, (3,3))
-        assert_equal(model.stationary_distribution.shape, (3,))
+        assert_equal(model.transition_matrix.shape, (3, 3))
+        assert_equal(model.stationary_distribution.shape, (3, ))
 
         return
 
@@ -43,8 +44,8 @@ class TestHMM(unittest.TestCase):
         import msmtools.analysis as msmana
         Pi = msmana.stationary_distribution(Tij)
         from bhmm import GaussianOutputModel
-        means=[-1,+1]
-        sigmas=[1,1]
+        means = [-1, +1]
+        sigmas = [1, 1]
         output_model = GaussianOutputModel(nstates, means=means, sigmas=sigmas)
         model = bhmm.HMM(Pi, Tij, output_model)
         # Test model is correct.
@@ -54,5 +55,5 @@ class TestHMM(unittest.TestCase):
         assert(np.allclose(model.output_model.sigmas, np.array(sigmas)))
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     unittest.main()

@@ -12,7 +12,8 @@ __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
 __license__ = "LGPL"
 __maintainer__ = "John D. Chodera, Frank Noe"
-__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
+__email__ = "jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
+
 
 class GaussianOutputModel(OutputModel):
     """
@@ -43,7 +44,7 @@ class GaussianOutputModel(OutputModel):
         """
         OutputModel.__init__(self, nstates)
 
-        dtype = config.dtype # type for internal storage
+        dtype = config.dtype  # type for internal storage
 
         if means is not None:
             self._means = np.array(means, dtype=dtype)
@@ -83,7 +84,7 @@ class GaussianOutputModel(OutputModel):
         --------------------------------------------------------------------------------
         """
 
-        output  = "--------------------------------------------------------------------------------\n"
+        output = "--------------------------------------------------------------------------------\n"
         output += "GaussianOutputModel\n"
         output += "nstates: %d\n" % self.nstates
         output += "means: %s\n" % str(self.means)
@@ -308,11 +309,10 @@ class GaussianOutputModel(OutputModel):
             else:
                 res = out
             for t in range(T):
-                res[t,:] = self._p_o(obs[t])
+                res[t, :] = self._p_o(obs[t])
             return res
         else:
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
-
 
     def estimate(self, observations, weights):
         """
@@ -347,8 +347,8 @@ class GaussianOutputModel(OutputModel):
         K = len(observations)
 
         # fit means
-        self._means = np.zeros((N))
-        w_sum = np.zeros((N))
+        self._means = np.zeros(N)
+        w_sum = np.zeros(N)
         for k in range(K):
             # update nominator
             for i in range(N):
@@ -359,19 +359,18 @@ class GaussianOutputModel(OutputModel):
         self._means /= w_sum
 
         # fit variances
-        self._sigmas  = np.zeros((N))
-        w_sum = np.zeros((N))
+        self._sigmas  = np.zeros(N)
+        w_sum = np.zeros(N)
         for k in range(K):
             # update nominator
             for i in range(N):
-                Y = (observations[k]-self.means[i])**2
-                self.sigmas[i] += np.dot(weights[k][:,i],Y)
+                Y = (observations[k] - self.means[i])**2
+                self.sigmas[i] += np.dot(weights[k][:, i], Y)
             # update denominator
             w_sum += np.sum(weights[k], axis=0)
         # normalize
         self._sigmas /= w_sum
         self._sigmas = np.sqrt(self.sigmas)
-
 
     def sample(self, observations, prior=None):
         """
@@ -421,7 +420,6 @@ class GaussianOutputModel(OutputModel):
 
         return
 
-
     def generate_observation_from_state(self, state_index):
         """
         Generate a single synthetic observation data from a given state.
@@ -450,7 +448,6 @@ class GaussianOutputModel(OutputModel):
         """
         observation = self.sigmas[state_index] * np.random.randn() + self.means[state_index]
         return observation
-
 
     def generate_observations_from_state(self, state_index, nobs):
         """
@@ -482,7 +479,6 @@ class GaussianOutputModel(OutputModel):
         """
         observations = self.sigmas[state_index] * np.random.randn(nobs) + self.means[state_index]
         return observations
-
 
     def generate_observation_trajectory(self, s_t):
         """

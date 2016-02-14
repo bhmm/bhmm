@@ -19,7 +19,8 @@ __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
 __license__ = "LGPL"
 __maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
+__email__ = "jchodera AT gmail DOT com"
+
 
 class BayesianHMMSampler(object):
     """Bayesian hidden Markov model sampler.
@@ -189,8 +190,8 @@ class BayesianHMMSampler(object):
         self.model.output_model.set_implementation(config.kernel)
 
         # pre-construct hidden variables
-        self.alpha = np.zeros((self.maxT,self.nstates), config.dtype, order='C')
-        self.pobs = np.zeros((self.maxT,self.nstates), config.dtype, order='C')
+        self.alpha = np.zeros((self.maxT, self.nstates), config.dtype, order='C')
+        self.pobs = np.zeros((self.maxT, self.nstates), config.dtype, order='C')
 
         return
 
@@ -243,7 +244,7 @@ class BayesianHMMSampler(object):
                 self._update()
             # Save a copy of the current model.
             model_copy = copy.deepcopy(self.model)
-            #print "Sampled: \n",repr(model_copy)
+            # print "Sampled: \n",repr(model_copy)
             if not save_hidden_state_trajectory:
                 model_copy.hidden_state_trajectory = None
             models.append(model_copy)
@@ -310,10 +311,10 @@ class BayesianHMMSampler(object):
 
         # compute output probability matrix
         self.model.output_model.p_obs(obs, out=self.pobs)
-        # forward variables
-        logprob = hidden.forward(A, self.pobs, pi, T = T, alpha_out=self.alpha)[0]
+        # compute forward variables
+        logprob = hidden.forward(A, self.pobs, pi, T=T, alpha_out=self.alpha)[0]
         # sample path
-        S = hidden.sample_path(self.alpha, A, self.pobs, T = T)
+        S = hidden.sample_path(self.alpha, A, self.pobs, T=T)
 
         return S
 
@@ -321,7 +322,8 @@ class BayesianHMMSampler(object):
         """Sample a new set of emission probabilites from the conditional distribution P(E | S, O)
 
         """
-        observations_by_state = [ self.model.collect_observations_in_state(self.observations, state) for state in range(self.model.nstates) ]
+        observations_by_state = [self.model.collect_observations_in_state(self.observations, state)
+                                 for state in range(self.model.nstates)]
         self.model.output_model.sample(observations_by_state)
 
     def _updateTransitionMatrix(self):
@@ -334,15 +336,16 @@ class BayesianHMMSampler(object):
 
         # check if we work with these options
         if self.reversible and not _tmatrix_disconnected.is_connected(C, strong=True):
-            raise NotImplementedError('Encountered disconnected count matrix with sampling option reversible:\n ' + str(C)
-                                      + '\nUse prior to ensure connectivity or use reversible=False.')
+            raise NotImplementedError('Encountered disconnected count matrix with sampling option reversible:\n '
+                                      + str(C) + '\nUse prior to ensure connectivity or use reversible=False.')
         # ensure consistent sparsity pattern (P0 might have additional zeros because of underflows)
         # TODO: these steps work around a bug in msmtools. Should be fixed there
         P0 = msmest.transition_matrix(C, reversible=self.reversible, maxiter=10000, warn_not_converged=False)
         zeros = np.where(P0 + P0.T == 0)
         C[zeros] = 0
         # run sampler
-        Tij = msmest.sample_tmatrix(C, nsample=1, nsteps=self.transition_matrix_sampling_steps, reversible=self.reversible)
+        Tij = msmest.sample_tmatrix(C, nsample=1, nsteps=self.transition_matrix_sampling_steps,
+                                    reversible=self.reversible)
 
         # INITIAL DISTRIBUTION
         if self.stationary:  # p0 is consistent with P
@@ -360,7 +363,7 @@ class BayesianHMMSampler(object):
         """
         logger().info("Generating initial model for BHMM using MLHMM...")
         from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator
-        mlhmm = MaximumLikelihoodEstimator(self.observations, self.nstates, reversible=self.reversible, output=output_model_type)
+        mlhmm = MaximumLikelihoodEstimator(self.observations, self.nstates, reversible=self.reversible,
+                                           output=output_model_type)
         model = mlhmm.fit()
         return model
-
