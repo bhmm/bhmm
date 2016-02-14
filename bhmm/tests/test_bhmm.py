@@ -16,7 +16,8 @@ __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
 __license__ = "FreeBSD"
 __maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
+__email__ = "jchodera AT gmail DOT com"
+
 
 class TestBHMM(unittest.TestCase):
 
@@ -122,16 +123,16 @@ class TestBHMM(unittest.TestCase):
         assert np.array_equal(samples.shape, (self.nsamples, self.nstates, self.nstates))
         # consistency
         for evec in samples:
-            assert np.sign(evec[0,0]) == np.sign(evec[0,1])
-            assert np.sign(evec[1,0]) != np.sign(evec[1,1])
+            assert np.sign(evec[0, 0]) == np.sign(evec[0, 1])
+            assert np.sign(evec[1, 0]) != np.sign(evec[1, 1])
 
     def test_eigenvectors_left_stats(self):
         # mean
         mean = self.sampled_hmm_lag10.eigenvectors_left_mean
         # test shape and consistency
         assert np.array_equal(mean.shape, (self.nstates, self.nstates))
-        assert np.sign(mean[0,0]) == np.sign(mean[0,1])
-        assert np.sign(mean[1,0]) != np.sign(mean[1,1])
+        assert np.sign(mean[0, 0]) == np.sign(mean[0, 1])
+        assert np.sign(mean[1, 0]) != np.sign(mean[1, 1])
         # std
         std = self.sampled_hmm_lag10.eigenvectors_left_std
         # test shape
@@ -151,16 +152,16 @@ class TestBHMM(unittest.TestCase):
         assert np.array_equal(samples.shape, (self.nsamples, self.nstates, self.nstates))
         # consistency
         for evec in samples:
-            assert np.sign(evec[0,0]) == np.sign(evec[1,0])
-            assert np.sign(evec[0,1]) != np.sign(evec[1,1])
+            assert np.sign(evec[0, 0]) == np.sign(evec[1, 0])
+            assert np.sign(evec[0, 1]) != np.sign(evec[1, 1])
 
     def test_eigenvectors_right_stats(self):
         # mean
         mean = self.sampled_hmm_lag10.eigenvectors_right_mean
         # test shape and consistency
         assert np.array_equal(mean.shape, (self.nstates, self.nstates))
-        assert np.sign(mean[0,0]) == np.sign(mean[1,0])
-        assert np.sign(mean[0,1]) != np.sign(mean[1,1])
+        assert np.sign(mean[0, 0]) == np.sign(mean[1, 0])
+        assert np.sign(mean[0, 1]) != np.sign(mean[1, 1])
         # std
         std = self.sampled_hmm_lag10.eigenvectors_right_std
         # test shape

@@ -8,6 +8,7 @@ from bhmm.output_models.discrete import DiscreteOutputModel
 from bhmm.util import config
 from bhmm.util.statistics import confidence_interval_arr
 
+
 class DiscreteHMM(HMM, DiscreteOutputModel):
     r""" Convenience access to an HMM with a Gaussian output model.
 
@@ -16,7 +17,7 @@ class DiscreteHMM(HMM, DiscreteOutputModel):
     def __init__(self, hmm):
         # superclass constructors
         if not isinstance(hmm.output_model, DiscreteOutputModel):
-            raise TypeError('Given hmm is not a discrete HMM, but has an output model of type: '+
+            raise TypeError('Given hmm is not a discrete HMM, but has an output model of type: ' +
                             str(type(hmm.output_model)))
         DiscreteOutputModel.__init__(self, hmm.output_model.output_probabilities)
         HMM.__init__(self, hmm.initial_distribution, hmm.transition_matrix, self, lag=hmm.lag)
@@ -46,7 +47,7 @@ class SampledDiscreteHMM(DiscreteHMM, SampledHMM):
         r""" Samples of the output probability matrix """
         res = np.empty((self.nsamples, self.nstates, self.dimension), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:,:] = self._sampled_hmms[i].means
+            res[i, :, :] = self._sampled_hmms[i].means
         return res
 
     @property

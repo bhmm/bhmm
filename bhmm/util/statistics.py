@@ -23,16 +23,17 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-'''
+"""
 Created on Jul 25, 2014
 
 @author: noe
-'''
+"""
 
 import numpy as np
 import math
 import itertools
 from bhmm.util import types
+
 
 def confidence_interval(data, alpha):
     """
@@ -50,7 +51,7 @@ def confidence_interval(data, alpha):
     [m,l,r] where m is the mean of the data, and (l,r) are the m-alpha/2 and m+alpha/2 
     confidence interval boundaries.
     """
-    if (alpha < 0 or alpha > 1):
+    if alpha < 0 or alpha > 1:
         raise ValueError('Not a meaningful confidence level: '+str(alpha))
     
     # compute mean
@@ -59,23 +60,24 @@ def confidence_interval(data, alpha):
     sdata = np.sort(data)
     # index of the mean
     im = np.searchsorted(sdata, m)
-    if (im == 0 or im == len(sdata)):
+    if im == 0 or im == len(sdata):
         pm = im
     else:
-        pm = (im-1) + (m-sdata[im-1])/(sdata[im]-sdata[im-1])
+        pm = (im-1) + (m-sdata[im-1]) / (sdata[im]-sdata[im-1])
     # left interval boundary
-    pl = pm - alpha*(pm)
+    pl = pm - alpha * pm
     il1 = max(0, int(math.floor(pl)))
     il2 = min(len(sdata)-1, int(math.ceil(pl)))
     l = sdata[il1] + (pl - il1)*(sdata[il2] - sdata[il1])
     # right interval boundary
-    pr = pm + alpha*(len(data)-im)
+    pr = pm + alpha * (len(data)-im)
     ir1 = max(0, int(math.floor(pr)))
     ir2 = min(len(sdata)-1, int(math.ceil(pr)))
     r = sdata[ir1] + (pr - ir1)*(sdata[ir2] - sdata[ir1])
 
     # return
-    return (m, l, r)
+    return m, l, r
+
 
 def _indexes(arr):
     """
@@ -90,6 +92,7 @@ def _indexes(arr):
     else:
         raise NotImplementedError('Only supporting arrays of dimension 1 and 2 as yet.')
 
+
 def _column(arr, indexes):
     """
     Returns a column with given indexes from a deep array
@@ -99,11 +102,12 @@ def _column(arr, indexes):
 
     """
     if arr.ndim == 2 and types.is_int(indexes):
-        return arr[:,indexes]
+        return arr[:, indexes]
     elif arr.ndim == 3 and len(indexes) == 2:
-        return arr[:,indexes[0],indexes[1]]
+        return arr[:, indexes[0], indexes[1]]
     else:
         raise NotImplementedError('Only supporting arrays of dimension 2 and 3 as yet.')
+
 
 def confidence_interval_arr(data, conf=0.95):
     r""" Computes element-wise confidence intervals from a sample of ndarrays
@@ -126,7 +130,7 @@ def confidence_interval_arr(data, conf=0.95):
         element-wise upper bounds
 
     """
-    if (conf < 0 or conf > 1):
+    if conf < 0 or conf > 1:
         raise ValueError('Not a meaningful confidence level: '+str(conf))
 
     # list or 1D-array? then fuse it
@@ -134,7 +138,7 @@ def confidence_interval_arr(data, conf=0.95):
         newshape = tuple([len(data)] + list(data[0].shape))
         newdata = np.zeros(newshape)
         for i in range(len(data)):
-            newdata[i,:] = data[i]
+            newdata[i, :] = data[i]
         data = newdata
 
     # do we have an array now? if yes go, if no fail
@@ -146,6 +150,6 @@ def confidence_interval_arr(data, conf=0.95):
             col = _column(data, i)
             m, lower[i], upper[i] = confidence_interval(col, conf)
         # return
-        return (lower, upper)
+        return lower, upper
     else:
         raise TypeError('data cannot be converted to an ndarray')

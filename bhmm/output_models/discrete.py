@@ -13,7 +13,7 @@ __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
 __license__ = "LGPL"
 __maintainer__ = "John D. Chodera, Frank Noe"
-__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
+__email__ = "jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
 
 
 class DiscreteOutputModel(OutputModel):
@@ -23,7 +23,7 @@ class DiscreteOutputModel(OutputModel):
 
     """
 
-    def __init__(self, B, prior=None):
+    def __init__(self, B, prior=None, ignore_outliers=True):
         """
         Create a 1D Gaussian output model.
 
@@ -57,7 +57,7 @@ class DiscreteOutputModel(OutputModel):
         self._output_probabilities = np.array(B, dtype=config.dtype)
         nstates, self._nsymbols = self._output_probabilities.shape[0], self._output_probabilities.shape[1]
         # superclass constructor
-        OutputModel.__init__(self, nstates)
+        OutputModel.__init__(self, nstates, ignore_outliers=ignore_outliers)
         # test if row-stochastic
         assert np.allclose(self._output_probabilities.sum(axis=1), np.ones(self.nstates)), 'B is no stochastic matrix'
         # set prior matrix
@@ -90,8 +90,7 @@ class DiscreteOutputModel(OutputModel):
         B[1] = [ 0.1  0.9]
         --------------------------------------------------------------------------------
         """
-
-        output  = "--------------------------------------------------------------------------------\n"
+        output = "--------------------------------------------------------------------------------\n"
         output += "DiscreteOutputModel\n"
         output += "nstates: %d\n" % self.nstates
         output += "nsymbols: %d\n" % self._nsymbols
@@ -118,7 +117,6 @@ class DiscreteOutputModel(OutputModel):
     def sub_output_model(self, states):
         return DiscreteOutputModel(self._output_probabilities[states])
 
-
     def p_obs(self, obs, out=None):
         """
         Returns the output probabilities for an entire trajectory and all hidden states
@@ -137,7 +135,7 @@ class DiscreteOutputModel(OutputModel):
         if out is None:
             out = self._output_probabilities[:, obs].T
             # out /= np.sum(out, axis=1)[:,None]
-            return out
+            return self._handle_outliers(out)
         else:
             if obs.shape[0] == out.shape[0]:
                 np.copyto(out, self._output_probabilities[:, obs].T)
@@ -146,7 +144,7 @@ class DiscreteOutputModel(OutputModel):
             else:
                 raise ValueError('output array out is too small: '+str(out.shape[0])+' < '+str(obs.shape[0]))
             # out /= np.sum(out, axis=1)[:,None]
-            return out
+            return self._handle_outliers(out)
 
     def estimate(self, observations, weights):
         """
@@ -174,13 +172,13 @@ class DiscreteOutputModel(OutputModel):
 
         >>> from scipy import stats
         >>> nobs = 1000
-        >>> obs = np.empty((nobs), dtype = object)
-        >>> weights = np.empty((nobs), dtype = object)
+        >>> obs = np.empty(nobs, dtype = object)
+        >>> weights = np.empty(nobs, dtype = object)
 
         >>> gens = [stats.rv_discrete(values=(range(len(B[i])), B[i])) for i in range(B.shape[0])]
         >>> obs = [gens[i].rvs(size=nobs) for i in range(B.shape[0])]
         >>> weights = [np.zeros((nobs, B.shape[1])) for i in range(B.shape[0])]
-        >>> for i in range(B.shape[0]): weights[i][:,i] = 1.0
+        >>> for i in range(B.shape[0]): weights[i][:, i] = 1.0
 
         Update the observation model parameters my a maximum-likelihood fit.
 
@@ -204,7 +202,7 @@ class DiscreteOutputModel(OutputModel):
         else:
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
         # normalize
-        self._output_probabilities /= np.sum(self._output_probabilities, axis=1)[:,None]
+        self._output_probabilities /= np.sum(self._output_probabilities, axis=1)[:, None]
 
     def sample(self, observations_by_state):
         """
@@ -239,7 +237,7 @@ class DiscreteOutputModel(OutputModel):
             # sample dirichlet distribution
             count += self.prior[i]
             if count.sum() > 0:  # if counts at all: can't sample, so leave output probabilities as they are.
-                self._output_probabilities[i,:] = dirichlet(self.prior[i] + count)
+                self._output_probabilities[i, :] = dirichlet(self.prior[i] + count)
 
     def generate_observation_from_state(self, state_index):
         """
@@ -269,7 +267,8 @@ class DiscreteOutputModel(OutputModel):
         """
         # generate random generator (note that this is inefficient - better use one of the next functions
         import scipy.stats
-        gen = scipy.stats.rv_discrete(values=(range(len(self._output_probabilities[state_index])), self._output_probabilities[state_index]))
+        gen = scipy.stats.rv_discrete(values=(range(len(self._output_probabilities[state_index])), 
+                                              self._output_probabilities[state_index]))
         gen.rvs(size=1)
 
     def generate_observations_from_state(self, state_index, nobs):
@@ -297,7 +296,7 @@ class DiscreteOutputModel(OutputModel):
 
         Generate sample from each state.
 
-        >>> observations = [ output_model.generate_observations_from_state(state_index, nobs=100) for state_index in range(output_model.nstates) ]
+        >>> observations = [output_model.generate_observations_from_state(state_index, nobs=100) for state_index in range(output_model.nstates)]
 
         """
         import scipy.stats
@@ -334,8 +333,7 @@ class DiscreteOutputModel(OutputModel):
         >>> o_t = output_model.generate_observation_trajectory(s_t)
 
         """
-
-        if dtype == None:
+        if dtype is None:
             dtype = np.int32
 
         # Determine number of samples to generate.
@@ -343,29 +341,27 @@ class DiscreteOutputModel(OutputModel):
         nsymbols = self._output_probabilities.shape[1]
 
         if (s_t.max() >= self.nstates) or (s_t.min() < 0):
-            str = ''
-            str += 's_t = %s\n' % s_t
-            str += 's_t.min() = %d, s_t.max() = %d\n' % (s_t.min(), s_t.max())
-            str += 's_t.argmax = %d\n' % s_t.argmax()
-            str += 'self.nstates = %d\n' % self.nstates
-            str += 's_t is out of bounds.\n'
-            raise Exception(str)
+            msg = ''
+            msg += 's_t = %s\n' % s_t
+            msg += 's_t.min() = %d, s_t.max() = %d\n' % (s_t.min(), s_t.max())
+            msg += 's_t.argmax = %d\n' % s_t.argmax()
+            msg += 'self.nstates = %d\n' % self.nstates
+            msg += 's_t is out of bounds.\n'
+            raise Exception(msg)
 
         # generate random generators
-        #import scipy.stats
-        #gens = [scipy.stats.rv_discrete(values=(range(len(self.B[state_index])), self.B[state_index])) for state_index in range(self.B.shape[0])]
-        #o_t = np.zeros([T], dtype=dtype)
-        #for t in range(T):
-        #    s = s_t[t]
-        #    o_t[t] = gens[s].rvs(size=1)
-        #return o_t
+        # import scipy.stats
+        # gens = [scipy.stats.rv_discrete(values=(range(len(self.B[state_index])), self.B[state_index]))
+        #         for state_index in range(self.B.shape[0])]
+        # o_t = np.zeros([T], dtype=dtype)
+        # for t in range(T):
+        #     s = s_t[t]
+        #     o_t[t] = gens[s].rvs(size=1)
+        # return o_t
 
         o_t = np.zeros([T], dtype=dtype)
         for t in range(T):
             s = s_t[t]
-            o_t[t] = np.random.choice(nsymbols, p=self._output_probabilities[s,:])
+            o_t[t] = np.random.choice(nsymbols, p=self._output_probabilities[s, :])
 
         return o_t
-
-
-

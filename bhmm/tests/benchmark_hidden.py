@@ -11,6 +11,7 @@ from bhmm.output_models.gaussian import GaussianOutputModel
 
 print_speedup = True
 
+
 class BenchmarkHidden(object):
 
     def __init__(self, nrep=10, kernel='c'):
@@ -19,11 +20,11 @@ class BenchmarkHidden(object):
 
         # variables
         self.nexamples = 0
-        self.A    = []
-        self.pi   = []
+        self.A = []
+        self.pi = []
         self.pobs = []
-        self.T    = []
-        self.N    = []
+        self.T = []
+        self.N = []
         self.alpha = []
         self.beta = []
         self.gamma = []
@@ -33,10 +34,10 @@ class BenchmarkHidden(object):
         self.time_c = []
         self.time_C = []
         self.time_vpath = []
-        self.alpha_mem   = []
-        self.beta_mem   = []
-        self.gamma_mem   = []
-        self.C_mem   = []
+        self.alpha_mem = []
+        self.beta_mem = []
+        self.gamma_mem = []
+        self.C_mem = []
 
         # second example
         A = np.array([[0.97, 0.02, 0.01],
@@ -44,7 +45,7 @@ class BenchmarkHidden(object):
                       [0.01, 0.02, 0.97]])
         pi = np.array([0.45, 0.1, 0.45])
         T = 1000000
-        means  = np.array([-1.0, 0.0, 1.0])
+        means = np.array([-1.0, 0.0, 1.0])
         sigmas = np.array([0.5,  0.5, 0.5])
         gom = GaussianOutputModel(3, means=means, sigmas=sigmas)
         obs = np.random.randint(3, size=T)
@@ -66,10 +67,10 @@ class BenchmarkHidden(object):
         gamma, _ = self.run_gamma(i, None)
         self.gamma.append(gamma)
         #
-        self.alpha_mem.append(np.zeros((pobs.shape[0],A.shape[0])))
-        self.beta_mem.append(np.zeros((pobs.shape[0],A.shape[0])))
-        self.gamma_mem.append(np.zeros((pobs.shape[0],A.shape[0])))
-        self.C_mem.append(np.zeros((A.shape[0],A.shape[0])))
+        self.alpha_mem.append(np.zeros((pobs.shape[0], A.shape[0])))
+        self.beta_mem.append(np.zeros((pobs.shape[0], A.shape[0])))
+        self.gamma_mem.append(np.zeros((pobs.shape[0], A.shape[0])))
+        self.C_mem.append(np.zeros((A.shape[0], A.shape[0])))
 
         self.nexamples += 1
 
@@ -83,7 +84,7 @@ class BenchmarkHidden(object):
         # compare
         time2 = time.time()
         d = (time2-time1)/(1.0*self.nrep)
-        return (logprob, alpha, d)
+        return logprob, alpha, d
 
     def run_backward(self, i, out):
         beta = None
@@ -94,7 +95,7 @@ class BenchmarkHidden(object):
         # compare
         time2 = time.time()
         d = (time2-time1)/(1.0*self.nrep)
-        return (beta, d)
+        return beta, d
 
     def run_gamma(self, i, out):
         gamma = None
@@ -105,7 +106,7 @@ class BenchmarkHidden(object):
         # compare
         time2 = time.time()
         d = (time2-time1)/(1.0*self.nrep)
-        return (gamma, d)
+        return gamma, d
 
     def run_state_counts(self, i, out):
         c = None
@@ -116,7 +117,7 @@ class BenchmarkHidden(object):
         # compare
         time2 = time.time()
         d = (time2-time1)/(1.0*self.nrep)
-        return (c, d)
+        return c, d
 
     def run_transition_counts(self, i, out):
         C = None
@@ -126,8 +127,8 @@ class BenchmarkHidden(object):
             C = hidden.transition_counts(self.alpha[i], self.beta[i], self.A[i], self.pobs[i], out=out)
         # compare
         time2 = time.time()
-        d = (time2-time1)/(1.0*self.nrep)
-        return (C, d)
+        d = (time2-time1) / (1.0*self.nrep)
+        return C, d
 
     def run_viterbi(self, i, out):
         vpath = None
@@ -137,21 +138,21 @@ class BenchmarkHidden(object):
             vpath = hidden.viterbi(self.A[i], self.pobs[i], self.pi[i])
         # compare
         time2 = time.time()
-        d = (time2-time1)/(1.0*self.nrep)
-        return (vpath, d)
+        d = (time2-time1) / (1.0*self.nrep)
+        return vpath, d
 
     def run_comp(self, call, outs):
         """
         Reference. Just computes the time
         """
         for i in range(self.nexamples):
-            if (outs is None):
+            if outs is None:
                 res = call(i, None)
             else:
                 res = call(i, outs[i])
             pkernel = 'mem'
-            if (print_speedup):
-                print('\t'+str(call.__name__)+'\t Impl = '+pkernel+' Time = '+str(int(1000.0*res[-1]))+' ms')
+            if print_speedup:
+                print('\t' + str(call.__name__) + '\t Impl = ' + pkernel + ' Time = ' + str(int(1000.0*res[-1])) + ' ms')
 
 
 def main():

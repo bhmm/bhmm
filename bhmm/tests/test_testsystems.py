@@ -10,10 +10,11 @@ __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
 __license__ = "FreeBSD"
 __maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
+__email__ = "jchodera AT gmail DOT com"
 
 import unittest
 from bhmm.util import testsystems
+
 
 class TestTestSystems(unittest.TestCase):
 
@@ -33,5 +34,5 @@ class TestTestSystems(unittest.TestCase):
         return
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     unittest.main()

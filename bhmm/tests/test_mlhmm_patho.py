@@ -4,6 +4,7 @@ import unittest
 import numpy as np
 import bhmm
 
+
 class TestMLHMM_Pathologic(unittest.TestCase):
 
     def test_1state(self):
@@ -54,5 +55,5 @@ class TestMLHMM_Pathologic(unittest.TestCase):
                or np.allclose(hmm.output_model.output_probabilities, B_ref[[perm]], atol=1e-5)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     unittest.main()
