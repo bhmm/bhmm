@@ -1,3 +1,22 @@
+
+# This file is part of BHMM (Bayesian Hidden Markov Models).
+#
+# Copyright (c) 2016 Frank Noe (Freie Universitaet Berlin)
+# and John D. Chodera (Memorial Sloan-Kettering Cancer Center, New York)
+#
+# BHMM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 """Python implementation of Hidden Markov Model kernel functions
 
 This module is considered to be the reference for checking correctness of other
@@ -9,13 +28,6 @@ closely related to Rabiners [1] paper.
    vol. 77, issue 2
 """
 import numpy as np
-
-__author__ = "Maikel Nadolski, Christoph Froehner, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["Maikel Nadolski", "Christoph Froehner", "Frank Noe"]
-__license__ = "LGPL"
-__maintainer__ = "Frank Noe"
-__email__ = "frank.noe AT fu-berlin DOT de"
 
 
 def forward(A, pobs, pi, T=None, alpha_out=None, dtype=np.float32):
