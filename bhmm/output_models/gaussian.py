@@ -1,3 +1,22 @@
+
+# This file is part of BHMM (Bayesian Hidden Markov Models).
+#
+# Copyright (c) 2016 Frank Noe (Freie Universitaet Berlin)
+# and John D. Chodera (Memorial Sloan-Kettering Cancer Center, New York)
+#
+# BHMM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import print_function
 from six.moves import range
 import numpy as np
@@ -6,13 +25,6 @@ from bhmm.output_models.impl_c import gaussian as gc
 from bhmm.output_models import OutputModel
 from bhmm.util.logger import logger
 from bhmm.util import config
-
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "LGPL"
-__maintainer__ = "John D. Chodera, Frank Noe"
-__email__ = "jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
 
 
 class GaussianOutputModel(OutputModel):
@@ -116,124 +128,6 @@ class GaussianOutputModel(OutputModel):
 
     def sub_output_model(self, states):
         return GaussianOutputModel(self._means[states], self._sigmas[states])
-
-    # TODO: remove code when we're sure we don't need it
-    # TODO: when cleaning up, save the functionality of the last function (log_p_o) and integrate into and overwrite of log_pobs.
-    # def p_o_i(self, o, i):
-    #     """
-    #     Returns the output probability for symbol o given hidden state i
-    #
-    #     Parameters
-    #     ----------
-    #     o : float or array_like
-    #         observation or observations for which probability is to be computed
-    #     i : int
-    #         the hidden state index
-    #
-    #     Return
-    #     ------
-    #     p_o_i : float
-    #         the probability that hidden state i generates symbol o
-    #
-    #     Examples
-    #     --------
-    #
-    #     Compute the output probability of a single observation from a given hidden state.
-    #
-    #     Create an observation model.
-    #
-    #     >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
-    #
-    #     Compute the output probability of a single observation from a single state.
-    #
-    #     >>> observation = 0
-    #     >>> state_index = 0
-    #     >>> p_o_i = output_model.p_o_i(observation, state_index)
-    #
-    #     Compute the output probability of a vector of observations from a single state.
-    #
-    #     >>> observations = np.random.randn(100)
-    #     >>> state_index = 0
-    #     >>> p_o_i = output_model.p_o_i(observations, state_index)
-    #
-    #     """
-    #     C = 1.0 / (np.sqrt(2.0 * np.pi) * self.sigmas[i])
-    #     Pobs = C * np.exp(-0.5 * ((o - self.means[i]) / self.sigmas[i])**2)
-    #     return Pobs
-    #
-    # def log_p_o_i(self, o, i):
-    #     """
-    #     Returns the log output probability for symbol o given hidden state i
-    #
-    #     Parameters
-    #     ----------
-    #     o : float or array_like
-    #         observation or observations for which probability is to be computed
-    #     i : int
-    #         the hidden state index
-    #
-    #     Return
-    #     ------
-    #     log_p_o_i : float
-    #         the probability that hidden state i generates symbol o
-    #
-    #     Examples
-    #     --------
-    #
-    #     Compute the log output probability of a single observation from a given hidden state.
-    #
-    #     Create an observation model.
-    #
-    #     >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
-    #
-    #     Compute the output probability of a single observation from a single state.
-    #
-    #     >>> observation = 0
-    #     >>> state_index = 0
-    #     >>> log_p_o_i = output_model.log_p_o_i(observation, state_index)
-    #
-    #     Compute the output probability of a vector of observations from a single state.
-    #
-    #     >>> observations = np.random.randn(100)
-    #     >>> state_index = 0
-    #     >>> p_o_i = output_model.p_o_i(observations, state_index)
-    #
-    #     """
-    #     log_C = - 0.5 * np.log(2.0 * np.pi) - np.log(self.sigmas[i])
-    #     log_Pobs = log_C - 0.5 * ((o - self.means[i]) / self.sigmas[i])**2
-    #     return log_Pobs
-    #
-    #
-    # def log_p_o(self, o):
-    #     """
-    #     Returns the log output probability for symbol o from all hidden states
-    #
-    #     Parameters
-    #     ----------
-    #     o : float
-    #         A single observation.
-    #
-    #     Return
-    #     ------
-    #     log_p_o : ndarray (N)
-    #         log_p_o[i] is the log probability density of the observation o from state i emission distribution
-    #
-    #     Examples
-    #     --------
-    #
-    #     Create an observation model.
-    #
-    #     >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
-    #
-    #     Compute the output probability of a single observation from all hidden states.
-    #
-    #     >>> observation = 0
-    #     >>> log_p_o = output_model.log_p_o(observation)
-    #
-    #     """
-    #     log_C = - 0.5 * np.log(2.0 * np.pi) - np.log(self.sigmas)
-    #     log_Pobs = log_C - 0.5 * ((o-self.means)/self.sigmas)**2
-    #     return log_Pobs
 
     def _p_o(self, o):
         """

@@ -1,3 +1,22 @@
+
+# This file is part of BHMM (Bayesian Hidden Markov Models).
+#
+# Copyright (c) 2016 Frank Noe (Freie Universitaet Berlin)
+# and John D. Chodera (Memorial Sloan-Kettering Cancer Center, New York)
+#
+# BHMM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 """Python implementation of Hidden Markov Model kernel functions
 
 This module is considered to be the reference for checking correctness of other
@@ -14,20 +33,12 @@ from bhmm.hidden import impl_c as ic
 from bhmm.util import config
 
 
-__author__ = "Maikel Nadolski, Christoph Froehner, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["Maikel Nadolski", "Christoph Froehner", "Frank Noe"]
-__license__ = "LGPL"
-__maintainer__ = "Frank Noe"
-__email__="frank.noe AT fu-berlin DOT de"
-
-
 # implementation codes
 __IMPL_PYTHON__ = 0
 __IMPL_C__ = 1
 
 # implementation used
-__impl__= __IMPL_PYTHON__
+__impl__ = __IMPL_PYTHON__
 
 
 def set_implementation(impl):
@@ -49,7 +60,6 @@ def set_implementation(impl):
         import warnings
         warnings.warn('Implementation '+impl+' is not known. Using the fallback python implementation.')
         __impl__ = __IMPL_PYTHON__
-
 
 
 def forward(A, pobs, pi, T=None, alpha_out=None):
@@ -119,6 +129,7 @@ def backward(A, pobs, T=None, beta_out=None):
 ones = None
 ones_size = 0
 
+
 def state_probabilities(alpha, beta, T=None, gamma_out=None):
     """ Calculate the (T,N)-probabilty matrix for being in state i at time t.
 
@@ -172,12 +183,12 @@ def state_probabilities(alpha, beta, T=None, gamma_out=None):
         else:
             np.multiply(alpha, beta, gamma_out)
     # normalize
-    np.divide(gamma_out, np.dot(gamma_out, ones), out = gamma_out)
+    np.divide(gamma_out, np.dot(gamma_out, ones), out=gamma_out)
     # done
     return gamma_out
 
 
-def state_counts(gamma, T, out = None):
+def state_counts(gamma, T, out=None):
     """ Sum the probabilities of being in state i to time t
 
     Parameters
@@ -197,43 +208,10 @@ def state_counts(gamma, T, out = None):
     state_probabilities : to calculate `gamma`
 
     """
-    return np.sum( gamma[0:T], axis = 0, out = out )
+    return np.sum(gamma[0:T], axis=0, out=out)
 
 
-# def symbol_counts(gamma, ob, M, dtype=np.float32):
-#     """ Sum the observed probabilities to see symbol k in state i.
-#
-#     Parameters
-#     ----------
-#     gamma : numpy.array shape (T,N)
-#             gamma[t,i] is the probabilty at time t to be in state i !
-#     ob : numpy.array shape (T)
-#     M : integer. number of possible observationsymbols
-#     dtype : item datatype, optional
-#
-#     Returns
-#     -------
-#     counts : numpy.array shape (N,M)
-#
-#     Notes
-#     -----
-#     This function is independ of alpha and beta being scaled, as long as their
-#     scaling is independ in i.
-#
-#     See Also
-#     --------
-#     forward, forward_no_scaling : to calculate `alpha`
-#     backward, backward_no_scaling : to calculate `beta`
-#     """
-#     T, N = len(gamma), len(gamma[0])
-#     counts = np.zeros((N,M), dtype=type)
-#     for t in range(T):
-#         for i in range(N):
-#             counts[i,ob[t]] += gamma[t,i]
-#     return counts
-
-
-def transition_counts(alpha, beta, A, pobs, T = None, out = None):
+def transition_counts(alpha, beta, A, pobs, T=None, out=None):
     """ Sum for all t the probability to transition from state i to state j.
 
     Parameters
@@ -296,7 +274,7 @@ def viterbi(A, pobs, pi):
         raise RuntimeError('Nonexisting implementation selected: '+str(__impl__))
 
 
-def sample_path(alpha, A, pobs, T = None):
+def sample_path(alpha, A, pobs, T=None):
     """ Sample the hidden pathway S from the conditional distribution P ( S | Parameters, Observations )
 
     Parameters
@@ -317,10 +295,8 @@ def sample_path(alpha, A, pobs, T = None):
 
     """
     if __impl__ == __IMPL_PYTHON__:
-        return ip.sample_path(alpha, A, pobs, T = T, dtype=config.dtype)
+        return ip.sample_path(alpha, A, pobs, T=T, dtype=config.dtype)
     elif __impl__ == __IMPL_C__:
-        return ic.sample_path(alpha, A, pobs, T = T, dtype=config.dtype)
+        return ic.sample_path(alpha, A, pobs, T=T, dtype=config.dtype)
     else:
         raise RuntimeError('Nonexisting implementation selected: '+str(__impl__))
-
-

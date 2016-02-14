@@ -1,19 +1,29 @@
+
+# This file is part of BHMM (Bayesian Hidden Markov Models).
+#
+# Copyright (c) 2016 Frank Noe (Freie Universitaet Berlin)
+# and John D. Chodera (Memorial Sloan-Kettering Cancer Center, New York)
+#
+# BHMM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import print_function
 from six.moves import range
-import copy
 import numpy as np
-from math import log
 
 from bhmm.output_models.impl_c import discrete as dc
 from bhmm.output_models import OutputModel
 from bhmm.util import config
-
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "LGPL"
-__maintainer__ = "John D. Chodera, Frank Noe"
-__email__ = "jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
 
 
 class DiscreteOutputModel(OutputModel):
@@ -23,7 +33,7 @@ class DiscreteOutputModel(OutputModel):
 
     """
 
-    def __init__(self, B, prior=None, ignore_outliers=True):
+    def __init__(self, B, prior=None, ignore_outliers=False):
         """
         Create a 1D Gaussian output model.
 
