@@ -23,7 +23,7 @@ class DiscreteOutputModel(OutputModel):
 
     """
 
-    def __init__(self, B, prior=None):
+    def __init__(self, B, prior=None, ignore_outliers=True):
         """
         Create a 1D Gaussian output model.
 
@@ -57,7 +57,7 @@ class DiscreteOutputModel(OutputModel):
         self._output_probabilities = np.array(B, dtype=config.dtype)
         nstates, self._nsymbols = self._output_probabilities.shape[0], self._output_probabilities.shape[1]
         # superclass constructor
-        OutputModel.__init__(self, nstates)
+        OutputModel.__init__(self, nstates, ignore_outliers=ignore_outliers)
         # test if row-stochastic
         assert np.allclose(self._output_probabilities.sum(axis=1), np.ones(self.nstates)), 'B is no stochastic matrix'
         # set prior matrix
@@ -90,7 +90,7 @@ class DiscreteOutputModel(OutputModel):
         B[1] = [ 0.1  0.9]
         --------------------------------------------------------------------------------
         """
-        output  = "--------------------------------------------------------------------------------\n"
+        output = "--------------------------------------------------------------------------------\n"
         output += "DiscreteOutputModel\n"
         output += "nstates: %d\n" % self.nstates
         output += "nsymbols: %d\n" % self._nsymbols
@@ -135,7 +135,7 @@ class DiscreteOutputModel(OutputModel):
         if out is None:
             out = self._output_probabilities[:, obs].T
             # out /= np.sum(out, axis=1)[:,None]
-            return out
+            return self._handle_outliers(out)
         else:
             if obs.shape[0] == out.shape[0]:
                 np.copyto(out, self._output_probabilities[:, obs].T)
@@ -144,7 +144,7 @@ class DiscreteOutputModel(OutputModel):
             else:
                 raise ValueError('output array out is too small: '+str(out.shape[0])+' < '+str(obs.shape[0]))
             # out /= np.sum(out, axis=1)[:,None]
-            return out
+            return self._handle_outliers(out)
 
     def estimate(self, observations, weights):
         """

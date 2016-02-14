@@ -12,10 +12,11 @@ __copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
 __credits__ = ["John D. Chodera", "Frank Noe"]
 __license__ = "LGPL"
 __maintainer__ = "John D. Chodera, Frank Noe"
-__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
+__email__ = "jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
 
 import numpy as np
 from abc import ABCMeta, abstractmethod
+
 
 class OutputModel(object):
     """
@@ -31,9 +32,9 @@ class OutputModel(object):
     __IMPL_C__ = 1
 
     # implementation used
-    __impl__= __IMPL_PYTHON__
+    __impl__ = __IMPL_PYTHON__
 
-    def __init__(self, nstates):
+    def __init__(self, nstates, ignore_outliers=True):
         """
         Create a general output model.
 
@@ -41,9 +42,19 @@ class OutputModel(object):
         ----------
         nstates : int
             The number of output states.
+        ignore_outliers : bool
+            By outliers we mean observations that have zero probability given the
+            current model. ignore_outliers=True means that outliers will be treated
+            as if no observation was made, which is equivalent to making this
+            observation with equal probability from any hidden state.
+            ignore_outliers=True means that an Exception or in the worst case an
+            unhandled crash will occur if an outlier is observed.
+            If outliers have been found, the flag found_outliers will be set True
 
         """
         self._nstates = nstates
+        self.ignore_outliers = ignore_outliers
+        self.found_outliers = False
 
         return
 
@@ -95,12 +106,26 @@ class OutputModel(object):
             the log probability of generating the symbol at time point t from any of the N hidden states
 
         """
-        if (out is None):
+        if out is None:
             return np.log(self.p_obs(obs))
         else:
             self.p_obs(obs, out=out, dtype=dtype)
             np.log(out, out=out)
             return out
+
+    def _handle_outliers(self, p_o):
+        """ Sets observation probabilities of outliers to uniform if ignore_outliers is set.
+        Parameters
+        ----------
+        p_o : ndarray((T, N))
+            output probabilities
+        """
+        if self.ignore_outliers:
+            outliers = np.where(p_o.sum(axis=1)==0)[0]
+            if outliers.size > 0:
+                p_o[outliers, :] = 1.0
+                self.found_outliers = True
+        return p_o
 
     @abstractmethod
     def generate_observation_trajectory(self, s_t, dtype=None):
@@ -120,5 +145,3 @@ class OutputModel(object):
             o_t[t] is the observation associated with state s_t[t]
         """
         pass
-
-

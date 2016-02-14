@@ -21,7 +21,7 @@ class GaussianOutputModel(OutputModel):
 
     """
 
-    def __init__(self, nstates, means=None, sigmas=None):
+    def __init__(self, nstates, means=None, sigmas=None, ignore_outliers=True):
         """
         Create a 1D Gaussian output model.
 
@@ -42,7 +42,7 @@ class GaussianOutputModel(OutputModel):
         >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
 
         """
-        OutputModel.__init__(self, nstates)
+        OutputModel.__init__(self, nstates, ignore_outliers=ignore_outliers)
 
         dtype = config.dtype  # type for internal storage
 
@@ -301,7 +301,8 @@ class GaussianOutputModel(OutputModel):
 
         """
         if self.__impl__ == self.__IMPL_C__:
-            return gc.p_obs(obs, self.means, self.sigmas, out=out, dtype=config.dtype)
+            res = gc.p_obs(obs, self.means, self.sigmas, out=out, dtype=config.dtype)
+            return self._handle_outliers(res)
         elif self.__impl__ == self.__IMPL_PYTHON__:
             T = len(obs)
             if out is None:
@@ -310,7 +311,7 @@ class GaussianOutputModel(OutputModel):
                 res = out
             for t in range(T):
                 res[t, :] = self._p_o(obs[t])
-            return res
+            return self._handle_outliers(res)
         else:
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
 
