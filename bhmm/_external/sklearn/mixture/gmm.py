@@ -438,7 +438,12 @@ class GMM(BaseEstimator):
 
         for _ in range(self.n_init):
             if 'm' in self.init_params or not hasattr(self, 'means_'):
-                from bhmm._external.clustering.kmeans_clustering import init_centers
+                if np.issubdtype(X.dtype, np.float32):
+                    from bhmm._external.clustering.kmeans_clustering_32 import init_centers
+                elif np.issubdtype(X.dtype, np.float64):
+                    from bhmm._external.clustering.kmeans_clustering_64 import init_centers
+                else:
+                    raise ValueError("Could not handle dtype %s for clustering!" % X.dtype)
                 centers = init_centers(X, 'euclidean', self.n_components)
                 self.means_ = centers
 

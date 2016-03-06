@@ -58,20 +58,20 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
     PyObject *py_centers, *py_item, *py_res;
     PyArrayObject *np_chunk, *np_item;
     Py_ssize_t N_centers, N_frames, dim;
-    float *chunk;
-    float **centers;
+    FLT *chunk;
+    FLT **centers;
     char *metric;
-    float mindist;
-    float d;
-    float *buffer_a, *buffer_b;
+    FLT mindist;
+    FLT d;
+    FLT *buffer_a, *buffer_b;
     int l;
     int *centers_counter;
     void *arr_data;
-    float *new_centers;
+    FLT *new_centers;
     int i, j;
     int closest_center_index;
     npy_intp dims[2];
-    float (*distance)(float*, float*, size_t, float*, float*);
+    FLT (*distance)(FLT*, FLT*, size_t, FLT*, FLT*);
     PyObject* return_new_centers;
     debug = 0;
     if(debug) printf("KMEANS: \n----------- cluster called ----------\n");
@@ -95,7 +95,11 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
 
     /* import chunk */
     if(debug) printf("KMEANS: importing chunk...");
-    if(PyArray_TYPE(np_chunk)!=NPY_FLOAT32) { PyErr_SetString(PyExc_ValueError, "dtype of \"chunk\" isn\'t float (32)."); goto error; };
+    #ifdef CLUSTERING_64
+    if(PyArray_TYPE(np_chunk)!=NPY_FLOAT64) { PyErr_SetString(PyExc_ValueError, "dtype of \"chunk\" isn\'t FLT (32)."); goto error; };
+    #else
+    if(PyArray_TYPE(np_chunk)!=NPY_FLOAT32) { PyErr_SetString(PyExc_ValueError, "dtype of \"chunk\" isn\'t FLT (32)."); goto error; };
+    #endif
     if(!PyArray_ISCARRAY_RO(np_chunk) ) { PyErr_SetString(PyExc_ValueError, "\"chunk\" isn\'t C-style contiguous or isn\'t behaved."); goto error; };
     if(PyArray_NDIM(np_chunk)!=2) { PyErr_SetString(PyExc_ValueError, "Number of dimensions of \"chunk\" isn\'t 2."); goto error;  };
     N_frames = np_chunk->dimensions[0];
@@ -112,8 +116,8 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
         distance = euclidean_distance;
     } /*else if(strcmp(metric,"minRMSD")==0) {
         distance = minRMSD_distance;
-        buffer_a = malloc(dim*sizeof(float));
-        buffer_b = malloc(dim*sizeof(float));
+        buffer_a = malloc(dim*sizeof(FLT));
+        buffer_b = malloc(dim*sizeof(FLT));
         if(!buffer_a || !buffer_b) { PyErr_NoMemory(); goto error; }
     } */
     else {
@@ -125,7 +129,7 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
     /* import list of cluster centers */
     if(debug) printf("KMEANS: importing list of cluster centers...");
     N_centers = PyList_Size(py_centers);
-    if(!(centers = malloc(N_centers*sizeof(float*)))) {
+    if(!(centers = malloc(N_centers*sizeof(FLT*)))) {
         PyErr_NoMemory(); goto error;
     }
     for(i = 0; i < N_centers; ++i) {
@@ -139,7 +143,11 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
         if(debug) printf("%d", l++); /* 3 */
         np_item = (PyArrayObject*)py_item;
         if(debug) printf("%d", l++); /* 4 */
-        if(PyArray_TYPE(np_item)!=NPY_FLOAT32) { PyErr_SetString(PyExc_ValueError, "dtype of cluster center isn\'t float (32)."); goto error; };
+        #ifdef CLUSTERING_64
+        if(PyArray_TYPE(np_item)!=NPY_FLOAT64) { PyErr_SetString(PyExc_ValueError, "dtype of cluster center isn\'t FLT (32)."); goto error; };
+        #else
+        if(PyArray_TYPE(np_item)!=NPY_FLOAT32) { PyErr_SetString(PyExc_ValueError, "dtype of cluster center isn\'t FLT (32)."); goto error; };
+        #endif
         if(debug) printf("%d", l++); /* 5 */
         if(!PyArray_ISBEHAVED_RO(np_item) ) { PyErr_SetString(PyExc_ValueError, "cluster center isn\'t behaved."); goto error; };
         if(debug) printf("%d", l++); /* 6 */
@@ -150,7 +158,7 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
           goto error;
         }
         if(debug) printf("%d", l++); /* 8 */
-        centers[i] = (float*)PyArray_DATA(np_item);
+        centers[i] = (FLT*)PyArray_DATA(np_item);
         if(debug) printf("%d", l++); /* 9 */
     }
     if(debug) printf("done, k=%zd\n", N_centers);
@@ -158,7 +166,7 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
     /* initialize centers_counter and new_centers with zeros */
     if(debug) printf("KMEANS: initializing calloc centers counter and new_centers stuff...");
     centers_counter = (int*) calloc(N_centers, sizeof(int));
-    new_centers = (float*) calloc(N_centers * dim, sizeof(float));
+    new_centers = (FLT*) calloc(N_centers * dim, sizeof(FLT));
     if(!centers_counter || !new_centers) { PyErr_NoMemory(); goto error; }
     if(debug) printf("done\n");
 
@@ -194,7 +202,11 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
 
     if(debug) printf("KMEANS: creating return_new_centers...");
     dims[0] = N_centers; dims[1] = dim;
+    #ifdef CLUSTERING_64
+    return_new_centers = PyArray_SimpleNew(2, dims, NPY_FLOAT64);
+    #else
     return_new_centers = PyArray_SimpleNew(2, dims, NPY_FLOAT32);
+    #endif
     if (return_new_centers == NULL){
         PyErr_SetString(PyExc_MemoryError, "Error occurs when creating a new PyArray");
         goto error;
@@ -222,9 +234,9 @@ error:
 static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     int k, centers_found, first_center_index, i, j, n_trials;
     int some_not_done;
-    float d;
-    float dist_sum;
-    float sum;
+    FLT d;
+    FLT dist_sum;
+    FLT sum;
     Py_ssize_t dim, n_frames;
     PyObject *ret_init_centers;
     PyArrayObject *np_data;
@@ -233,15 +245,15 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     npy_intp dims[2];
     int *taken_points;
     int best_candidate = -1;
-    float best_potential = FLT_MAX;
+    FLT best_potential = FLT_MAX;
     int *next_center_candidates;
-    float *next_center_candidates_rand;
-    float *next_center_candidates_potential;
-    float *data, *init_centers;
-    float *buffer_a, *buffer_b;
+    FLT *next_center_candidates_rand;
+    FLT *next_center_candidates_potential;
+    FLT *data, *init_centers;
+    FLT *buffer_a, *buffer_b;
     void *arr_data;
-    float *squared_distances;
-    float (*distance)(float*, float*, size_t, float*, float*);
+    FLT *squared_distances;
+    FLT (*distance)(FLT*, FLT*, size_t, FLT*, FLT*);
 
     ret_init_centers = Py_BuildValue("");
     py_callback_result = NULL;
@@ -268,28 +280,36 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     n_frames = np_data->dimensions[0];
     dim = np_data->dimensions[1];
     data = PyArray_DATA(np_data);
+    /*printf("-------- data ----------\n");
+    for(i=0; i < n_frames; i++) {
+        for(j=0; j < dim; j++) {
+            printf("%f, ", data[i*dim + j]);
+        }
+        printf("\n");
+    }
+    printf("-------- data end ------\n");*/
     /* number of trials before choosing the data point with the best potential */
     n_trials = 2 + (int) log(k);
 
     /* allocate space for the index giving away which point has already been used as a cluster center */
     if(!(taken_points = (int*) calloc(n_frames, sizeof(int)))) { PyErr_NoMemory(); goto error; }
     /* allocate space for the array holding the cluster centers to be returned */
-    if(!(init_centers = (float*) calloc(k * dim, sizeof(float)))) { PyErr_NoMemory(); goto error; }
+    if(!(init_centers = (FLT*) calloc(k * dim, sizeof(FLT)))) { PyErr_NoMemory(); goto error; }
     /* allocate space for the array holding the squared distances to the assigned cluster centers */
-    if(!(squared_distances = (float*) calloc(n_frames, sizeof(float)))) { PyErr_NoMemory(); goto error; }
+    if(!(squared_distances = (FLT*) calloc(n_frames, sizeof(FLT)))) { PyErr_NoMemory(); goto error; }
 
     /* candidates allocations */
     if(!(next_center_candidates = (int*) malloc(n_trials * sizeof(int)))) { PyErr_NoMemory(); goto error; }
-    if(!(next_center_candidates_rand = (float*) malloc(n_trials * sizeof(float)))) { PyErr_NoMemory(); goto error; }
-    if(!(next_center_candidates_potential = (float*) malloc(n_trials * sizeof(float)))) { PyErr_NoMemory(); goto error; }
+    if(!(next_center_candidates_rand = (FLT*) malloc(n_trials * sizeof(FLT)))) { PyErr_NoMemory(); goto error; }
+    if(!(next_center_candidates_potential = (FLT*) malloc(n_trials * sizeof(FLT)))) { PyErr_NoMemory(); goto error; }
 
     /* parse and initialize metric */
     if(strcmp(metric,"euclidean")==0) {
         distance = euclidean_distance;
     } /*else if(strcmp(metric,"minRMSD")==0) {
         distance = minRMSD_distance;
-        buffer_a = malloc(dim*sizeof(float));
-        buffer_b = malloc(dim*sizeof(float));
+        buffer_a = malloc(dim*sizeof(FLT));
+        buffer_b = malloc(dim*sizeof(FLT));
         if(!buffer_a || !buffer_b) { PyErr_NoMemory(); goto error; }
     } */
     else {
@@ -330,7 +350,7 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
         /* initialize the trials random values by the D^2-weighted distribution */
         for(j = 0; j < n_trials; j++) {
             next_center_candidates[j] = -1;
-            next_center_candidates_rand[j] = dist_sum * ((float)rand()/(float)RAND_MAX);
+            next_center_candidates_rand[j] = dist_sum * ((FLT)rand()/(FLT)RAND_MAX);
             next_center_candidates_potential[j] = 0.0;
         }
 
@@ -432,7 +452,11 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     /* create the output objects */
     dims[0] = k;
     dims[1] = dim;
+    #ifdef CLUSTERING_64
+    ret_init_centers = PyArray_SimpleNew(2, dims, NPY_FLOAT64);
+    #else
     ret_init_centers = PyArray_SimpleNew(2, dims, NPY_FLOAT32);
+    #endif
     if (ret_init_centers == NULL){
         PyErr_SetString(PyExc_MemoryError, "Error occurs when creating a new PyArray");
         goto error;
@@ -461,12 +485,12 @@ error:
 "\n"\
 "Parameters\n"\
 "----------\n"\
-"chunk : (N,M) C-style contiguous and behaved ndarray of np.float32\n"\
+"chunk : (N,M) C-style contiguous and behaved ndarray of np.FLT32\n"\
 "    (input) array of N frames, each frame having dimension M\n"\
-"centers : list of (M) behaved ndarrays of np.float32\n"\
+"centers : list of (M) behaved ndarrays of np.FLT32\n"\
 "    (input/output) Possibly empty list of previously found cluster\n"\
 "    centers. New centers are appended to this list.\n"\
-"dmin : float\n"\
+"dmin : FLT\n"\
 "    (input) Distance parameter for regular spatial clustering. Whenever\n"\
 "    a frame is at least `dmin` away form all cluster centers it is added\n"\
 "    as a new cluster center.\n"\
@@ -486,7 +510,7 @@ error:
 "\n"\
 "Parameters\n"\
 "----------\n"\
-"data : (N,M) C-style contiguous and behaved ndarray of np.float32\n"\
+"data : (N,M) C-style contiguous and behaved ndarray of np.FLT32\n"\
 "    (input) array of data points, each having dimension M.\n"\
 "metric : string\n"\
 "    (input) One of \"euclidean\" or \"minRMSD\" (case sensitive).\n"\
@@ -501,6 +525,11 @@ error:
 "----\n"\
 "This function uses the minRMSD implementation of mdtraj."
 
+#ifdef CLUSTERING_64
+#define _MODULE_NAME "kmeans_clustering_64"
+#else
+#define _MODULE_NAME "kmeans_clustering_32"
+#endif
 
 static PyMethodDef kmeansMethods[] =
 {
@@ -542,10 +571,9 @@ static int myextension_clear(PyObject *m) {
     return 0;
 }
 
-
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
-        "kmeans_clustering",
+        _MODULE_NAME,
         NULL,
         sizeof(struct module_state),
         kmeansMethods,
@@ -558,18 +586,26 @@ static struct PyModuleDef moduledef = {
 #define INITERROR return NULL
 
 PyObject *
-PyInit_kmeans_clustering(void)
+#ifdef CLUSTERING_64
+PyInit_kmeans_clustering_64(void)
+#else
+PyInit_kmeans_clustering_32(void)
+#endif
 
 #else // py2
 #define INITERROR return
 
-void initkmeans_clustering(void)
+#ifdef CLUSTERING_64
+void initkmeans_clustering_64(void)
+#else
+void initkmeans_clustering_32(void)
+#endif
 #endif
 {
 #if PY_MAJOR_VERSION >= 3
     PyObject *module = PyModule_Create(&moduledef);
 #else
-    PyObject *module = Py_InitModule3("kmeans_clustering", kmeansMethods, MOD_USAGE);
+    PyObject *module = Py_InitModule3(_MODULE_NAME, kmeansMethods, MOD_USAGE);
 #endif
     struct module_state *st = GETSTATE(module);
 
