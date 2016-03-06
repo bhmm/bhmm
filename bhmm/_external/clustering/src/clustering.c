@@ -27,7 +27,7 @@
 #include <clustering.h>
 #include <assert.h>
 
-float euclidean_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *buffer_a, float *buffer_b)
+FLT euclidean_distance(FLT *SKP_restrict a, FLT *SKP_restrict b, size_t n, FLT *buffer_a, FLT *buffer_b)
 {
     double sum;
     size_t i;
@@ -40,13 +40,13 @@ float euclidean_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n,
 }
 
 /*
-float minRMSD_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *SKP_restrict buffer_a, float *SKP_restrict buffer_b)
+FLT minRMSD_distance(FLT *SKP_restrict a, FLT *SKP_restrict b, size_t n, FLT *SKP_restrict buffer_a, FLT *SKP_restrict buffer_b)
 {
-    float msd;
-    float trace_a, trace_b;
+    FLT msd;
+    FLT trace_a, trace_b;
 
-    memcpy(buffer_a, a, n*sizeof(float));
-    memcpy(buffer_b, b, n*sizeof(float));
+    memcpy(buffer_a, a, n*sizeof(FLT));
+    memcpy(buffer_b, b, n*sizeof(FLT));
 
     inplace_center_and_trace_atom_major(buffer_a, &trace_a, 1, n/3);
     inplace_center_and_trace_atom_major(buffer_b, &trace_b, 1, n/3);
@@ -55,12 +55,12 @@ float minRMSD_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, f
 }
 */
 
-int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric, Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim) {
+int c_assign(FLT *chunk, FLT *centers, npy_int32 *dtraj, char* metric, Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim) {
     int ret;
-    float d, mindist;
+    FLT d, mindist;
     size_t argmin;
-    float *buffer_a, *buffer_b;
-    float (*distance)(float*, float*, size_t, float*, float*);
+    FLT *buffer_a, *buffer_b;
+    FLT (*distance)(FLT*, FLT*, size_t, FLT*, FLT*);
 
     buffer_a = NULL; buffer_b = NULL;
     ret = ASSIGN_SUCCESS;
@@ -70,8 +70,8 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric, Py_ss
         distance = euclidean_distance;
     } /*else if(strcmp(metric,"minRMSD")==0) {
         distance = minRMSD_distance;
-        buffer_a = malloc(dim*sizeof(float));
-        buffer_b = malloc(dim*sizeof(float));
+        buffer_a = malloc(dim*sizeof(FLT));
+        buffer_b = malloc(dim*sizeof(FLT));
         if(!buffer_a || !buffer_b) {
             ret = ASSIGN_ERR_NO_MEMORY; goto error;
         }
@@ -86,7 +86,11 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric, Py_ss
         Py_ssize_t i,j;
 //        #pragma omp for private(j, argmin, mindist)
         for(i = 0; i < N_frames; ++i) {
-			mindist = FLT_MAX;
+            #ifdef CLUSTERING_64
+            mindist = DBL_MAX;
+            #else
+            mindist = FLT_MAX;
+            #endif
             argmin = -1;
             for(j = 0; j < N_centers; ++j) {
                 d = distance(&chunk[i*dim], &centers[j*dim], dim, buffer_a, buffer_b);
@@ -110,8 +114,8 @@ PyObject *assign(PyObject *self, PyObject *args) {
     PyObject *py_centers, *py_res;
     PyArrayObject *np_chunk, *np_centers, *np_dtraj;
     Py_ssize_t N_centers, N_frames, dim;
-    float *chunk;
-    float *centers;
+    FLT *chunk;
+    FLT *centers;
     npy_int32 *dtraj;
     char *metric;
 
@@ -122,7 +126,11 @@ PyObject *assign(PyObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "O!OO!s", &PyArray_Type, &np_chunk, &py_centers, &PyArray_Type, &np_dtraj, &metric)) goto error; /* ref:borr. */
 
     /* import chunk */
-    if(PyArray_TYPE(np_chunk)!=NPY_FLOAT32) { PyErr_SetString(PyExc_ValueError, "dtype of \"chunk\" isn\'t float (32)."); goto error; };
+    #ifdef CLUSTERING_64
+    if(PyArray_TYPE(np_chunk)!=NPY_FLOAT64) { PyErr_SetString(PyExc_ValueError, "dtype of \"chunk\" isn\'t FLT (32)."); goto error; };
+    #else
+    if(PyArray_TYPE(np_chunk)!=NPY_FLOAT32) { PyErr_SetString(PyExc_ValueError, "dtype of \"chunk\" isn\'t FLT (32)."); goto error; };
+    #endif
     if(!PyArray_ISCARRAY_RO(np_chunk) ) { PyErr_SetString(PyExc_ValueError, "\"chunk\" isn\'t C-style contiguous or isn\'t behaved."); goto error; };
     if(PyArray_NDIM(np_chunk)!=2) { PyErr_SetString(PyExc_ValueError, "Number of dimensions of \"chunk\" isn\'t 2."); goto error;  };
     N_frames = np_chunk->dimensions[0];
@@ -144,9 +152,13 @@ PyObject *assign(PyObject *self, PyObject *args) {
     dtraj = (npy_int32*)PyArray_DATA(np_dtraj);
 
     /* import list of cluster centers */
+    #ifdef CLUSTERING_64
+    np_centers = (PyArrayObject*)PyArray_ContiguousFromAny(py_centers, NPY_FLOAT64, 2, 2);
+    #else
     np_centers = (PyArrayObject*)PyArray_ContiguousFromAny(py_centers, NPY_FLOAT32, 2, 2);
+    #endif
     if(!np_centers) {
-        PyErr_SetString(PyExc_ValueError, "Could not convert \"centers\" to two-dimensional C-contiguous behaved ndarray of float (32).");
+        PyErr_SetString(PyExc_ValueError, "Could not convert \"centers\" to two-dimensional C-contiguous behaved ndarray of FLT (32).");
         goto error;
     }
     N_centers = np_centers->dimensions[0];
@@ -158,7 +170,7 @@ PyObject *assign(PyObject *self, PyObject *args) {
         PyErr_SetString(PyExc_ValueError, "Dimension of cluster centers doesn\'t match dimension of frames.");
         goto error;
     }
-    centers = (float*)PyArray_DATA(np_centers);
+    centers = (FLT*)PyArray_DATA(np_centers);
 
     /* do the assignment */
     switch(c_assign(chunk, centers, dtraj, metric, N_frames, N_centers, dim)) {
