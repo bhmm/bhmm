@@ -59,6 +59,17 @@ class TestHMM(unittest.TestCase):
         assert(np.allclose(model.output_model.means, np.array(means)))
         assert(np.allclose(model.output_model.sigmas, np.array(sigmas)))
 
+    def test_attributes(self):
+        """ Tests that attributes used in properties remain in sync
+        """
+        model = testsystems.force_spectroscopy_model()
+        assert(hasattr(model, 'is_stationary'))
+        assert(hasattr(model, '_nstates'))
+        assert(hasattr(model, '_ensure_spectral_decomposition'))
+        assert(hasattr(model, '_spectral_decomp_available'))
+        assert(hasattr(model, '_Pi'))
+        assert(hasattr(model, '_Tij'))
+
 
 if __name__ == "__main__":
     unittest.main()

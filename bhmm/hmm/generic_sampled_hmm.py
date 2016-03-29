@@ -92,7 +92,7 @@ class SampledHMM(HMM):
     @property
     def stationary_distribution_samples(self):
         r""" Samples of the stationary distribution """
-        if self._stationary:
+        if self.is_stationary:
             return self.initial_distribution_samples
         else:
             raise ValueError('HMM is not stationary')
