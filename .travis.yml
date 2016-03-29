@@ -1,26 +1,24 @@
 language: c
-
+sudo: false
 addons:
   apt:
-    packages:
-    - g++ 
-    - gfortran
-    - csh
-    - g++-multilib
-    - gcc-multilib
-    - openbabel   
-
-branches:
-  only:
-    - master
+    sources:
+    - ubuntu-toolchain-r-test
 
 install:
-  - source devtools/ci/install.sh
+  - bash -x devtools/travis-ci/install.sh
   - export PYTHONUNBUFFERED=true
+  - export PATH=$HOME/miniconda/bin:$PATH
 
 script:
-  # this builds the binary, unpacks it, and runs the tests
+  # Add conda channel
+  - conda config --add channels $ORGNAME
+  # Build the recipe
   - conda build devtools/conda-recipe
+  # Test the local installation
+  - source activate _test
+  - conda install --yes --quiet nose nose-timer
+  - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-doctest --with-timer -a "\!slow" && cd ..
 
 env:
   matrix:
@@ -29,12 +27,14 @@ env:
     - python=3.5  CONDA_PY=35
 
   global:
-  # Security tokens for binstar.
-  - secure: "dlmnPV822CrsiUT6pBnplScFKHE1ZPImZB6Ctz5mdRydWLJ00UisZER/d5RO3ik4RKHPn2giJ/t89ldtgQyHtLAx60+glvxoeydolyQQS00th6PjBC/Ey8e/ZkbxI/9OEXtJg+oCjOKxLezx0/Xj1IA+lp9DOjvl6stRFOJ8vQI5yiGbcUO41m7ykHeDu9gST9Wiej2jtVRc5oGr8sznq9zXcVM6AVq4tbSf10XdAJzMmNjU7D6hM/mknwIZUhyW2mb3AR39zmVmq+vMkmyHRtFUcTUjlPVAjuJKIPhT+nZcNfoNW+xxJ9aEGuVeV98vY6DnlZkWaR6LOGVbJMHZHeoIASpEcJnZKztvAHnjMMIbfF5yC6AFzjqGW49IZeaxgXkT1IJoLE8jWbR2PXZNZ0WaYOpsoTHXWOmq0LB5sHOH2r0GvzaA7J8226C3oO59NsRfB4DOK/isNnQWkynUkHxP0YzIEoGpwKSI9eV/jfWglCB9bcOdiHFsAUQEOtLGMzWH69zNlYVPvciIK//TLaDXCQV2FAaZe586AqpfQ9zsjXj8BugTZTwr1DsY0cFJ9kmrmek/KVhLiNn+hLRGBFAmehfeJoJvMuSTl0uvvcrTxMcwwQsVjq1YzQL0QXMe+LGqSPdNx5uf6DZd0VLqa9UBVKsMYdxezAi+bTUpT3w="
+    - ORGNAME="omnia" # the name of the organization
+    - PACKAGENAME="bhmm" # the name of your package
+    # encrypted BINSTAR_TOKEN for push of dev package to binstar
+    - secure: "dlmnPV822CrsiUT6pBnplScFKHE1ZPImZB6Ctz5mdRydWLJ00UisZER/d5RO3ik4RKHPn2giJ/t89ldtgQyHtLAx60+glvxoeydolyQQS00th6PjBC/Ey8e/ZkbxI/9OEXtJg+oCjOKxLezx0/Xj1IA+lp9DOjvl6stRFOJ8vQI5yiGbcUO41m7ykHeDu9gST9Wiej2jtVRc5oGr8sznq9zXcVM6AVq4tbSf10XdAJzMmNjU7D6hM/mknwIZUhyW2mb3AR39zmVmq+vMkmyHRtFUcTUjlPVAjuJKIPhT+nZcNfoNW+xxJ9aEGuVeV98vY6DnlZkWaR6LOGVbJMHZHeoIASpEcJnZKztvAHnjMMIbfF5yC6AFzjqGW49IZeaxgXkT1IJoLE8jWbR2PXZNZ0WaYOpsoTHXWOmq0LB5sHOH2r0GvzaA7J8226C3oO59NsRfB4DOK/isNnQWkynUkHxP0YzIEoGpwKSI9eV/jfWglCB9bcOdiHFsAUQEOtLGMzWH69zNlYVPvciIK//TLaDXCQV2FAaZe586AqpfQ9zsjXj8BugTZTwr1DsY0cFJ9kmrmek/KVhLiNn+hLRGBFAmehfeJoJvMuSTl0uvvcrTxMcwwQsVjq1YzQL0QXMe+LGqSPdNx5uf6DZd0VLqa9UBVKsMYdxezAi+bTUpT3w="
 
 after_success:
   - echo "after_success"
-  - source devtools/ci/after_success.sh
+  - if [ "$TRAVIS_SECURE_ENV_VARS" == true ]; then source devtools/travis-ci/after_success.sh; fi
 
 deploy:
   edge: true # testing bleeding edge git deployment code
