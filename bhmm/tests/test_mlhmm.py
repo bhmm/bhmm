@@ -1,9 +1,21 @@
-#!/usr/local/bin/env python
 
-"""
-Test MLHMM.
-
-"""
+# This file is part of BHMM (Bayesian Hidden Markov Models).
+#
+# Copyright (c) 2016 Frank Noe (Freie Universitaet Berlin)
+# and John D. Chodera (Memorial Sloan-Kettering Cancer Center, New York)
+#
+# BHMM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
 import numpy as np
@@ -12,14 +24,7 @@ from os.path import abspath, join
 from os import pardir
 
 
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "FreeBSD"
-__maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
-
-class TestMLHMM(unittest.TestCase):
+class TestMLHMM_DoubleWell(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -36,8 +41,8 @@ class TestMLHMM(unittest.TestCase):
         nstates = 2
 
         # run with lag 1 and 10
-        cls.hmm_lag1 = bhmm.estimate_hmm([obs], nstates, lag=1, type='discrete')
-        cls.hmm_lag10 = bhmm.estimate_hmm([obs], nstates, lag=10, type='discrete')
+        cls.hmm_lag1 = bhmm.estimate_hmm([obs], nstates, lag=1, output='discrete')
+        cls.hmm_lag10 = bhmm.estimate_hmm([obs], nstates, lag=10, output='discrete')
 
     # =============================================================================
     # Test
@@ -53,8 +58,8 @@ class TestMLHMM(unittest.TestCase):
         assert self.hmm_lag10.is_reversible
 
     def test_stationary(self):
-        assert self.hmm_lag1.is_stationary
-        assert self.hmm_lag10.is_stationary
+        assert not self.hmm_lag1.is_stationary
+        assert not self.hmm_lag10.is_stationary
 
     def test_lag(self):
         assert self.hmm_lag1.lag == 1
@@ -78,24 +83,22 @@ class TestMLHMM(unittest.TestCase):
 
     def test_eigenvectors_left(self):
         for evec in [self.hmm_lag1.eigenvectors_left, self.hmm_lag10.eigenvectors_left]:
-            assert np.array_equal(evec.shape, (2,2))
-            assert np.sign(evec[0,0]) == np.sign(evec[0,1])
-            assert np.sign(evec[1,0]) != np.sign(evec[1,1])
+            assert np.array_equal(evec.shape, (2, 2))
+            assert np.sign(evec[0, 0]) == np.sign(evec[0, 1])
+            assert np.sign(evec[1, 0]) != np.sign(evec[1, 1])
 
     def test_eigenvectors_right(self):
         for evec in [self.hmm_lag1.eigenvectors_right, self.hmm_lag10.eigenvectors_right]:
-            assert np.array_equal(evec.shape, (2,2))
-            assert np.isclose(evec[0,0], evec[1,0])
-            assert np.sign(evec[0,1]) != np.sign(evec[1,1])
+            assert np.array_equal(evec.shape, (2, 2))
+            assert np.isclose(evec[0, 0], evec[1, 0])
+            assert np.sign(evec[0, 1]) != np.sign(evec[1, 1])
 
     def test_initial_distribution(self):
         for mu in [self.hmm_lag1.initial_distribution, self.hmm_lag10.initial_distribution]:
             # normalization
             assert np.isclose(mu.sum(), 1.0)
-            # positivity
-            assert np.all(mu > 0.0)
-            # this data: approximately equal probability
-            assert np.max(np.abs(mu[0]-mu[1])) < 0.05
+            # should be on one side
+            assert np.isclose(mu[0], 1.0) or np.isclose(mu[0], 0.0)
 
     def test_stationary_distribution(self):
         for mu in [self.hmm_lag1.stationary_distribution, self.hmm_lag10.stationary_distribution]:
@@ -120,5 +123,5 @@ class TestMLHMM(unittest.TestCase):
         # this data: lifetimes about 680
         assert np.abs(self.hmm_lag10.timescales[0] - 340) < 20.0
 
-if __name__=="__main__":
+if __name__ == "__main__":
     unittest.main()

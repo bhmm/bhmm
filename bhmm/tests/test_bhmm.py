@@ -1,9 +1,21 @@
-#!/usr/local/bin/env python
 
-"""
-Test BHMM using simple analytical models.
-
-"""
+# This file is part of BHMM (Bayesian Hidden Markov Models).
+#
+# Copyright (c) 2016 Frank Noe (Freie Universitaet Berlin)
+# and John D. Chodera (Memorial Sloan-Kettering Cancer Center, New York)
+#
+# BHMM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
 import numpy as np
@@ -11,12 +23,6 @@ import bhmm
 from os.path import abspath, join
 from os import pardir
 
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "FreeBSD"
-__maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
 
 class TestBHMM(unittest.TestCase):
 
@@ -37,7 +43,7 @@ class TestBHMM(unittest.TestCase):
 
         # EM with lag 10
         lag = 10
-        cls.hmm_lag10 = bhmm.estimate_hmm([obs], cls.nstates, lag=lag, type='discrete')
+        cls.hmm_lag10 = bhmm.estimate_hmm([obs], cls.nstates, lag=lag, output='discrete')
         # BHMM
         cls.sampled_hmm_lag10 = bhmm.bayesian_hmm([obs[::lag]], cls.hmm_lag10, nsample=cls.nsamples)
 
@@ -49,7 +55,7 @@ class TestBHMM(unittest.TestCase):
         assert self.sampled_hmm_lag10.is_reversible
 
     def test_stationary(self):
-        assert self.sampled_hmm_lag10.is_stationary
+        assert not self.sampled_hmm_lag10.is_stationary
 
     def test_lag(self):
         assert self.sampled_hmm_lag10.lag == 10
@@ -122,16 +128,16 @@ class TestBHMM(unittest.TestCase):
         assert np.array_equal(samples.shape, (self.nsamples, self.nstates, self.nstates))
         # consistency
         for evec in samples:
-            assert np.sign(evec[0,0]) == np.sign(evec[0,1])
-            assert np.sign(evec[1,0]) != np.sign(evec[1,1])
+            assert np.sign(evec[0, 0]) == np.sign(evec[0, 1])
+            assert np.sign(evec[1, 0]) != np.sign(evec[1, 1])
 
     def test_eigenvectors_left_stats(self):
         # mean
         mean = self.sampled_hmm_lag10.eigenvectors_left_mean
         # test shape and consistency
         assert np.array_equal(mean.shape, (self.nstates, self.nstates))
-        assert np.sign(mean[0,0]) == np.sign(mean[0,1])
-        assert np.sign(mean[1,0]) != np.sign(mean[1,1])
+        assert np.sign(mean[0, 0]) == np.sign(mean[0, 1])
+        assert np.sign(mean[1, 0]) != np.sign(mean[1, 1])
         # std
         std = self.sampled_hmm_lag10.eigenvectors_left_std
         # test shape
@@ -151,16 +157,16 @@ class TestBHMM(unittest.TestCase):
         assert np.array_equal(samples.shape, (self.nsamples, self.nstates, self.nstates))
         # consistency
         for evec in samples:
-            assert np.sign(evec[0,0]) == np.sign(evec[1,0])
-            assert np.sign(evec[0,1]) != np.sign(evec[1,1])
+            assert np.sign(evec[0, 0]) == np.sign(evec[1, 0])
+            assert np.sign(evec[0, 1]) != np.sign(evec[1, 1])
 
     def test_eigenvectors_right_stats(self):
         # mean
         mean = self.sampled_hmm_lag10.eigenvectors_right_mean
         # test shape and consistency
         assert np.array_equal(mean.shape, (self.nstates, self.nstates))
-        assert np.sign(mean[0,0]) == np.sign(mean[1,0])
-        assert np.sign(mean[0,1]) != np.sign(mean[1,1])
+        assert np.sign(mean[0, 0]) == np.sign(mean[1, 0])
+        assert np.sign(mean[0, 1]) != np.sign(mean[1, 1])
         # std
         std = self.sampled_hmm_lag10.eigenvectors_right_std
         # test shape

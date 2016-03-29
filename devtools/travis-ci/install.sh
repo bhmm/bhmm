@@ -9,12 +9,12 @@ fi
 bash $MINICONDA -b
 PIP_ARGS="-U"
 
-export PATH=$HOME/miniconda/bin:$PATH
+export PATH=$HOME/miniconda2/bin:$PATH
 
-sudo apt-get update
-sudo apt-get install -qq -y g++ gfortran csh g++-multilib gcc-multilib openbabel
+#sudo apt-get update
+#sudo apt-get install -qq -y g++ gfortran csh g++-multilib gcc-multilib openbabel
 
 conda update --yes --quiet conda
-conda config --add channels http://conda.binstar.org/omnia
-conda config --add channels https://conda.binstar.org/rdkit
+conda config --add channels omnia
+conda config --add channels rdkit
 conda install --yes --quiet conda-build jinja2 binstar pip

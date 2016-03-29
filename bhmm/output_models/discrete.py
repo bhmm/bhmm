@@ -1,19 +1,29 @@
+
+# This file is part of BHMM (Bayesian Hidden Markov Models).
+#
+# Copyright (c) 2016 Frank Noe (Freie Universitaet Berlin)
+# and John D. Chodera (Memorial Sloan-Kettering Cancer Center, New York)
+#
+# BHMM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import print_function
 from six.moves import range
-import copy
 import numpy as np
-from math import log
 
 from bhmm.output_models.impl_c import discrete as dc
 from bhmm.output_models import OutputModel
 from bhmm.util import config
-
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "LGPL"
-__maintainer__ = "John D. Chodera, Frank Noe"
-__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
 
 
 class DiscreteOutputModel(OutputModel):
@@ -23,15 +33,26 @@ class DiscreteOutputModel(OutputModel):
 
     """
 
-    def __init__(self, B):
+    def __init__(self, B, prior=None, ignore_outliers=False):
         """
         Create a 1D Gaussian output model.
 
         Parameters
         ----------
-        B : ndarray((N,M),dtype=float)
+        B : ndarray((N, M), dtype=float)
             output probability matrix using N hidden states and M observable symbols.
             This matrix needs to be row-stochastic.
+        prior : None or broadcastable to ndarray((N, M), dtype=float)
+            Prior for the initial distribution of the HMM.
+            Currently implements the Dirichlet prior that is conjugate to the
+            Dirichlet distribution of :math:`b_i`. :math:`b_i` is sampled from:
+            .. math:
+                b_i \sim \prod_j b_{ij}_i^{a_{ij} + n_{ij} - 1}
+            where :math:`n_{ij}` are the number of times symbol :math:`j` has
+            been observed when the hidden trajectory was in state :math:`i`
+            and :math:`a_{ij}` is the prior count.
+            The default prior=None corresponds to :math:`a_{ij} = 0`.
+                This option ensures coincidence between sample mean an MLE.
 
         Examples
         --------
@@ -39,18 +60,22 @@ class DiscreteOutputModel(OutputModel):
         Create an observation model.
 
         >>> import numpy as np
-        >>> B = np.array([[0.5,0.5],[0.1,0.9]])
+        >>> B = np.array([[0.5, 0.5], [0.1, 0.9]])
         >>> output_model = DiscreteOutputModel(B)
 
         """
         self._output_probabilities = np.array(B, dtype=config.dtype)
-        nstates,self._nsymbols = self._output_probabilities.shape[0],self._output_probabilities.shape[1]
+        nstates, self._nsymbols = self._output_probabilities.shape[0], self._output_probabilities.shape[1]
         # superclass constructor
-        OutputModel.__init__(self, nstates)
+        OutputModel.__init__(self, nstates, ignore_outliers=ignore_outliers)
         # test if row-stochastic
-        assert np.allclose(np.sum(self._output_probabilities, axis=1), np.ones(self.nstates)), 'B is not a stochastic matrix'
-        # set output matrix
-        self._output_probabilities = B
+        assert np.allclose(self._output_probabilities.sum(axis=1), np.ones(self.nstates)), 'B is no stochastic matrix'
+        # set prior matrix
+        if prior is None:
+            prior = np.zeros((nstates, self._nsymbols))
+        else:
+            prior = np.zeros((nstates, self._nsymbols)) + prior  # will fail if not broadcastable
+        self.prior = prior
 
     def __repr__(self):
         r""" String representation of this output model
@@ -75,8 +100,7 @@ class DiscreteOutputModel(OutputModel):
         B[1] = [ 0.1  0.9]
         --------------------------------------------------------------------------------
         """
-
-        output  = "--------------------------------------------------------------------------------\n"
+        output = "--------------------------------------------------------------------------------\n"
         output += "DiscreteOutputModel\n"
         output += "nstates: %d\n" % self.nstates
         output += "nsymbols: %d\n" % self._nsymbols
@@ -100,82 +124,8 @@ class DiscreteOutputModel(OutputModel):
         r""" Number of symbols, or observable output states """
         return self._nsymbols
 
-    # TODO: remove this code if we're sure we don't need it.
-    # def p_o_i(self, o, i):
-    #     """
-    #     Returns the output probability for symbol o given hidden state i
-    #
-    #     Parameters
-    #     ----------
-    #     o : int
-    #         the discrete symbol o (observation)
-    #     i : int
-    #         the hidden state index
-    #
-    #     Return
-    #     ------
-    #     p_o : float
-    #         the probability that hidden state i generates symbol o
-    #
-    #     """
-    #     # TODO: so far we don't use this method. Perhaps we don't need it.
-    #     return self.B[i,o]
-    #
-    # def log_p_o_i(self, o, i):
-    #     """
-    #     Returns the logarithm of the output probability for symbol o given hidden state i
-    #
-    #     Parameters
-    #     ----------
-    #     o : int
-    #         the discrete symbol o (observation)
-    #     i : int
-    #         the hidden state index
-    #
-    #     Return
-    #     ------
-    #     p_o : float
-    #         the log probability that hidden state i generates symbol o
-    #
-    #     """
-    #     # TODO: check if we need the log-probabilities
-    #     return log(self.B[i,o])
-    #
-    #
-    # def p_o(self, o):
-    #     """
-    #     Returns the output probability for symbol o from all hidden states
-    #
-    #     Parameters
-    #     ----------
-    #     o : int
-    #         the discrete symbol o (observation)
-    #
-    #     Return
-    #     ------
-    #     p_o : ndarray (N)
-    #         the probability that any of the N hidden states generates symbol o
-    #
-    #     """
-    #     # TODO: so far we don't use this method. Perhaps we don't need it.
-    #     return self.B[:,o]
-    #
-    # def log_p_o(self, o):
-    #     """
-    #     Returns the logarithm of the output probabilities for symbol o from all hidden states
-    #
-    #     Parameters
-    #     ----------
-    #     o : int
-    #         the discrete symbol o (observation)
-    #
-    #     Return
-    #     ------
-    #     p_o : ndarray (N)
-    #         the log probability that any of the N hidden states generates symbol o
-    #
-    #     """
-    #     return np.log(self.B[:,o])
+    def sub_output_model(self, states):
+        return DiscreteOutputModel(self._output_probabilities[states])
 
     def p_obs(self, obs, out=None):
         """
@@ -195,7 +145,7 @@ class DiscreteOutputModel(OutputModel):
         if out is None:
             out = self._output_probabilities[:, obs].T
             # out /= np.sum(out, axis=1)[:,None]
-            return out
+            return self._handle_outliers(out)
         else:
             if obs.shape[0] == out.shape[0]:
                 np.copyto(out, self._output_probabilities[:, obs].T)
@@ -204,18 +154,18 @@ class DiscreteOutputModel(OutputModel):
             else:
                 raise ValueError('output array out is too small: '+str(out.shape[0])+' < '+str(obs.shape[0]))
             # out /= np.sum(out, axis=1)[:,None]
-            return out
+            return self._handle_outliers(out)
 
-    def _estimate_output_model(self, observations, weights):
+    def estimate(self, observations, weights):
         """
-        Fits the output model given the observations and weights
+        Maximum likelihood estimation of output model given the observations and weights
 
         Parameters
         ----------
 
         observations : [ ndarray(T_k) ] with K elements
             A list of K observation trajectories, each having length T_k
-        weights : [ ndarray(T_k,N) ] with K elements
+        weights : [ ndarray(T_k, N) ] with K elements
             A list of K weight matrices, each having length T_k and containing the probability of any of the states in
             the given time step
 
@@ -232,17 +182,17 @@ class DiscreteOutputModel(OutputModel):
 
         >>> from scipy import stats
         >>> nobs = 1000
-        >>> obs = np.empty((nobs), dtype = object)
-        >>> weights = np.empty((nobs), dtype = object)
+        >>> obs = np.empty(nobs, dtype = object)
+        >>> weights = np.empty(nobs, dtype = object)
 
         >>> gens = [stats.rv_discrete(values=(range(len(B[i])), B[i])) for i in range(B.shape[0])]
         >>> obs = [gens[i].rvs(size=nobs) for i in range(B.shape[0])]
         >>> weights = [np.zeros((nobs, B.shape[1])) for i in range(B.shape[0])]
-        >>> for i in range(B.shape[0]): weights[i][:,i] = 1.0
+        >>> for i in range(B.shape[0]): weights[i][:, i] = 1.0
 
         Update the observation model parameters my a maximum-likelihood fit.
 
-        >>> output_model._estimate_output_model(obs, weights)
+        >>> output_model.estimate(obs, weights)
 
         """
         # sizes
@@ -262,44 +212,42 @@ class DiscreteOutputModel(OutputModel):
         else:
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
         # normalize
-        self._output_probabilities /= np.sum(self._output_probabilities, axis=1)[:,None]
+        self._output_probabilities /= np.sum(self._output_probabilities, axis=1)[:, None]
 
-    def _sample_output_model(self, observations):
+    def sample(self, observations_by_state):
         """
         Sample a new set of distribution parameters given a sample of observations from the given state.
 
-        Both the internal parameters and the attached HMM model are updated.
+        The internal parameters are updated.
 
         Parameters
         ----------
         observations :  [ numpy.array with shape (N_k,) ] with nstates elements
-            observations[k] is a set of observations sampled from state k
+            observations[k] are all observations associated with hidden state k
 
         Examples
         --------
 
         initialize output model
 
-        >>> B = np.array([[0.5,0.5],[0.1,0.9]])
+        >>> B = np.array([[0.5, 0.5], [0.1, 0.9]])
         >>> output_model = DiscreteOutputModel(B)
 
         sample given observation
 
-        >>> obs = [[0,0,0,1,1,1],[1,1,1,1,1,1]]
-        >>> output_model._sample_output_model(obs)
+        >>> obs = [[0, 0, 0, 1, 1, 1], [1, 1, 1, 1, 1, 1]]
+        >>> output_model.sample(obs)
 
         """
         from numpy.random import dirichlet
-        # total number of observation symbols
-        M = self._output_probabilities.shape[1]
-        count_full = np.zeros((M), dtype = int)
-        for i in range(len(observations)):
+        N, M = self._output_probabilities.shape  # nstates, nsymbols
+        for i in range(len(observations_by_state)):
             # count symbols found in data
-            count = np.bincount(observations[i])
-            # blow up to full symbol space (if symbols are missing in this observation)
-            count_full[:count.shape[0]] = count[:]
+            count = np.bincount(observations_by_state[i], minlength=M).astype(float)
             # sample dirichlet distribution
-            self._output_probabilities[i,:] = dirichlet(count_full + 1)
+            count += self.prior[i]
+            if count.sum() > 0:  # if counts at all: can't sample, so leave output probabilities as they are.
+                self._output_probabilities[i, :] = dirichlet(self.prior[i] + count)
 
     def generate_observation_from_state(self, state_index):
         """
@@ -329,7 +277,8 @@ class DiscreteOutputModel(OutputModel):
         """
         # generate random generator (note that this is inefficient - better use one of the next functions
         import scipy.stats
-        gen = scipy.stats.rv_discrete(values=(range(len(self._output_probabilities[state_index])), self._output_probabilities[state_index]))
+        gen = scipy.stats.rv_discrete(values=(range(len(self._output_probabilities[state_index])), 
+                                              self._output_probabilities[state_index]))
         gen.rvs(size=1)
 
     def generate_observations_from_state(self, state_index, nobs):
@@ -357,7 +306,7 @@ class DiscreteOutputModel(OutputModel):
 
         Generate sample from each state.
 
-        >>> observations = [ output_model.generate_observations_from_state(state_index, nobs=100) for state_index in range(output_model.nstates) ]
+        >>> observations = [output_model.generate_observations_from_state(state_index, nobs=100) for state_index in range(output_model.nstates)]
 
         """
         import scipy.stats
@@ -394,8 +343,7 @@ class DiscreteOutputModel(OutputModel):
         >>> o_t = output_model.generate_observation_trajectory(s_t)
 
         """
-
-        if dtype == None:
+        if dtype is None:
             dtype = np.int32
 
         # Determine number of samples to generate.
@@ -403,29 +351,27 @@ class DiscreteOutputModel(OutputModel):
         nsymbols = self._output_probabilities.shape[1]
 
         if (s_t.max() >= self.nstates) or (s_t.min() < 0):
-            str = ''
-            str += 's_t = %s\n' % s_t
-            str += 's_t.min() = %d, s_t.max() = %d\n' % (s_t.min(), s_t.max())
-            str += 's_t.argmax = %d\n' % s_t.argmax()
-            str += 'self.nstates = %d\n' % self.nstates
-            str += 's_t is out of bounds.\n'
-            raise Exception(str)
+            msg = ''
+            msg += 's_t = %s\n' % s_t
+            msg += 's_t.min() = %d, s_t.max() = %d\n' % (s_t.min(), s_t.max())
+            msg += 's_t.argmax = %d\n' % s_t.argmax()
+            msg += 'self.nstates = %d\n' % self.nstates
+            msg += 's_t is out of bounds.\n'
+            raise Exception(msg)
 
         # generate random generators
-        #import scipy.stats
-        #gens = [scipy.stats.rv_discrete(values=(range(len(self.B[state_index])), self.B[state_index])) for state_index in range(self.B.shape[0])]
-        #o_t = np.zeros([T], dtype=dtype)
-        #for t in range(T):
-        #    s = s_t[t]
-        #    o_t[t] = gens[s].rvs(size=1)
-        #return o_t
+        # import scipy.stats
+        # gens = [scipy.stats.rv_discrete(values=(range(len(self.B[state_index])), self.B[state_index]))
+        #         for state_index in range(self.B.shape[0])]
+        # o_t = np.zeros([T], dtype=dtype)
+        # for t in range(T):
+        #     s = s_t[t]
+        #     o_t[t] = gens[s].rvs(size=1)
+        # return o_t
 
         o_t = np.zeros([T], dtype=dtype)
         for t in range(T):
             s = s_t[t]
-            o_t[t] = np.random.choice(nsymbols, p=self._output_probabilities[s,:])
+            o_t[t] = np.random.choice(nsymbols, p=self._output_probabilities[s, :])
 
         return o_t
-
-
-

@@ -1,14 +1,21 @@
-"""
-Hidden Markov model
 
-"""
-
-__author__ = "Frank Noe and John D. Chodera"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["Frank Noe", "John D. Chodera"]
-__license__ = "LGPL"
-__maintainer__ = "Frank Noe"
-__email__="frank DOT noe AT fu-berlin DOT de"
+# This file is part of BHMM (Bayesian Hidden Markov Models).
+#
+# Copyright (c) 2016 Frank Noe (Freie Universitaet Berlin)
+# and John D. Chodera (Memorial Sloan-Kettering Cancer Center, New York)
+#
+# BHMM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
 import copy
@@ -16,7 +23,7 @@ import copy
 import numpy as np
 
 
-# TODO: reactivate multiprocessing
+# TODO: reactivate multiprocessing, parallelize model fitting and forward-backward
 # from multiprocessing import Queue, Process, cpu_count
 
 # BHMM imports
@@ -24,6 +31,7 @@ import bhmm
 import bhmm.hidden as hidden
 from bhmm.util.logger import logger
 from bhmm.util import config
+
 
 class MaximumLikelihoodEstimator(object):
     """
@@ -44,41 +52,49 @@ class MaximumLikelihoodEstimator(object):
 
     References
     ----------
-    [1] L. E. Baum and J. A. Egon, "An inequality with applications to statistical estimation for probabilistic
-        functions of a Markov process and to a model for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
+    [1] L. E. Baum and J. A. Egon, "An inequality with applications to statistical
+        estimation for probabilistic functions of a Markov process and to a model
+        for ecology," Bull. Amer. Meteorol. Soc., vol. 73, pp. 360-363, 1967.
 
     """
-    def __init__(self, observations, nstates, initial_model=None, type='gaussian',
-                 reversible=True, stationary=True, p=None, accuracy=1e-3, maxit=1000):
+    def __init__(self, observations, nstates, initial_model=None, output='gaussian',
+                 reversible=True, stationary=False, p=None, accuracy=1e-3, maxit=1000, maxit_P=100000):
         """Initialize a Bayesian hidden Markov model sampler.
 
         Parameters
         ----------
         observations : list of numpy arrays representing temporal data
-            `observations[i]` is a 1d numpy array corresponding to the observed trajectory index `i`
+            `observations[i]` is a 1d numpy array corresponding to the observed
+            trajectory index `i`
         nstates : int
             The number of states in the model.
         initial_model : HMM, optional, default=None
-            If specified, the given initial model will be used to initialize the BHMM.
-            Otherwise, a heuristic scheme is used to generate an initial guess.
+            If specified, the given initial model will be used to initialize the
+            BHMM. Otherwise, a heuristic scheme is used to generate an initial guess.
         type : str, optional, default=None
             Output model type from [None, 'gaussian', 'discrete'].
         reversible : bool, optional, default=True
-            If True, a prior that enforces reversible transition matrices (detailed balance) is used;
-            otherwise, a standard  non-reversible prior is used.
-        stationary : bool, optional, default=True
-            If True, the initial distribution of hidden states is self-consistently computed as the stationary
-            distribution of the transition matrix. If False, it will be estimated from the starting states.
+            If True, a prior that enforces reversible transition matrices (detailed
+            balance) is used; otherwise, a standard  non-reversible prior is used.
+        stationary : bool, optional, default=False
+            If True, the initial distribution of hidden states is self-consistently
+            computed as the stationary distribution of the transition matrix. If
+            False, it will be estimated from the starting states.
         p : ndarray (nstates), optional, default=None
-            Initial or fixed stationary distribution. If given and stationary=True, transition matrices will be
-            estimated with the constraint that they have p as their stationary distribution. If given and
-            stationary=False, p is the fixed initial distribution of hidden states.
+            Initial or fixed stationary distribution. If given and stationary=True,
+            transition matrices will be estimated with the constraint that they
+            have p as their stationary distribution. If given and stationary=False,
+            p is the fixed initial distribution of hidden states.
         accuracy : float
-            convergence threshold for EM iteration. When two the likelihood does not increase by more than accuracy, the
-            iteration is stopped successfully.
+            convergence threshold for EM iteration. When two the likelihood does
+            not increase by more than accuracy, the iteration is stopped successfully.
         maxit : int
-            stopping criterion for EM iteration. When so many iterations are performanced without reaching the requested
-            accuracy, the iteration is stopped without convergence (a warning is given)
+            stopping criterion for EM iteration. When so many iterations are
+            performed without reaching the requested accuracy, the iteration is
+            stopped without convergence (a warning is given)
+        maxit_P : int
+            maximum number of iterations for reversible transition matrix estimation.
+            Only used with reversible=True.
 
         """
         # Store a copy of the observations.
@@ -87,28 +103,17 @@ class MaximumLikelihoodEstimator(object):
         self._Ts = [len(o) for o in observations]
         self._maxT = np.max(self._Ts)
 
-        # Store the number of states.
+        # Set parameters
         self._nstates = nstates
+        self._reversible = reversible
+        self._stationary = stationary
 
         if initial_model is not None:
             # Use user-specified initial model, if provided.
             self._hmm = copy.deepcopy(initial_model)
-            # consistency checks
-            if self._hmm.is_stationary != stationary:
-                logger().warn('Requested stationary=' + str(stationary) + ' but initial model is stationary=' +
-                              str(self._hmm.is_stationary) + '. Using stationary='+str(self._hmm.is_stationary))
-            if self._hmm.is_reversible != reversible:
-                logger().warn('Requested reversible=' + str(reversible) + ' but initial model is reversible=' +
-                              str(self._hmm.is_reversible) + '. Using reversible='+str(self._hmm.is_reversible))
-            # setting parameters
-            self._reversible = self._hmm.is_reversible
-            self._stationary = self._hmm.is_stationary
         else:
             # Generate our own initial model.
-            self._hmm = bhmm.init_hmm(observations, nstates, type=type)
-            # setting parameters
-            self._reversible = reversible
-            self._stationary = stationary
+            self._hmm = bhmm.init_hmm(observations, nstates, output=output)
 
         # stationary and initial distribution
         self._fixed_stationary_distribution = None
@@ -130,6 +135,7 @@ class MaximumLikelihoodEstimator(object):
         # convergence options
         self._accuracy = accuracy
         self._maxit = maxit
+        self._maxit_P = maxit_P
         self._likelihoods = None
 
         # Kernel for computing things
@@ -235,23 +241,46 @@ class MaximumLikelihoodEstimator(object):
         """
         # get parameters
         A = self._hmm.transition_matrix
-        pi = self._hmm.stationary_distribution
+        pi = self._hmm.initial_distribution
         obs = self._observations[itraj]
         T = len(obs)
         # compute output probability matrix
+        # t1 = time.time()
         self._hmm.output_model.p_obs(obs, out=self._pobs)
+        # t2 = time.time()
+        # self._fbtimings[0] += t2-t1
         # forward variables
         logprob = hidden.forward(A, self._pobs, pi, T=T, alpha_out=self._alpha)[0]
+        # t3 = time.time()
+        # self._fbtimings[1] += t3-t2
         # backward variables
         hidden.backward(A, self._pobs, T=T, beta_out=self._beta)
+        # t4 = time.time()
+        # self._fbtimings[2] += t4-t3
         # gamma
-        hidden.state_probabilities(self._alpha, self._beta, gamma_out=self._gammas[itraj])
+        hidden.state_probabilities(self._alpha, self._beta, T=T, gamma_out=self._gammas[itraj])
+        # t5 = time.time()
+        # self._fbtimings[3] += t5-t4
         # count matrix
-        hidden.transition_counts(self._alpha, self._beta, A, self._pobs, out=self._Cs[itraj])
+        hidden.transition_counts(self._alpha, self._beta, A, self._pobs, T=T, out=self._Cs[itraj])
+        # t6 = time.time()
+        # self._fbtimings[4] += t6-t5
         # return results
         return logprob
 
-    def _update_model(self, gammas, count_matrices):
+    def _init_counts(self, gammas):
+        gamma0_sum = np.zeros(self._nstates)
+        for k in range(len(self._observations)):  # update state counts
+            gamma0_sum += gammas[k][0]
+        return gamma0_sum
+
+    def _transition_counts(self, count_matrices):
+        C = np.zeros((self._nstates, self._nstates))
+        for k in range(len(self._observations)):  # update count matrix
+            C += count_matrices[k]
+        return C
+
+    def _update_model(self, gammas, count_matrices, maxiter=10000000):
         """
         Maximization step: Updates the HMM model given the hidden state assignment and count matrices
 
@@ -260,30 +289,27 @@ class MaximumLikelihoodEstimator(object):
         gamma : [ ndarray(T,N, dtype=float) ]
             list of state probabilities for each trajectory
         count_matrix : [ ndarray(N,N, dtype=float) ]
-            list of the Baum-Welch transition count matrices for each hidden state trajectory
+            list of the Baum-Welch transition count matrices for each hidden
+            state trajectory
+        maxiter : int
+            maximum number of iterations of the transition matrix estimation if
+            an iterative method is used.
 
         """
-        K = len(self._observations)
-        N = self._nstates
-
-        C = np.zeros((N, N))
-        gamma0_sum = np.zeros((N))
-        for k in range(K):
-            # update state counts
-            gamma0_sum += gammas[k][0]
-            # update count matrix
-            # print 'C['+str(k)+'] = ',count_matrices[k]
-            C += count_matrices[k]
-
+        gamma0_sum = self._init_counts(gammas)
+        C = self._transition_counts(count_matrices)
+        logger().info("Initial count = \n"+str(gamma0_sum))
         logger().info("Count matrix = \n"+str(C))
 
         # compute new transition matrix
         from bhmm.estimators._tmatrix_disconnected import estimate_P, stationary_distribution
-        T = estimate_P(C, reversible=self._hmm.is_reversible, fixed_statdist=self._fixed_stationary_distribution)
-        # stationary or init distribution
-        if self._hmm.is_stationary:
+        T = estimate_P(C, reversible=self._hmm.is_reversible, fixed_statdist=self._fixed_stationary_distribution,
+                       maxiter=maxiter, maxerr=1e-12, mincount_connectivity=1e-16)
+        # print 'P:\n', T
+        # estimate stationary or init distribution
+        if self._stationary:
             if self._fixed_stationary_distribution is None:
-                pi = stationary_distribution(C, T)
+                pi = stationary_distribution(T, C=C, mincount_connectivity=1e-16)
             else:
                 pi = self._fixed_stationary_distribution
         else:
@@ -291,16 +317,16 @@ class MaximumLikelihoodEstimator(object):
                 pi = gamma0_sum / np.sum(gamma0_sum)
             else:
                 pi = self._fixed_initial_distribution
+        # print 'pi: ', pi, ' stationary = ', self._hmm.is_stationary
 
         # update model
-        self._hmm.update(T, pi)
+        self._hmm.update(pi, T)
 
         logger().info("T: \n"+str(T))
         logger().info("pi: \n"+str(pi))
 
         # update output model
-        # TODO: need to parallelize model fitting. Otherwise we can't gain much speed!
-        self._hmm.output_model._estimate_output_model(self._observations, gammas)
+        self._hmm.output_model.estimate(self._observations, gammas)
 
     def compute_viterbi_paths(self):
         """
@@ -310,10 +336,10 @@ class MaximumLikelihoodEstimator(object):
         # get parameters
         K = len(self._observations)
         A = self._hmm.transition_matrix
-        pi = self._hmm.stationary_distribution
+        pi = self._hmm.initial_distribution
 
         # compute viterbi path for each trajectory
-        paths = np.empty((K), dtype=object)
+        paths = np.empty(K, dtype=object)
         for itraj in range(K):
             obs = self._observations[itraj]
             # compute output probability matrix
@@ -342,33 +368,60 @@ class MaximumLikelihoodEstimator(object):
         initial_time = time.time()
 
         it = 0
-        self._likelihoods = np.zeros((self.maxit))
+        self._likelihoods = np.zeros(self.maxit)
         loglik = 0.0
+        # flag if connectivity has changed (e.g. state lost) - in that case the likelihood
+        # is discontinuous and can't be used as a convergence criterion in that iteration.
+        tmatrix_nonzeros = self.hmm.transition_matrix.nonzero()
         converged = False
 
-        while (not converged and it < self.maxit):
+        while not converged and it < self.maxit:
+            # self._fbtimings = np.zeros(5)
+            t1 = time.time()
             loglik = 0.0
             for k in range(self._nobs):
                 loglik += self._forward_backward(k)
+            t2 = time.time()
 
-            self._update_model(self._gammas, self._Cs)
-            logger().info(str(it)+" ll = "+str(loglik))
-            #print self.model.output_model
-            #print "---------------------"
-
-            self._likelihoods[it] = loglik
-
+            # convergence check
             if it > 0:
-                if loglik - self._likelihoods[it-1] < self._accuracy:
-                    #print "CONVERGED! Likelihood change = ",(loglik - self.likelihoods[it-1])
+                dL = loglik - self._likelihoods[it-1]
+                # print 'dL ', dL, 'iter_P ', maxiter_P
+                if dL < self._accuracy:
+                    # print "CONVERGED! Likelihood change = ",(loglik - self.likelihoods[it-1])
                     converged = True
 
+            # update model
+            self._update_model(self._gammas, self._Cs, maxiter=self._maxit_P)
+            t3 = time.time()
+
+            # connectivity change check
+            tmatrix_nonzeros_new = self.hmm.transition_matrix.nonzero()
+            if not np.array_equal(tmatrix_nonzeros, tmatrix_nonzeros_new):
+                converged = False  # unset converged
+                tmatrix_nonzeros = tmatrix_nonzeros_new
+
+            # print 't_fb: ', str(1000.0*(t2-t1)), 't_up: ', str(1000.0*(t3-t2)), 'L = ', loglik, 'dL = ', (loglik - self._likelihoods[it-1])
+            # print '  fb timings (ms): pobs', (1000.0*self._fbtimings).astype(int)
+
+            logger().info(str(it) + " ll = " + str(loglik))
+            # print self.model.output_model
+            # print "---------------------"
+
+            # end of iteration
+            self._likelihoods[it] = loglik
             it += 1
+
+        # final update with high precision
+        # self._update_model(self._gammas, self._Cs, maxiter=10000000)
 
         # truncate likelihood history
         self._likelihoods = self._likelihoods[:it]
         # set final likelihood
         self._hmm.likelihood = loglik
+        # set final count matrix
+        self.count_matrix = self._transition_counts(self._Cs)
+        self.initial_count = self._init_counts(self._gammas)
 
         final_time = time.time()
         elapsed_time = final_time - initial_time
@@ -389,7 +442,6 @@ class MaximumLikelihoodEstimator(object):
         logger().info("=================================================================")
 
         return self._hmm
-
 
     # TODO: reactive multiprocessing
     # ###################

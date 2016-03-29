@@ -25,6 +25,13 @@
 
 #ifndef _CLUSTERING_H_
 #define _CLUSTERING_H_
+
+#ifdef CLUSTERING_64
+typedef double FLT;
+#else
+typedef float FLT;
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -83,14 +90,14 @@ extern "C" {
 "This function uses the minRMSD implementation of mdtraj."
 
 // euclidean metric
-float euclidean_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *buffer_a, float *buffer_b);
+FLT euclidean_distance(FLT *SKP_restrict a, FLT *SKP_restrict b, size_t n, FLT *buffer_a, FLT *buffer_b);
 // minRMSD metric
 //float minRMSD_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *SKP_restrict buffer_a, float *SKP_restrict buffer_b);
 
 // assignment to cluster centers from python
 PyObject *assign(PyObject *self, PyObject *args);
 // assignment to cluster centers from c
-int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric, Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim);
+int c_assign(FLT *chunk, FLT *centers, npy_int32 *dtraj, char* metric, Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim);
 
 #ifdef __cplusplus
 }

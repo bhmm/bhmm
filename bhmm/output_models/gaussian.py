@@ -1,3 +1,22 @@
+
+# This file is part of BHMM (Bayesian Hidden Markov Models).
+#
+# Copyright (c) 2016 Frank Noe (Freie Universitaet Berlin)
+# and John D. Chodera (Memorial Sloan-Kettering Cancer Center, New York)
+#
+# BHMM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import print_function
 from six.moves import range
 import numpy as np
@@ -7,12 +26,6 @@ from bhmm.output_models import OutputModel
 from bhmm.util.logger import logger
 from bhmm.util import config
 
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "LGPL"
-__maintainer__ = "John D. Chodera, Frank Noe"
-__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
 
 class GaussianOutputModel(OutputModel):
     """
@@ -20,7 +33,7 @@ class GaussianOutputModel(OutputModel):
 
     """
 
-    def __init__(self, nstates, means=None, sigmas=None):
+    def __init__(self, nstates, means=None, sigmas=None, ignore_outliers=True):
         """
         Create a 1D Gaussian output model.
 
@@ -41,9 +54,9 @@ class GaussianOutputModel(OutputModel):
         >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
 
         """
-        OutputModel.__init__(self, nstates)
+        OutputModel.__init__(self, nstates, ignore_outliers=ignore_outliers)
 
-        dtype = config.dtype # type for internal storage
+        dtype = config.dtype  # type for internal storage
 
         if means is not None:
             self._means = np.array(means, dtype=dtype)
@@ -83,7 +96,7 @@ class GaussianOutputModel(OutputModel):
         --------------------------------------------------------------------------------
         """
 
-        output  = "--------------------------------------------------------------------------------\n"
+        output = "--------------------------------------------------------------------------------\n"
         output += "GaussianOutputModel\n"
         output += "nstates: %d\n" % self.nstates
         output += "means: %s\n" % str(self.means)
@@ -113,123 +126,8 @@ class GaussianOutputModel(OutputModel):
         r""" Standard deviations of Gaussian output densities """
         return self._sigmas
 
-    # TODO: remove code when we're sure we don't need it
-    # TODO: when cleaning up, save the functionality of the last function (log_p_o) and integrate into and overwrite of log_pobs.
-    # def p_o_i(self, o, i):
-    #     """
-    #     Returns the output probability for symbol o given hidden state i
-    #
-    #     Parameters
-    #     ----------
-    #     o : float or array_like
-    #         observation or observations for which probability is to be computed
-    #     i : int
-    #         the hidden state index
-    #
-    #     Return
-    #     ------
-    #     p_o_i : float
-    #         the probability that hidden state i generates symbol o
-    #
-    #     Examples
-    #     --------
-    #
-    #     Compute the output probability of a single observation from a given hidden state.
-    #
-    #     Create an observation model.
-    #
-    #     >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
-    #
-    #     Compute the output probability of a single observation from a single state.
-    #
-    #     >>> observation = 0
-    #     >>> state_index = 0
-    #     >>> p_o_i = output_model.p_o_i(observation, state_index)
-    #
-    #     Compute the output probability of a vector of observations from a single state.
-    #
-    #     >>> observations = np.random.randn(100)
-    #     >>> state_index = 0
-    #     >>> p_o_i = output_model.p_o_i(observations, state_index)
-    #
-    #     """
-    #     C = 1.0 / (np.sqrt(2.0 * np.pi) * self.sigmas[i])
-    #     Pobs = C * np.exp(-0.5 * ((o - self.means[i]) / self.sigmas[i])**2)
-    #     return Pobs
-    #
-    # def log_p_o_i(self, o, i):
-    #     """
-    #     Returns the log output probability for symbol o given hidden state i
-    #
-    #     Parameters
-    #     ----------
-    #     o : float or array_like
-    #         observation or observations for which probability is to be computed
-    #     i : int
-    #         the hidden state index
-    #
-    #     Return
-    #     ------
-    #     log_p_o_i : float
-    #         the probability that hidden state i generates symbol o
-    #
-    #     Examples
-    #     --------
-    #
-    #     Compute the log output probability of a single observation from a given hidden state.
-    #
-    #     Create an observation model.
-    #
-    #     >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
-    #
-    #     Compute the output probability of a single observation from a single state.
-    #
-    #     >>> observation = 0
-    #     >>> state_index = 0
-    #     >>> log_p_o_i = output_model.log_p_o_i(observation, state_index)
-    #
-    #     Compute the output probability of a vector of observations from a single state.
-    #
-    #     >>> observations = np.random.randn(100)
-    #     >>> state_index = 0
-    #     >>> p_o_i = output_model.p_o_i(observations, state_index)
-    #
-    #     """
-    #     log_C = - 0.5 * np.log(2.0 * np.pi) - np.log(self.sigmas[i])
-    #     log_Pobs = log_C - 0.5 * ((o - self.means[i]) / self.sigmas[i])**2
-    #     return log_Pobs
-    #
-    #
-    # def log_p_o(self, o):
-    #     """
-    #     Returns the log output probability for symbol o from all hidden states
-    #
-    #     Parameters
-    #     ----------
-    #     o : float
-    #         A single observation.
-    #
-    #     Return
-    #     ------
-    #     log_p_o : ndarray (N)
-    #         log_p_o[i] is the log probability density of the observation o from state i emission distribution
-    #
-    #     Examples
-    #     --------
-    #
-    #     Create an observation model.
-    #
-    #     >>> output_model = GaussianOutputModel(nstates=3, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
-    #
-    #     Compute the output probability of a single observation from all hidden states.
-    #
-    #     >>> observation = 0
-    #     >>> log_p_o = output_model.log_p_o(observation)
-    #
-    #     """
-    #     log_C = - 0.5 * np.log(2.0 * np.pi) - np.log(self.sigmas)
-    #     log_Pobs = log_C - 0.5 * ((o-self.means)/self.sigmas)**2
-    #     return log_Pobs
+    def sub_output_model(self, states):
+        return GaussianOutputModel(self._means[states], self._sigmas[states])
 
     def _p_o(self, o):
         """
@@ -297,7 +195,8 @@ class GaussianOutputModel(OutputModel):
 
         """
         if self.__impl__ == self.__IMPL_C__:
-            return gc.p_obs(obs, self.means, self.sigmas, out=out, dtype=config.dtype)
+            res = gc.p_obs(obs, self.means, self.sigmas, out=out, dtype=config.dtype)
+            return self._handle_outliers(res)
         elif self.__impl__ == self.__IMPL_PYTHON__:
             T = len(obs)
             if out is None:
@@ -305,13 +204,12 @@ class GaussianOutputModel(OutputModel):
             else:
                 res = out
             for t in range(T):
-                res[t,:] = self._p_o(obs[t])
-            return res
+                res[t, :] = self._p_o(obs[t])
+            return self._handle_outliers(res)
         else:
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
 
-
-    def _estimate_output_model(self, observations, weights):
+    def estimate(self, observations, weights):
         """
         Fits the output model given the observations and weights
 
@@ -336,7 +234,7 @@ class GaussianOutputModel(OutputModel):
 
         Update the observation model parameters my a maximum-likelihood fit.
 
-        >>> output_model._estimate_output_model(observations, weights)
+        >>> output_model.estimate(observations, weights)
 
         """
         # sizes
@@ -344,8 +242,8 @@ class GaussianOutputModel(OutputModel):
         K = len(observations)
 
         # fit means
-        self._means = np.zeros((N))
-        w_sum = np.zeros((N))
+        self._means = np.zeros(N)
+        w_sum = np.zeros(N)
         for k in range(K):
             # update nominator
             for i in range(N):
@@ -356,21 +254,20 @@ class GaussianOutputModel(OutputModel):
         self._means /= w_sum
 
         # fit variances
-        self._sigmas  = np.zeros((N))
-        w_sum = np.zeros((N))
+        self._sigmas  = np.zeros(N)
+        w_sum = np.zeros(N)
         for k in range(K):
             # update nominator
             for i in range(N):
-                Y = (observations[k]-self.means[i])**2
-                self.sigmas[i] += np.dot(weights[k][:,i],Y)
+                Y = (observations[k] - self.means[i])**2
+                self.sigmas[i] += np.dot(weights[k][:, i], Y)
             # update denominator
             w_sum += np.sum(weights[k], axis=0)
         # normalize
         self._sigmas /= w_sum
         self._sigmas = np.sqrt(self.sigmas)
 
-
-    def _sample_output_model(self, observations):
+    def sample(self, observations, prior=None):
         """
         Sample a new set of distribution parameters given a sample of observations from the given state.
 
@@ -380,6 +277,8 @@ class GaussianOutputModel(OutputModel):
         ----------
         observations :  [ numpy.array with shape (N_k,) ] with `nstates` elements
             observations[k] is a set of observations sampled from state `k`
+        prior : object
+            prior option for compatibility
 
         Examples
         --------
@@ -390,11 +289,10 @@ class GaussianOutputModel(OutputModel):
         >>> nobs = 1000
         >>> output_model = GaussianOutputModel(nstates=nstates, means=[-1, 0, 1], sigmas=[0.5, 1, 2])
         >>> observations = [ output_model.generate_observations_from_state(state_index, nobs) for state_index in range(nstates) ]
-        >>> weights = [ np.zeros([nobs,nstates], np.float32).T for _ in range(nstates) ]
 
         Update output parameters by sampling.
 
-        >>> output_model._sample_output_model(observations)
+        >>> output_model.sample(observations)
 
         """
         for state_index in range(self.nstates):
@@ -407,19 +305,15 @@ class GaussianOutputModel(OutputModel):
             # Skip update if no observations.
             if nsamples_in_state == 0:
                 logger().warn('Warning: State %d has no observations.' % state_index)
-                continue
-
-            # Sample new mu.
-            self.means[state_index] = np.random.randn()*self.sigmas[state_index]/np.sqrt(nsamples_in_state) + np.mean(observations_in_state)
-
-            # Sample new sigma.
-            # This scheme uses the improper Jeffreys prior on sigma^2, P(mu, sigma^2) \propto 1/sigma
-            chisquared = np.random.chisquare(nsamples_in_state-1)
-            sigmahat2 = np.mean((observations_in_state - self.means[state_index])**2)
-            self.sigmas[state_index] = np.sqrt(sigmahat2) / np.sqrt(chisquared / nsamples_in_state)
+            if nsamples_in_state > 0:  # Sample new mu.
+                self.means[state_index] = np.random.randn()*self.sigmas[state_index]/np.sqrt(nsamples_in_state) + np.mean(observations_in_state)
+            if nsamples_in_state > 1:  # Sample new sigma
+                # This scheme uses the improper Jeffreys prior on sigma^2, P(mu, sigma^2) \propto 1/sigma
+                chisquared = np.random.chisquare(nsamples_in_state-1)
+                sigmahat2 = np.mean((observations_in_state - self.means[state_index])**2)
+                self.sigmas[state_index] = np.sqrt(sigmahat2) / np.sqrt(chisquared / nsamples_in_state)
 
         return
-
 
     def generate_observation_from_state(self, state_index):
         """
@@ -449,7 +343,6 @@ class GaussianOutputModel(OutputModel):
         """
         observation = self.sigmas[state_index] * np.random.randn() + self.means[state_index]
         return observation
-
 
     def generate_observations_from_state(self, state_index, nobs):
         """
@@ -481,7 +374,6 @@ class GaussianOutputModel(OutputModel):
         """
         observations = self.sigmas[state_index] * np.random.randn(nobs) + self.means[state_index]
         return observations
-
 
     def generate_observation_trajectory(self, s_t):
         """

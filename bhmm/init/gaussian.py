@@ -1,4 +1,21 @@
-__author__ = 'noe'
+
+# This file is part of BHMM (Bayesian Hidden Markov Models).
+#
+# Copyright (c) 2016 Frank Noe (Freie Universitaet Berlin)
+# and John D. Chodera (Memorial Sloan-Kettering Cancer Center, New York)
+#
+# BHMM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 
@@ -6,7 +23,7 @@ from bhmm.hmm.generic_hmm import HMM
 from bhmm.util.logger import logger
 from bhmm.util import config
 
-def initial_model_gaussian1d(observations, nstates, reversible=True):
+def init_model_gaussian1d(observations, nstates, reversible=True):
     """Generate an initial model with 1D-Gaussian output densities
 
     Parameters
@@ -22,8 +39,8 @@ def initial_model_gaussian1d(observations, nstates, reversible=True):
     Generate initial model for a gaussian output model.
 
     >>> from bhmm import testsystems
-    >>> [model, observations, states] = testsystems.generate_synthetic_observations(output_model_type='gaussian')
-    >>> initial_model = initial_model_gaussian1d(observations, model.nstates)
+    >>> [model, observations, states] = testsystems.generate_synthetic_observations(output='gaussian')
+    >>> initial_model = init_model_gaussian1d(observations, model.nstates)
 
     """
     ntrajectories = len(observations)
@@ -65,9 +82,11 @@ def initial_model_gaussian1d(observations, nstates, reversible=True):
 
     # Compute transition matrix maximum likelihood estimate.
     import msmtools.estimation as msmest
+    import msmtools.analysis as msmana
     Tij = msmest.transition_matrix(Nij, reversible=reversible)
+    pi = msmana.stationary_distribution(Tij)
 
     # Update model.
-    model = HMM(Tij, output_model, reversible=reversible)
+    model = HMM(pi, Tij, output_model)
 
     return model

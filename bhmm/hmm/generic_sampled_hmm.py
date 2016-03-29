@@ -1,20 +1,28 @@
-"""
-Sampled Hidden Markov model representation.
 
-"""
-
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "LGPL"
-__maintainer__ = "John D. Chodera"
-__email__="jchodera AT gmail DOT com"
+# This file is part of BHMM (Bayesian Hidden Markov Models).
+#
+# Copyright (c) 2016 Frank Noe (Freie Universitaet Berlin)
+# and John D. Chodera (Memorial Sloan-Kettering Cancer Center, New York)
+#
+# BHMM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 
 from bhmm.hmm.generic_hmm import HMM
 from bhmm.util import config
 from bhmm.util.statistics import confidence_interval_arr
+
 
 class SampledHMM(HMM):
     """ Sampled HMM with a representative single point estimate and error estimates
@@ -31,9 +39,8 @@ class SampledHMM(HMM):
     """
     def __init__(self, estimated_hmm, sampled_hmms, conf=0.95):
         # call superclass constructer with estimated_hmm
-        HMM.__init__(self, estimated_hmm.transition_matrix, estimated_hmm.output_model,
-                     lag=estimated_hmm.lag, Pi=estimated_hmm.initial_distribution,
-                     stationary=estimated_hmm.is_stationary, reversible=estimated_hmm.is_reversible)
+        HMM.__init__(self, estimated_hmm.initial_distribution, estimated_hmm.transition_matrix,
+                     estimated_hmm.output_model, lag=estimated_hmm.lag)
         # save sampled HMMs to calculate statistical moments.
         self._sampled_hmms = sampled_hmms
         self._nsamples = len(sampled_hmms)
@@ -64,7 +71,7 @@ class SampledHMM(HMM):
         r""" Samples of the initial distribution """
         res = np.empty((self.nsamples, self.nstates), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:] = self._sampled_hmms[i].stationary_distribution
+            res[i, :] = self._sampled_hmms[i].stationary_distribution
         return res
 
     @property
@@ -85,7 +92,7 @@ class SampledHMM(HMM):
     @property
     def stationary_distribution_samples(self):
         r""" Samples of the stationary distribution """
-        if self._stationary:
+        if self.is_stationary:
             return self.initial_distribution_samples
         else:
             raise ValueError('HMM is not stationary')
@@ -110,7 +117,7 @@ class SampledHMM(HMM):
         r""" Samples of the transition matrix """
         res = np.empty((self.nsamples, self.nstates, self.nstates), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:,:] = self._sampled_hmms[i].transition_matrix
+            res[i, :, :] = self._sampled_hmms[i].transition_matrix
         return res
 
     @property
@@ -133,7 +140,7 @@ class SampledHMM(HMM):
         r""" Samples of the eigenvalues """
         res = np.empty((self.nsamples, self.nstates), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:] = self._sampled_hmms[i].eigenvalues
+            res[i, :] = self._sampled_hmms[i].eigenvalues
         return res
 
     @property
@@ -156,7 +163,7 @@ class SampledHMM(HMM):
         r""" Samples of the left eigenvectors of the hidden transition matrix """
         res = np.empty((self.nsamples, self.nstates, self.nstates), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:,:] = self._sampled_hmms[i].eigenvectors_left
+            res[i, :, :] = self._sampled_hmms[i].eigenvectors_left
         return res
 
     @property
@@ -179,7 +186,7 @@ class SampledHMM(HMM):
         r""" Samples of the right eigenvectors of the hidden transition matrix """
         res = np.empty((self.nsamples, self.nstates, self.nstates), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:,:] = self._sampled_hmms[i].eigenvectors_right
+            res[i, :, :] = self._sampled_hmms[i].eigenvectors_right
         return res
 
     @property
@@ -202,7 +209,7 @@ class SampledHMM(HMM):
         r""" Samples of the timescales """
         res = np.empty((self.nsamples, self.nstates-1), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:] = self._sampled_hmms[i].timescales
+            res[i, :] = self._sampled_hmms[i].timescales
         return res
 
     @property
@@ -225,7 +232,7 @@ class SampledHMM(HMM):
         r""" Samples of the timescales """
         res = np.empty((self.nsamples, self.nstates), dtype=config.dtype)
         for i in range(self.nsamples):
-            res[i,:] = self._sampled_hmms[i].lifetimes
+            res[i, :] = self._sampled_hmms[i].lifetimes
         return res
 
     @property

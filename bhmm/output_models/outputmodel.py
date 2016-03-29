@@ -1,21 +1,25 @@
-"""
-Abstract base class for HMM output model.
 
-TODO
-----
-* Allow new derived classes to be registered and retrieved.
-
-"""
-
-__author__ = "John D. Chodera, Frank Noe"
-__copyright__ = "Copyright 2015, John D. Chodera and Frank Noe"
-__credits__ = ["John D. Chodera", "Frank Noe"]
-__license__ = "LGPL"
-__maintainer__ = "John D. Chodera, Frank Noe"
-__email__="jchodera AT gmail DOT com, frank DOT noe AT fu-berlin DOT de"
+# This file is part of BHMM (Bayesian Hidden Markov Models).
+#
+# Copyright (c) 2016 Frank Noe (Freie Universitaet Berlin)
+# and John D. Chodera (Memorial Sloan-Kettering Cancer Center, New York)
+#
+# BHMM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 from abc import ABCMeta, abstractmethod
+
 
 class OutputModel(object):
     """
@@ -31,9 +35,9 @@ class OutputModel(object):
     __IMPL_C__ = 1
 
     # implementation used
-    __impl__= __IMPL_PYTHON__
+    __impl__ = __IMPL_PYTHON__
 
-    def __init__(self, nstates):
+    def __init__(self, nstates, ignore_outliers=True):
         """
         Create a general output model.
 
@@ -41,9 +45,19 @@ class OutputModel(object):
         ----------
         nstates : int
             The number of output states.
+        ignore_outliers : bool
+            By outliers we mean observations that have zero probability given the
+            current model. ignore_outliers=True means that outliers will be treated
+            as if no observation was made, which is equivalent to making this
+            observation with equal probability from any hidden state.
+            ignore_outliers=True means that an Exception or in the worst case an
+            unhandled crash will occur if an outlier is observed.
+            If outliers have been found, the flag found_outliers will be set True
 
         """
         self._nstates = nstates
+        self.ignore_outliers = ignore_outliers
+        self.found_outliers = False
 
         return
 
@@ -71,6 +85,10 @@ class OutputModel(object):
             warnings.warn('Implementation '+impl+' is not known. Using the fallback python implementation.')
             self.__impl__ = self.__IMPL_PYTHON__
 
+    @abstractmethod
+    def sub_output_model(self, states):
+        """ Returns output model on a subset of states """
+        pass
 
     def log_p_obs(self, obs, out=None, dtype=np.float32):
         """
@@ -91,12 +109,26 @@ class OutputModel(object):
             the log probability of generating the symbol at time point t from any of the N hidden states
 
         """
-        if (out is None):
+        if out is None:
             return np.log(self.p_obs(obs))
         else:
             self.p_obs(obs, out=out, dtype=dtype)
             np.log(out, out=out)
             return out
+
+    def _handle_outliers(self, p_o):
+        """ Sets observation probabilities of outliers to uniform if ignore_outliers is set.
+        Parameters
+        ----------
+        p_o : ndarray((T, N))
+            output probabilities
+        """
+        if self.ignore_outliers:
+            outliers = np.where(p_o.sum(axis=1)==0)[0]
+            if outliers.size > 0:
+                p_o[outliers, :] = 1.0
+                self.found_outliers = True
+        return p_o
 
     @abstractmethod
     def generate_observation_trajectory(self, s_t, dtype=None):
@@ -116,5 +148,3 @@ class OutputModel(object):
             o_t[t] is the observation associated with state s_t[t]
         """
         pass
-
-
