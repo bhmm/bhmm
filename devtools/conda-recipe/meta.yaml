@@ -1,6 +1,10 @@
 package:
   name: bhmm-dev
-  version: !!str 0.0.0
+  version: 0.0.0
+
+source:
+  path: ../..
+
 
 build:
   preserve_egg_dir: True
@@ -10,7 +14,6 @@ requirements:
   build:
     - python
     - setuptools
-    - mock
     - cython
     - numpy
     - scipy
