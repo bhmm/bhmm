@@ -15,8 +15,9 @@ script:
   - conda config --add channels $ORGNAME
   # Build the recipe
   - conda build devtools/conda-recipe
+  # Install the recipe
+  - conda install --use-local --yes bhmm-dev
   # Test the local installation
-  - source activate _test
   - conda install --yes --quiet nose nose-timer
   - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-doctest --with-timer -a "\!slow" && cd ..
 
