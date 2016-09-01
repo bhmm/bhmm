@@ -13,10 +13,14 @@ install:
 script:
   # Add conda channel
   - conda config --add channels $ORGNAME
+  # Create environment
+  - conda create --yes -n test python=$python
+  - source activate test
   # Build the recipe
   - conda build devtools/conda-recipe
+  # Install the recipe
+  - conda install --use-local --yes bhmm-dev
   # Test the local installation
-  - source activate _test
   - conda install --yes --quiet nose nose-timer
   - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-doctest --with-timer -a "\!slow" && cd ..
 
