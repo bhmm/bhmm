@@ -13,6 +13,9 @@ install:
 script:
   # Add conda channel
   - conda config --add channels $ORGNAME
+  # Create environment
+  - conda create environment -n test python=$python
+  - source activate test
   # Build the recipe
   - conda build devtools/conda-recipe
   # Install the recipe
