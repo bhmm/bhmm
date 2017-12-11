@@ -23,21 +23,12 @@ cimport numpy
 
 cdef extern from "_hidden.h":
     double _forward(double * alpha, const double *A, const double *pobs, const double *pi, const int N, const int T)
-
-cdef extern from "_hidden.h":
     void _backward(double *beta, const double *A, const double *pobs, const int N, const int T)
-
-# cdef extern from "_hmm.h":
 #     void _computeGamma(double *gamma, const double *alpha, const double *beta, const int T, const int N)
-#
-cdef extern from "_hidden.h":
-    void _compute_transition_counts(double *transition_counts, const double *A, const double *pobs, const double *alpha, const double *beta, int N, int T)
-
-cdef extern from "_hidden.h":
-    void _compute_viterbi(int *path, const double *A, const double *pobs, const double *pi, int N, int T)
-
-cdef extern from "_hidden.h":
-    void _sample_path(int *path, const double *alpha, const double *A, const double *pobs, const int N, const int T)
+    int _compute_transition_counts(double *transition_counts, const double *A, const double *pobs, const double *alpha, const double *beta, int N, int T)
+    int _compute_viterbi(int *path, const double *A, const double *pobs, const double *pi, int N, int T)
+    int _sample_path(int *path, const double *alpha, const double *A, const double *pobs, const int N, const int T)
+    int _BHMM_ERR_NO_MEM
 
 
 def cdef_double_array(n1, n2):
@@ -155,7 +146,9 @@ def transition_counts(alpha, beta, A, pobs, T = None, out = None, dtype=numpy.fl
         palpha = <double*> numpy.PyArray_DATA(alpha)
         pbeta  = <double*> numpy.PyArray_DATA(beta)
         # call
-        _compute_transition_counts(pC, pA, ppobs, palpha, pbeta, N, T)
+        res = _compute_transition_counts(pC, pA, ppobs, palpha, pbeta, N, T)
+        if res == _BHMM_ERR_NO_MEM:
+            raise MemoryError()
         return C
     else:
         raise TypeError
@@ -176,7 +169,9 @@ def viterbi(A, pobs, pi, dtype=numpy.float32):
         ppobs = <double*> numpy.PyArray_DATA(pobs)
         ppi   = <double*> numpy.PyArray_DATA(pi)
         # call
-        _compute_viterbi(ppath, pA, ppobs, ppi, N, T)
+        res = _compute_viterbi(ppath, pA, ppobs, ppi, N, T)
+        if res == _BHMM_ERR_NO_MEM:
+            raise MemoryError()
         return path
     else:
         raise TypeError
@@ -199,7 +194,9 @@ def sample_path(alpha, A, pobs, T = None, dtype=numpy.float32):
         pA     = <double*> numpy.PyArray_DATA(A)
         ppobs  = <double*> numpy.PyArray_DATA(pobs)
         # call
-        _sample_path(ppath, palpha, pA, ppobs, N, T)
+        res = _sample_path(ppath, palpha, pA, ppobs, N, T)
+        if res == _BHMM_ERR_NO_MEM:
+            raise MemoryError()
         return path
     else:
         raise TypeError
