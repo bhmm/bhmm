@@ -209,7 +209,7 @@ int _compute_viterbi(
 {
     int i, j, t, maxi, result;
     double sum;
-    double* v, vnext, h, vh;
+    double *v, *vnext, *h, *vh;
     int* ptr;
     result = 0;
     // allocate v
