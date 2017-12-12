@@ -209,15 +209,16 @@ int _compute_viterbi(
 {
     int i, j, t, maxi, result;
     double sum;
+    double* v, vnext, h, vh;
+    int* ptr;
     result = 0;
     // allocate v
-    double* v = (double*) malloc(N * sizeof(double));
-    double* vnext = (double*) malloc(N * sizeof(double));
-    double* h = (double*) malloc(N * sizeof(double));
-    double* vh;
+    v = (double*) malloc(N * sizeof(double));
+    vnext = (double*) malloc(N * sizeof(double));
+    h = (double*) malloc(N * sizeof(double));
 
     // allocate ptr
-    int* ptr = (int*) malloc(T*N * sizeof(int));
+    ptr = (int*) malloc(T*N * sizeof(int));
 
     if (! v || ! vnext || !h || ! ptr) {
         result = _BHMM_ERR_NO_MEM; // indicate no memory
@@ -327,7 +328,8 @@ int _sample_path(
 {
     // initialize variables
     int i,t;
-    double* psel = (double*) malloc(N * sizeof(double));
+    double* psel;
+    psel = (double*) malloc(N * sizeof(double));
     if (! psel) {
         return _BHMM_ERR_NO_MEM;
     }
