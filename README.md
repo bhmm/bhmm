@@ -10,7 +10,7 @@ This toolkit provides machinery for sampling from the Bayesian posterior of hidd
 
 The easiest way to install `bhmm` is via the [`conda` package manager](http://conda.pydata.org/):
 ```
-conda config --add channels http://conda.binstar.org/omnia
+conda config --add channels conda-forge
 conda install bhmm
 ```
 
