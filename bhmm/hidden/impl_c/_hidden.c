@@ -145,7 +145,7 @@ void _compute_state_counts(
 }*/
 
 
-void _compute_transition_counts(
+int _compute_transition_counts(
         double *transition_counts,
         const double *A,
         const double *pobs,
@@ -162,6 +162,9 @@ void _compute_transition_counts(
             transition_counts[i*N+j] = 0.0;
 
     tmp = (double*) malloc(N*N * sizeof(double));
+    if (! tmp) {
+        return _BHMM_ERR_NO_MEM;
+    }
     for (t = 0; t < T-1; t++)
     {
         sum = 0.0;
@@ -176,6 +179,7 @@ void _compute_transition_counts(
                 transition_counts[i*N+j] += tmp[i*N+j] / sum;
     }
     free(tmp);
+    return 0;
 }
 
 
@@ -196,24 +200,30 @@ int argmax(double* v, int N)
 }
 
 
-void _compute_viterbi(
+int _compute_viterbi(
         int *path,
         const double *A,
         const double *pobs,
         const double *pi,
         int N, int T)
 {
-    int i, j, t, maxi;
-    double sum, maxprod, p;
-
+    int i, j, t, maxi, result;
+    double sum;
+    double *v, *vnext, *h, *vh;
+    int* ptr;
+    result = 0;
     // allocate v
-    double* v = (double*) malloc(N * sizeof(double));
-    double* vnext = (double*) malloc(N * sizeof(double));
-    double* h = (double*) malloc(N * sizeof(double));
-    double* vh;
+    v = (double*) malloc(N * sizeof(double));
+    vnext = (double*) malloc(N * sizeof(double));
+    h = (double*) malloc(N * sizeof(double));
 
     // allocate ptr
-    int* ptr = (int*) malloc(T*N * sizeof(int));
+    ptr = (int*) malloc(T*N * sizeof(int));
+
+    if (! v || ! vnext || !h || ! ptr) {
+        result = _BHMM_ERR_NO_MEM; // indicate no memory
+        goto error;
+    }
 
     // initialization of v
     sum = 0.0;
@@ -260,12 +270,14 @@ void _compute_viterbi(
     {
         path[t] = ptr[(t+1)*N+path[t+1]];
     }
-
+    error:
     // free memory
     free(v);
     free(vnext);
     free(h);
     free(ptr);
+
+    return result;
 }
 
 int _random_choice(const double* p, const int N)
@@ -307,7 +319,7 @@ void _normalize(double* v, const int N)
 }
 
 
-void _sample_path(
+int _sample_path(
         int *path,
         const double *alpha,
         const double *A,
@@ -316,7 +328,11 @@ void _sample_path(
 {
     // initialize variables
     int i,t;
-    double* psel = (double*) malloc(N * sizeof(double));
+    double* psel;
+    psel = (double*) malloc(N * sizeof(double));
+    if (! psel) {
+        return _BHMM_ERR_NO_MEM;
+    }
 
     // initialize random number generator
     srand(time(NULL));
@@ -353,6 +369,7 @@ void _sample_path(
 
     // free memory
     free(psel);
+    return 0;
 }
 
 /*

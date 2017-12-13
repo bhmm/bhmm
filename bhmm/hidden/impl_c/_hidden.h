@@ -1,6 +1,8 @@
 #ifndef HMM_H_
 #define HMM_H_
 
+
+#define _BHMM_ERR_NO_MEM 2
 /*
  API FUNCTIONS
 */
@@ -29,7 +31,7 @@ void _compute_state_counts(
         const double *gamma,
         int T, int N);
 
-void _compute_transition_counts(
+int _compute_transition_counts(
         double *transition_counts,
         const double *A,
         const double *pobs,
@@ -37,14 +39,14 @@ void _compute_transition_counts(
         const double *beta,
         int N, int T);
 
-void _compute_viterbi(
+int _compute_viterbi(
         int *path,
         const double *A,
         const double *pobs,
         const double *pi,
         int N, int T);
 
-void _sample_path(
+int _sample_path(
         int *path,
         const double *alpha,
         const double *A,
