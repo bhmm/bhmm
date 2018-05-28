@@ -241,13 +241,14 @@ class DiscreteOutputModel(OutputModel):
         """
         from numpy.random import dirichlet
         N, M = self._output_probabilities.shape  # nstates, nsymbols
-        for i in range(len(observations_by_state)):
+        for i, obs_by_state in enumerate(observations_by_state):
             # count symbols found in data
-            count = np.bincount(observations_by_state[i], minlength=M).astype(float)
+            count = np.bincount(obs_by_state, minlength=M).astype(float)
             # sample dirichlet distribution
             count += self.prior[i]
-            if count.sum() > 0:  # if counts at all: can't sample, so leave output probabilities as they are.
-                self._output_probabilities[i, :] = dirichlet(self.prior[i] + count)
+            positive = count > 0
+            # if counts at all: can't sample, so leave output probabilities as they are.
+            self._output_probabilities[i, positive] = dirichlet(count[positive])
 
     def generate_observation_from_state(self, state_index):
         """

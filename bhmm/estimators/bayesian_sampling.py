@@ -358,7 +358,10 @@ class BayesianHMMSampler(object):
             p0 = _tmatrix_disconnected.stationary_distribution(Tij, C=C)
         else:
             n0 = self.model.count_init().astype(float)
-            p0 = np.random.dirichlet(n0 + self.prior_n0)  # sample p0 from posterior
+            first_timetep_counts_with_prior = n0 + self.prior_n0
+            positive = first_timetep_counts_with_prior > 0
+            p0 = np.zeros_like(n0)
+            p0[positive] = np.random.dirichlet(first_timetep_counts_with_prior[positive])  # sample p0 from posterior
 
         # update HMM with new sample
         self.model.update(p0, Tij)
