@@ -34,7 +34,7 @@ test:
   imports:
     - bhmm
   commands:
-    - nosetests bhmm --nocapture --verbosity=2 --with-doctest
+    - nosetests bhmm --nocapture --verbosity=2 --with-doctest --doctest-options +NORMALIZE_WHITESPACE
 
 about:
   home: https://github.com/choderalab/bhmm
