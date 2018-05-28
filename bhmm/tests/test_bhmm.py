@@ -267,5 +267,20 @@ class TestBHMM(unittest.TestCase):
     # TODO: these tests can be made compact because they are almost the same. can define general functions for testing
     # TODO: samples and stats, only need to implement consistency check individually.
 
+
+
+class TestCornerCase(unittest.TestCase):
+    def test_no_except(self):
+        obs = [np.array([0, 1, 2, 2, 2, 2, 1, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int),
+               np.array([0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0], dtype=int)
+               ]
+        lag = 1
+        nstates = 2
+        nsamples = 2
+        hmm_lag10 = bhmm.estimate_hmm(obs, nstates, lag=lag, output='discrete')
+        # BHMM
+        sampled_hmm_lag10 = bhmm.bayesian_hmm(obs[::lag], hmm_lag10, nsample=nsamples)
+
+
 if __name__=="__main__":
     unittest.main()
