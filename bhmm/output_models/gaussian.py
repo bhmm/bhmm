@@ -159,8 +159,13 @@ class GaussianOutputModel(OutputModel):
         if self.__impl__ == self.__IMPL_C__:
             return gc.p_o(o, self.means, self.sigmas, out=None, dtype=type(o))
         elif self.__impl__ == self.__IMPL_PYTHON__:
-            C = 1.0 / (np.sqrt(2.0 * np.pi) * self.sigmas)
-            Pobs = C * np.exp(-0.5 * ((o-self.means)/self.sigmas)**2)
+            eps = 1e-14
+            if np.any(self.sigmas < eps):
+                sigmas = np.ones_like(self.sigmas)
+            else:
+                sigmas = self.sigmas
+            C = 1.0 / (np.sqrt(2.0 * np.pi) * sigmas)
+            Pobs = C * np.exp(-0.5 * ((o-self.means)/sigmas)**2)
             return Pobs
         else:
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
@@ -266,6 +271,8 @@ class GaussianOutputModel(OutputModel):
         # normalize
         self._sigmas /= w_sum
         self._sigmas = np.sqrt(self.sigmas)
+        if np.any(self._sigmas < 1E-80):
+            self._sigmas = np.ones_like(self._sigmas)
 
     def sample(self, observations, prior=None):
         """
