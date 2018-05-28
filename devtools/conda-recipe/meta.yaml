@@ -30,11 +30,11 @@ requirements:
 
 test:
   requires:
-    - nose
+    - pytest
   imports:
     - bhmm
   commands:
-    - nosetests bhmm --nocapture --verbosity=2 --with-doctest --doctest-options +NORMALIZE_WHITESPACE
+    - pytest --pyargs bhmm -s -v --doctest-modules
 
 about:
   home: https://github.com/choderalab/bhmm
