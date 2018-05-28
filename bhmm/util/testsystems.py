@@ -295,11 +295,11 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000,
 
     Generate BHMM with default parameters.
 
-    >>> [model, observations, hidden_traj, bhmm] = generate_random_bhmm()
+    >>> model, observations, hidden_traj, bhmm = generate_random_bhmm()
 
     Generate BHMM with discerete states.
 
-    >>> [model, observations, hidden_traj, bhmm] = generate_random_bhmm(output='discrete')
+    >>> model, observations, hidden_traj, bhmm = generate_random_bhmm(output='discrete')
 
     """
 
