@@ -12,7 +12,7 @@ install:
 
 script:
   # Add conda channel
-  - conda config --add channels $ORGNAME
+  - conda config --add channels conda-forge 
   # Create environment
   - conda create --yes -n test python=$python
   - source activate test
