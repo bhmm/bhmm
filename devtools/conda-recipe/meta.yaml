@@ -5,10 +5,9 @@ package:
 source:
   path: ../..
 
-
 build:
-  preserve_egg_dir: True
   number: 0
+  script: pip install .
 
 requirements:
   build:
@@ -19,6 +18,7 @@ requirements:
     - scipy
     - msmtools
     - six
+    - pip
 
   run:
     - python
@@ -29,6 +29,8 @@ requirements:
     - six
 
 test:
+  source_files:
+    - conftest.py
   requires:
     - pytest
   imports:
