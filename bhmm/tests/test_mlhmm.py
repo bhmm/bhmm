@@ -123,5 +123,21 @@ class TestMLHMM_DoubleWell(unittest.TestCase):
         # this data: lifetimes about 680
         assert np.abs(self.hmm_lag10.timescales[0] - 340) < 20.0
 
+class TestMLHMM_SpecialCases(unittest.TestCase):
+    def test_disconnected_2state(self):
+        dtrajs = [[4, 2, 0, 3, 4, 0, 1, 3, 0, 0, 3, 1, 0, 0, 1, 0, 2, 3, 2, 1, 1, 1, 2,
+                   4, 0, 4, 1, 3, 1, 2, 2, 2, 3, 4, 2, 0, 1, 4, 4, 3, 3, 4, 3, 2, 2, 2,
+                   2, 4, 0, 4, 2, 4, 4, 3, 3, 0, 4, 4, 3, 2, 0, 1, 1, 3, 3, 3, 0, 1, 2,
+                   2, 4, 2, 1, 1, 4, 0, 3, 4, 1, 2, 4, 0, 1, 4, 2, 1, 4, 0, 4, 2, 3, 0,
+                   2, 1, 0, 3, 0, 1, 3, 4],
+                  [7, 9, 7, 8, 10, 6, 8, 7, 10, 9, 8, 7, 8, 6, 10, 6, 10,
+                   8, 9, 6, 8, 9, 10, 7, 6, 10, 6, 9, 6, 7, 7, 9, 10, 6,
+                   6, 6, 7, 7, 8, 10, 7, 10, 8, 7, 6, 10, 8, 10, 9, 6, 6,
+                   8, 6, 8, 10, 10, 7, 9, 8, 7, 10, 6, 8, 6, 8, 9, 6, 6,
+                   7, 7, 8, 6, 7, 10, 8, 10, 8, 10, 6, 6, 10, 10, 8, 9, 10,
+                   10, 9, 8, 9, 8, 10, 7, 7, 9, 7, 10, 8, 9, 8, 10]]
+        with self.assertRaises(ValueError):
+            bhmm.estimate_hmm(dtrajs, 2, lag=5, output='discrete')
+
 if __name__ == "__main__":
     unittest.main()
