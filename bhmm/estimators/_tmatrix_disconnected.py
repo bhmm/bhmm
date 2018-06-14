@@ -37,7 +37,7 @@ def connected_sets(C, mincount_connectivity=0, strong=True):
     """
     import msmtools.estimation as msmest
     Cconn = C.copy()
-    Cconn[np.where(C < mincount_connectivity)] = 0
+    Cconn[np.where(C <= mincount_connectivity)] = 0
     # treat each connected set separately
     S = msmest.connected_sets(Cconn, directed=strong)
     return S
@@ -96,7 +96,7 @@ def estimate_P(C, reversible=True, fixed_statdist=None, maxiter=1000000, maxerr=
         for s in S:
             mask = np.zeros(n, dtype=bool)
             mask[s] = True
-            if C[np.ix_(mask, ~mask)].sum() > 0:  # outgoing transitions - use partial rev algo.
+            if C[np.ix_(mask, ~mask)].sum() > np.finfo(C.dtype).eps:  # outgoing transitions - use partial rev algo.
                 transition_matrix_partial_rev(C, P, mask, maxiter=maxiter, maxerr=maxerr)
             else:  # closed set - use standard estimator
                 I = np.ix_(mask, mask)
