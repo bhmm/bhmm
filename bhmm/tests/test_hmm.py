@@ -23,7 +23,6 @@ import unittest
 import bhmm
 from bhmm.util import testsystems
 
-from nose.tools import assert_equal, assert_almost_equal
 from numpy.testing import assert_array_almost_equal
 
 
@@ -33,8 +32,8 @@ class TestHMM(unittest.TestCase):
         # Create a simple HMM model.
         model = testsystems.dalton_model(nstates=3)
         # Test model parameter access.
-        assert_equal(model.transition_matrix.shape, (3, 3))
-        assert_equal(model.stationary_distribution.shape, (3, ))
+        np.testing.assert_equal(model.transition_matrix.shape, (3, 3))
+        np.testing.assert_equal(model.stationary_distribution.shape, (3, ))
 
         return
 

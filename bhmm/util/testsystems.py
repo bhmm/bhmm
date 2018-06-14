@@ -295,11 +295,11 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000,
 
     Generate BHMM with default parameters.
 
-    >>> [model, observations, bhmm] = generate_random_bhmm()
+    >>> model, observations, hidden_traj, bhmm = generate_random_bhmm() # doctest: +SKIP
 
     Generate BHMM with discerete states.
 
-    >>> [model, observations, bhmm] = generate_random_bhmm(output='discrete')
+    >>> model, observations, hidden_traj, bhmm = generate_random_bhmm(output='discrete') # doctest: +SKIP
 
     """
 
@@ -308,12 +308,12 @@ def generate_random_bhmm(nstates=3, ntrajectories=10, length=10000,
                          lifetime_max=lifetime_max, lifetime_min=lifetime_min, reversible=reversible,
                          output=output)
     # Generate synthetic data.
-    [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
+    O, S = model.generate_synthetic_observation_trajectories(ntrajectories=ntrajectories, length=length)
     # Initialize a new BHMM model.
     from bhmm import BHMM
     sampled_model = BHMM(O, nstates)
 
-    return [model, O, S, sampled_model]
+    return model, O, S, sampled_model
 
 
 def total_state_visits(nstates, S):
@@ -329,7 +329,7 @@ def total_state_visits(nstates, S):
 
     """
 
-    N_i = np.zeros([nstates], np.int32)
+    N_i = np.zeros(nstates, np.int32)
     min_state = nstates
     max_state = 0
     for s_t in S:
@@ -337,4 +337,4 @@ def total_state_visits(nstates, S):
             N_i[state_index] += (s_t == state_index).sum()
         min_state = min(min_state, s_t.min())
         max_state = max(max_state, s_t.max())
-    return [N_i, min_state, max_state]
+    return N_i, min_state, max_state
