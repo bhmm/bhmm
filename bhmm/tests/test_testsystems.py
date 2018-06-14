@@ -19,6 +19,7 @@
 
 import unittest
 from bhmm.util import testsystems
+from msmtools.analysis import is_transition_matrix
 
 
 class TestTestSystems(unittest.TestCase):
@@ -28,8 +29,8 @@ class TestTestSystems(unittest.TestCase):
         """
         Tij = testsystems.generate_transition_matrix(nstates=3, reversible=False)
         Tij = testsystems.generate_transition_matrix(nstates=3, reversible=True)
-        # TODO: Check Tij is proper row-stochastic matrix?
-        return
+        assert Tij.shape == (3, 3)
+        assert is_transition_matrix(Tij)
 
     def test_three_state_model(self):
         """Test three-state model.
@@ -37,6 +38,12 @@ class TestTestSystems(unittest.TestCase):
         model = testsystems.dalton_model()
         # TODO: Check stationary probiblities are correct?
         return
+
+    @unittest.skip('known to be kaputt.')
+    def test_generate_random_bhmm(self):
+        from bhmm.util.testsystems import generate_random_bhmm
+        model, observations, hidden_traj, bhmm = generate_random_bhmm(output='discrete')
+        assert is_transition_matrix(model.transition_matrix)
 
 
 if __name__ == "__main__":

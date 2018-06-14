@@ -382,6 +382,7 @@ class MaximumLikelihoodEstimator(object):
             loglik = 0.0
             for k in range(self._nobs):
                 loglik += self._forward_backward(k)
+                assert np.isfinite(loglik), it
             t2 = time.time()
 
             # convergence check

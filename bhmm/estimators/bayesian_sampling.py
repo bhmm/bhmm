@@ -159,8 +159,10 @@ class BayesianHMMSampler(object):
         if p0_prior is None or p0_prior == 'sparse':
             self.prior_n0 = np.zeros(self.nstates)
         elif isinstance(p0_prior, np.ndarray):
-            if np.array_equal(p0_prior.shape, self.nstates):
+            if len(p0_prior.shape) == 1 and p0_prior.shape[0] == self.nstates:
                 self.prior_n0 = np.array(p0_prior)
+            else:
+                raise ValueError('initial distribution prior must have dimension ' + str(nstates))
         elif p0_prior == 'mixed':
             self.prior_n0 = np.array(self.model.initial_distribution)
         elif p0_prior == 'uniform':
@@ -358,7 +360,10 @@ class BayesianHMMSampler(object):
             p0 = _tmatrix_disconnected.stationary_distribution(Tij, C=C)
         else:
             n0 = self.model.count_init().astype(float)
-            p0 = np.random.dirichlet(n0 + self.prior_n0)  # sample p0 from posterior
+            first_timestep_counts_with_prior = n0 + self.prior_n0
+            positive = first_timestep_counts_with_prior > 0
+            p0 = np.zeros_like(n0)
+            p0[positive] = np.random.dirichlet(first_timestep_counts_with_prior[positive])  # sample p0 from posterior
 
         # update HMM with new sample
         self.model.update(p0, Tij)

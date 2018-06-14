@@ -12,23 +12,16 @@ install:
 
 script:
   # Add conda channel
-  - conda config --add channels $ORGNAME
-  # Create environment
-  - conda create --yes -n test python=$python
-  - source activate test
+  - conda config --add channels conda-forge 
   # Build the recipe
   - conda build devtools/conda-recipe
-  # Install the recipe
-  - conda install --use-local --yes bhmm-dev
-  # Test the local installation
-  - conda install --yes --quiet nose nose-timer
-  - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-doctest --with-timer -a "\!slow" && cd ..
 
 env:
   matrix:
     - python=2.7  CONDA_PY=27
-    - python=3.4  CONDA_PY=34
     - python=3.5  CONDA_PY=35
+    - python=3.6  CONDA_PY=36 CONDA_NPY=114
+
 
   global:
     - ORGNAME="omnia" # the name of the organization
