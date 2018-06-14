@@ -570,20 +570,20 @@ class HMM(object):
 
         >>> from bhmm import testsystems
         >>> model = testsystems.dalton_model()
-        >>> [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100)
+        >>> O, S = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100)
 
         Use an initial nonequilibrium distribution.
 
         >>> from bhmm import testsystems
         >>> model = testsystems.dalton_model(nstates=3)
-        >>> [O, S] = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100, initial_Pi=np.array([1,0,0]))
+        >>> O, S = model.generate_synthetic_observation_trajectories(ntrajectories=10, length=100, initial_Pi=np.array([1,0,0]))
 
         """
         O = list()  # observations
         S = list()  # state trajectories
         for trajectory_index in range(ntrajectories):
-            [o_t, s_t] = self.generate_synthetic_observation_trajectory(length=length, initial_Pi=initial_Pi)
+            o_t, s_t = self.generate_synthetic_observation_trajectory(length=length, initial_Pi=initial_Pi)
             O.append(o_t)
             S.append(s_t)
 
-        return [O, S]
+        return O, S
