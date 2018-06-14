@@ -159,13 +159,10 @@ class GaussianOutputModel(OutputModel):
         if self.__impl__ == self.__IMPL_C__:
             return gc.p_o(o, self.means, self.sigmas, out=None, dtype=type(o))
         elif self.__impl__ == self.__IMPL_PYTHON__:
-            eps = 1e-14
-            if np.any(self.sigmas < eps):
-                sigmas = np.ones_like(self.sigmas)
-            else:
-                sigmas = self.sigmas
-            C = 1.0 / (np.sqrt(2.0 * np.pi) * sigmas)
-            Pobs = C * np.exp(-0.5 * ((o-self.means)/sigmas)**2)
+            if np.any(self.sigmas < np.finfo(self.sigmas.dtype).eps):
+                raise RuntimeError('at least one sigma is too small to continue.')
+            C = 1.0 / (np.sqrt(2.0 * np.pi) * self.sigmas)
+            Pobs = C * np.exp(-0.5 * ((o-self.means)/self.sigmas)**2)
             return Pobs
         else:
             raise RuntimeError('Implementation '+str(self.__impl__)+' not available')
@@ -252,14 +249,14 @@ class GaussianOutputModel(OutputModel):
         for k in range(K):
             # update nominator
             for i in range(N):
-                self.means[i] += np.dot(weights[k][:,i],observations[k])
+                self.means[i] += np.dot(weights[k][:, i], observations[k])
             # update denominator
             w_sum += np.sum(weights[k], axis=0)
         # normalize
         self._means /= w_sum
 
         # fit variances
-        self._sigmas  = np.zeros(N)
+        self._sigmas = np.zeros(N)
         w_sum = np.zeros(N)
         for k in range(K):
             # update nominator
@@ -271,8 +268,8 @@ class GaussianOutputModel(OutputModel):
         # normalize
         self._sigmas /= w_sum
         self._sigmas = np.sqrt(self.sigmas)
-        if np.any(self._sigmas < 1E-80):
-            self._sigmas = np.ones_like(self._sigmas)
+        if np.any(self._sigmas < np.finfo(self._sigmas.dtype).eps):
+            raise RuntimeError('at least one sigma is too small to continue.')
 
     def sample(self, observations, prior=None):
         """
