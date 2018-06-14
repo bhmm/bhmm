@@ -279,9 +279,6 @@ class MaximumLikelihoodEstimator(object):
         for k in range(len(self._observations)):  # update count matrix
             C += count_matrices[k]
 
-        # trim counts below machine precision
-        C[C < 1e-16] = 0
-
         return C
 
     def _update_model(self, gammas, count_matrices, maxiter=10000000):
