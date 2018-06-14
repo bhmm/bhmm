@@ -278,6 +278,7 @@ class MaximumLikelihoodEstimator(object):
         C = np.zeros((self._nstates, self._nstates))
         for k in range(len(self._observations)):  # update count matrix
             C += count_matrices[k]
+
         return C
 
     def _update_model(self, gammas, count_matrices, maxiter=10000000):
