@@ -262,7 +262,6 @@ def sample_path(alpha, A, pobs, T=None, dtype=np.float32, seed=None):
     """
     if seed is not None:
         np.random.seed(seed)
-    np.random.uniform(0.5)
     N = pobs.shape[1]
     # set T
     if T is None:
