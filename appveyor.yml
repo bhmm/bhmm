@@ -1,41 +1,32 @@
+image: Visual Studio 2015
+platform: x64
 environment:
   myuser:
     secure: BNlXevLtF9e2aPA67RkRlg==
   mypass:
     secure: UVcVBPUuJmH6Dargd2JZHitYoqNavVuBWWeJ8fvarLfSahvVhAAlXsnO2roo/75L
   global:
-    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
-    # /E:ON and /V:ON options are not enabled in the batch script intepreter
-    # See: http://stackoverflow.com/a/13751649/163740
-    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\devtools\\appveyor-ci\\run_with_env.cmd"
-    PYTHONUNBUFFERED: 1
+    PYTHONHASHSEED: "0"
+    MINICONDA_PYTHON: "C:\\Miniconda36-x64"
+    MSSdk: "1"
+    SET_DISTUTILS_SDK: "1"
 
   matrix:
-    - PYTHON: "C:\\Miniconda"
-      CONDA_PY: "27"
-      CONDA_NPY: "110"
-
-    - PYTHON: "C:\\Miniconda-x64"
-      CONDA_PY: "27"
-      CONDA_NPY: "112"
-      ARCH: "64"
-
-    - PYTHON: "C:\\Miniconda3"
-      CONDA_PY: "35"
-      CONDA_NPY: "113"
-
-    - PYTHON: "C:\\Miniconda3-x64"
-      CONDA_PY: "36"
-      CONDA_NPY: "113"
-      ARCH: "64"
+    - CONDA_PY: "35"
+      CONDA_NPY: "114"
+    - CONDA_PY: "36"
+      CONDA_NPY: "114"
+    - CONDA_PY: "37"
+      CONDA_NPY: "114"
 
 install:
-  - set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
+  - cmd: '"%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%'
+  - ps: if ($env:PLATFORM -eq "x64") { $env:CONDA = "$env:CONDA-x64" }
+  - "SET PATH=%MINICONDA_PYTHON%;%MINICONDA_PYTHON%\\Scripts;%PATH%;"
   - conda config --add channels conda-forge
-  - conda install -yq conda-build 
+  - conda install -yq conda-build
 
 build: false
 
 test_script:
-  - "%CMD_IN_ENV% conda build --quiet devtools\\conda-recipe"
-
+  - conda build -q devtools/conda-recipe %CONDA_NPY%"
