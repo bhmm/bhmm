@@ -13,11 +13,11 @@ environment:
 
   matrix:
     - CONDA_PY: "35"
-      CONDA_NPY: "114"
+      NUMPY: "114"
     - CONDA_PY: "36"
-      CONDA_NPY: "114"
+      NUMPY: "114"
     - CONDA_PY: "37"
-      CONDA_NPY: "114"
+      NUMPY: "114"
 
 install:
   - cmd: '"%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%'
