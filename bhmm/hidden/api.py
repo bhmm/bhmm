@@ -274,7 +274,7 @@ def viterbi(A, pobs, pi):
         raise RuntimeError('Nonexisting implementation selected: '+str(__impl__))
 
 
-def sample_path(alpha, A, pobs, T=None):
+def sample_path(alpha, A, pobs, T=None, seed=None):
     """ Sample the hidden pathway S from the conditional distribution P ( S | Parameters, Observations )
 
     Parameters
@@ -287,6 +287,8 @@ def sample_path(alpha, A, pobs, T=None):
         pobs[t,i] is the observation probability for observation at time t given hidden state i
     T : int
         number of time steps
+    seed : int, optional, default=None
+        Random seed to be used if not None.
 
     Returns
     -------
@@ -295,8 +297,8 @@ def sample_path(alpha, A, pobs, T=None):
 
     """
     if __impl__ == __IMPL_PYTHON__:
-        return ip.sample_path(alpha, A, pobs, T=T, dtype=config.dtype)
+        return ip.sample_path(alpha, A, pobs, T=T, dtype=config.dtype, seed=seed)
     elif __impl__ == __IMPL_C__:
-        return ic.sample_path(alpha, A, pobs, T=T, dtype=config.dtype)
+        return ic.sample_path(alpha, A, pobs, T=T, dtype=config.dtype, seed=seed)
     else:
         raise RuntimeError('Nonexisting implementation selected: '+str(__impl__))

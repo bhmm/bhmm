@@ -60,6 +60,8 @@ int argmax(double* v, int N);
 int _random_choice(const double* p, const int N);
 void _normalize(double* v, const int N);
 
+void set_seed(int seed);
+
 
 /*void computeGamma(
 		double *gamma,
