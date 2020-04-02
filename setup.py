@@ -119,7 +119,6 @@ setup(
         'numpy',
         'scipy',
         'msmtools',
-        'six',
         ],
     setup_requires=[
         'cython',

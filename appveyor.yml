@@ -12,11 +12,11 @@ environment:
     SET_DISTUTILS_SDK: "1"
 
   matrix:
-    - CONDA_PY: "35"
-      NUMPY: "114"
     - CONDA_PY: "36"
       NUMPY: "114"
     - CONDA_PY: "37"
+      NUMPY: "114"
+    - CONDA_PY: "38"
       NUMPY: "114"
 
 install:
@@ -29,4 +29,4 @@ install:
 build: false
 
 test_script:
-  - conda build -q devtools/conda-recipe %CONDA_NPY%"
+  - conda build -q devtools/conda-recipe %CONDA_NPY% --numpy=%NUMPY%"
