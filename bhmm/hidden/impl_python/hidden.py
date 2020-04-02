@@ -247,7 +247,7 @@ def viterbi(A, pobs, pi, dtype=np.float32):
     return q
 
 
-def sample_path(alpha, A, pobs, T=None, dtype=np.float32):
+def sample_path(alpha, A, pobs, T=None, dtype=np.float32, seed=None):
     """
     alpha : ndarray((T,N), dtype = float), optional, default = None
         alpha[t,i] is the ith forward coefficient of time t.
@@ -257,7 +257,11 @@ def sample_path(alpha, A, pobs, T=None, dtype=np.float32):
         transition matrix of the hidden states
     pobs : ndarray((T,N), dtype = float)
         pobs[t,i] is the observation probability for observation at time t given hidden state i
+    seed : int, optional, default=None
+        Sets the internal random state of numpy if not None.
     """
+    if seed is not None:
+        np.random.seed(seed)
     N = pobs.shape[1]
     # set T
     if T is None:

@@ -204,7 +204,7 @@ class BayesianHMMSampler(object):
         return
 
     def sample(self, nsamples, nburn=0, nthin=1, save_hidden_state_trajectory=False,
-               call_back=None):
+               call_back=None, seed=None):
         """Sample from the BHMM posterior.
 
         Parameters
@@ -220,6 +220,8 @@ class BayesianHMMSampler(object):
         call_back : function, optional, default=None
             a call back function with no arguments, which if given is being called
             after each computed sample. This is useful for implementing progress bars.
+        seed : int, optional, default=None
+            Seed for the random generator when computing hidden state trajectories. Ignored if None.
 
         Returns
         -------
@@ -237,11 +239,12 @@ class BayesianHMMSampler(object):
         >>> samples = sampled_model.sample(nsamples, nburn=nburn, nthin=nthin)
 
         """
-
+        first_update = True
         # Run burn-in.
         for iteration in range(nburn):
             logger().info("Burn-in   %8d / %8d" % (iteration, nburn))
-            self._update()
+            self._update(seed=seed if first_update else None)
+            first_update = False
 
         # Collect data.
         models = list()
@@ -249,7 +252,8 @@ class BayesianHMMSampler(object):
             logger().info("Iteration %8d / %8d" % (iteration, nsamples))
             # Run a number of Gibbs sampling updates to generate each sample.
             for thin in range(nthin):
-                self._update()
+                self._update(seed=seed if first_update else None)
+                first_update = False
             # Save a copy of the current model.
             model_copy = copy.deepcopy(self.model)
             # print "Sampled: \n",repr(model_copy)
@@ -262,13 +266,13 @@ class BayesianHMMSampler(object):
         # Return the list of models saved.
         return models
 
-    def _update(self):
+    def _update(self, seed=None):
         """Update the current model using one round of Gibbs sampling.
 
         """
         initial_time = time.time()
 
-        self._updateHiddenStateTrajectories()
+        self._updateHiddenStateTrajectories(seed=seed)
         self._updateEmissionProbabilities()
         self._updateTransitionMatrix()
 
@@ -276,17 +280,17 @@ class BayesianHMMSampler(object):
         elapsed_time = final_time - initial_time
         logger().info("BHMM update iteration took %.3f s" % elapsed_time)
 
-    def _updateHiddenStateTrajectories(self):
+    def _updateHiddenStateTrajectories(self, seed=None):
         """Sample a new set of state trajectories from the conditional distribution P(S | T, E, O)
 
         """
         self.model.hidden_state_trajectories = list()
         for trajectory_index in range(self.nobs):
-            hidden_state_trajectory = self._sampleHiddenStateTrajectory(self.observations[trajectory_index])
+            hidden_state_trajectory = self._sampleHiddenStateTrajectory(self.observations[trajectory_index], seed=seed)
             self.model.hidden_state_trajectories.append(hidden_state_trajectory)
         return
 
-    def _sampleHiddenStateTrajectory(self, obs, dtype=np.int32):
+    def _sampleHiddenStateTrajectory(self, obs, dtype=np.int32, seed=None):
         """Sample a hidden state trajectory from the conditional distribution P(s | T, E, o)
 
         Parameters
@@ -322,7 +326,7 @@ class BayesianHMMSampler(object):
         # compute forward variables
         logprob = hidden.forward(A, self.pobs, pi, T=T, alpha_out=self.alpha)[0]
         # sample path
-        S = hidden.sample_path(self.alpha, A, self.pobs, T=T)
+        S = hidden.sample_path(self.alpha, A, self.pobs, T=T, seed=seed)
 
         return S
 

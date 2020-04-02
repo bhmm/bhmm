@@ -28,13 +28,13 @@ cdef extern from "_hidden.h":
     int _compute_transition_counts(double *transition_counts, const double *A, const double *pobs, const double *alpha, const double *beta, int N, int T)
     int _compute_viterbi(int *path, const double *A, const double *pobs, const double *pi, int N, int T)
     int _sample_path(int *path, const double *alpha, const double *A, const double *pobs, const int N, const int T)
+    void set_seed(int seed)
     int _BHMM_ERR_NO_MEM
 
 
 def cdef_double_array(n1, n2):
     cdef numpy.ndarray[double, ndim=2, mode="c"] out = numpy.zeros( (n1,n2), dtype=numpy.double, order='C' )
     return out
-
 
 def forward(A, pobs, pi, T=None, alpha_out=None, dtype=numpy.float32):
     # set T
@@ -177,7 +177,9 @@ def viterbi(A, pobs, pi, dtype=numpy.float32):
         raise TypeError
 
 
-def sample_path(alpha, A, pobs, T = None, dtype=numpy.float32):
+def sample_path(alpha, A, pobs, T = None, dtype=numpy.float32, seed=None):
+    if seed is not None:
+        set_seed(int(seed))
     N = pobs.shape[1]
     # set T
     if (T is None):

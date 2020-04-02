@@ -318,6 +318,14 @@ void _normalize(double* v, const int N)
     }
 }
 
+void set_seed(int seed) {
+    if (seed >= 0) {
+        srand(seed);
+    } else {
+        srand(time(NULL));
+    }
+}
+
 
 int _sample_path(
         int *path,
@@ -333,9 +341,6 @@ int _sample_path(
     if (! psel) {
         return _BHMM_ERR_NO_MEM;
     }
-
-    // initialize random number generator
-    srand(time(NULL));
 
     // Sample final state.
     //printf("t = %i ",(T-1));
